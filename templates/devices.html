@@ -1,0 +1,145 @@
+{% extends "index.html" %}
+{% block title %}Device Management - Cybersecurity Access Control System{% endblock %}
+
+{% block content %}
+        
+            <header class="header">
+                <h1><i class="fas fa-desktop"></i> Device Management</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-box">
+                <div class="header" style="margin-bottom: 2rem;">
+                    <h2>Devices List</h2>
+                    <button class="btn-primary" id="addDeviceBtn">
+                        <i class="fas fa-plus"></i> Add Device
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table id="devicesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>PC ID</th>
+                                <th>Location</th>
+                                <th>Created At</th>
+                                <th>Last Access</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Devices will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    </div>
+
+    <!-- Add/Edit Device Modal -->
+    <div class="modal" id="deviceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="deviceModalTitle">Add New Device</h3>
+                <button class="close-modal" id="closeDeviceModal">&times;</button>
+            </div>
+            
+            <form id="deviceForm">
+                <input type="hidden" id="deviceId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pc_id">PC ID *</label>
+                        <input type="text" id="pc_id" name="pc_id" required placeholder="e.g., WIN-PC-01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location">Location *</label>
+                        <input type="text" id="location" name="location" required placeholder="e.g., Workshop A">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="saveDeviceBtn">
+                        Save Device
+                    </button>
+                    <button type="button" class="btn-secondary" id="cancelDeviceBtn">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <script>
+        // Initialize session protection
+
+        
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            adminLogout();
+            window.location.href = '{% url "login" %}';
+        });
+        
+        // Load devices when page loads
+        document.addEventListener('DOMContentLoaded', loadDevices);
+        
+        // Device modal controls
+        const deviceModal = document.getElementById('deviceModal');
+        const addDeviceBtn = document.getElementById('addDeviceBtn');
+        const closeDeviceModal = document.getElementById('closeDeviceModal');
+        const cancelDeviceBtn = document.getElementById('cancelDeviceBtn');
+        
+        addDeviceBtn.addEventListener('click', () => {
+            document.getElementById('deviceModalTitle').textContent = 'Add New Device';
+            document.getElementById('deviceForm').reset();
+            document.getElementById('deviceId').value = '';
+            deviceModal.style.display = 'flex';
+        });
+        
+        closeDeviceModal.addEventListener('click', () => {
+            deviceModal.style.display = 'none';
+        });
+        
+        cancelDeviceBtn.addEventListener('click', () => {
+            deviceModal.style.display = 'none';
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === deviceModal) {
+                deviceModal.style.display = 'none';
+            }
+        });
+        
+        // Handle device form submission
+        document.getElementById('deviceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const deviceId = document.getElementById('deviceId').value;
+            const deviceData = {
+                pc_id: document.getElementById('pc_id').value,
+                location: document.getElementById('location').value
+            };
+            
+            try {
+                if (deviceId) {
+                    await updateDevice(deviceId, deviceData);
+                } else {
+                    await createDevice(deviceData);
+                }
+                
+                deviceModal.style.display = 'none';
+                loadDevices();
+            } catch (error) {
+                alert('Error saving device: ' + error.message);
+            }
+        });
+    </script>
+{% endblock %}

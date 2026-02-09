@@ -1,0 +1,102 @@
+{%extends "index.html" %}
+{% block title %}Access Logs - Cybersecurity Access Control System{% endblock %}
+
+{% block content %}
+            <header class="header">
+                <h1><i class="fas fa-clipboard-list"></i> Access Logs</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-box">
+                <div class="header" style="margin-bottom: 2rem;">
+                    <h2>Access History</h2>
+                    <div class="form-actions">
+                        <button class="btn-secondary" id="filterToday">
+                            <i class="fas fa-calendar-day"></i> Today
+                        </button>
+                        <button class="btn-secondary" id="filterWeek">
+                            <i class="fas fa-calendar-week"></i> This Week
+                        </button>
+                        <button class="btn-secondary" id="filterAll">
+                            <i class="fas fa-calendar-alt"></i> All Time
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <input type="text" id="searchLogs" placeholder="Search logs..." style="width: 100%; padding: 0.5rem;">
+                </div>
+
+                <div class="table-container">
+                    <table id="logsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Device</th>
+                                <th>Action</th>
+                                <th>Success</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Logs will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 1rem; text-align: center; color: #666;">
+                    <p><i class="fas fa-info-circle"></i> Access logs are read-only for security audit purposes</p>
+                </div>
+            </div>
+        
+
+
+    
+    <script>
+        // Initialize session protection
+        // checkSession();
+        
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            adminLogout();
+            window.location.href = '{% url "login" %}';
+        });
+        
+        // Load logs when page loads
+        document.addEventListener('DOMContentLoaded', loadLogs);
+        
+        // Filter buttons
+        document.getElementById('filterToday').addEventListener('click', () => {
+            const today = new Date().toISOString().split('T')[0];
+            loadLogs(`date=${today}`);
+        });
+        
+        document.getElementById('filterWeek').addEventListener('click', () => {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            loadLogs(`start_date=${weekAgo.toISOString().split('T')[0]}`);
+        });
+        
+        document.getElementById('filterAll').addEventListener('click', () => {
+            loadLogs();
+        });
+        
+        // Search functionality
+        document.getElementById('searchLogs').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#logsTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    </script>
+{% endblock %}

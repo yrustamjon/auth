@@ -1,0 +1,126 @@
+{% extends "index.html" %}
+
+{% block title %}Dashboard - Cybersecurity Access Control System{% endblock %}
+
+{% block content %}
+    <div class="dashboard-container">
+            <header class="header">
+                <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </header>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Users</h3>
+                    <div class="number" id="totalUsers">0</div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Active Devices</h3>
+                    <div class="number" id="totalDevices">0</div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Today's Logs</h3>
+                    <div class="number" id="todayLogs">0</div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Active Roles</h3>
+                    <div class="number" id="totalRoles">0</div>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h2><i class="fas fa-info-circle"></i> System Overview</h2>
+                <p>Welcome to the Cybersecurity Access Control System Admin Panel.</p>
+                
+                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Recent Activity</h3>
+                <div class="table-container">
+                    <table id="recentLogs">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Device</th>
+                                <th>Action</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Recent logs will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    </div>
+    <script>
+        // Initialize session protection
+        // checkSession();
+        
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            adminLogout();
+            window.location.href = '{% url "login" %}';
+        });
+        
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                const [users, devices, roles, logs] = await Promise.all([
+                    fetchWithAuth('/api/users'),
+                    fetchWithAuth('/api/devices'),
+                    fetchWithAuth('/api/roles'),
+                    fetchWithAuth('/api/access-logs?limit=5')
+                ]);
+                
+                if (users.ok) {
+                    const usersData = await users.json();
+                    document.getElementById('totalUsers').textContent = usersData.length;
+                }
+                
+                if (devices.ok) {
+                    const devicesData = await devices.json();
+                    document.getElementById('totalDevices').textContent = devicesData.length;
+                }
+                
+                if (roles.ok) {
+                    const rolesData = await roles.json();
+                    document.getElementById('totalRoles').textContent = rolesData.length;
+                }
+                
+                if (logs.ok) {
+                    const logsData = await logs.json();
+                    document.getElementById('todayLogs').textContent = logsData.length;
+                    
+                    // Display recent logs
+                    const recentLogsTable = document.querySelector('#recentLogs tbody');
+                    recentLogsTable.innerHTML = '';
+                    
+                    logsData.slice(0, 5).forEach(log => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${new Date(log.timestamp).toLocaleString()}</td>
+                            <td>${log.user_fio || 'N/A'}</td>
+                            <td>${log.device_pc_id || 'N/A'}</td>
+                            <td>${log.action || 'Access'}</td>
+                            <td><span class="${log.success ? 'status-active' : 'status-inactive'}">
+                                ${log.success ? 'Success' : 'Failed'}
+                            </span></td>
+                        `;
+                        recentLogsTable.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadDashboardData);
+    </script>
+{% endblock %}
