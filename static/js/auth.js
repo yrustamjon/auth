@@ -28,7 +28,7 @@ function getCookie(name) {
 
 async function adminLogin(username, password) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
+        const response = await fetch(`/api/admin/login`, {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -60,7 +60,8 @@ async function adminLogin(username, password) {
 
 async function adminLogout() {
     try {
-        await fetch(`${API_BASE_URL}/api/admin/logout`, {
+        
+        await fetch(`/api/admin/logout`, {
             method: 'POST',
             credentials: 'include',
             headers: {

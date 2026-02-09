@@ -23,16 +23,7 @@ async function checkSession() {
     const path = window.location.pathname;
 
     // Login page
-    if (path === LOGIN_PATH) {
-        try {
-            const response = await fetchWithAuth('/api/users');
-            if (response.ok) {
-                window.location.href = '/';
-            }
-        } catch (_) {}
-        return;
-    }
-
+   
     // Protected pages
     if (PROTECTED_PATHS.includes(path)) {
         const isValid = await validateSession();
