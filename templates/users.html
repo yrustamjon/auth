@@ -1,0 +1,154 @@
+{% extends "index.html" %}
+{% block title %}User Management - Cybersecurity Access Control System{% endblock %}
+
+{% block content %}
+            <header class="header">
+                <h1><i class="fas fa-users"></i> User Management</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-box">
+                <div class="header" style="margin-bottom: 2rem;">
+                    <h2>Users List</h2>
+                    <button class="btn-primary" id="addUserBtn">
+                        <i class="fas fa-plus"></i> Add User
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Full Name</th>
+                                <th>Position</th>
+                                <th>Status</th>
+                                <th>Roles</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+    <!-- Add/Edit User Modal -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New User</h3>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fio">Full Name *</label>
+                        <input type="text" id="fio" name="fio" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lavozim">Position *</label>
+                        <input type="text" id="lavozim" name="lavozim" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="status">
+                        <input type="checkbox" id="status" name="status" checked>
+                        Active Status
+                    </label>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="saveUserBtn">
+                        Save User
+                    </button>
+                    <button type="button" class="btn-secondary" id="cancelBtn">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+    
+    <script>
+        // Initialize session protection
+        // checkSession();
+        
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            adminLogout();
+            window.location.href = '{% url "login" %}';
+        });
+        
+        // Load users when page loads
+        document.addEventListener('DOMContentLoaded', loadUsers);
+        
+        // Modal controls
+        const modal = document.getElementById('userModal');
+        const addUserBtn = document.getElementById('addUserBtn');
+        const closeModal = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+        
+        addUserBtn.addEventListener('click', () => {
+            document.getElementById('modalTitle').textContent = 'Add New User';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            modal.style.display = 'flex';
+        });
+        
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Handle form submission
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userId = document.getElementById('userId').value;
+            const userData = {
+                fio: document.getElementById('fio').value,
+                lavozim: document.getElementById('lavozim').value,
+                status: document.getElementById('status').checked
+            };
+            
+            try {
+                if (userId) {
+                    await updateUser(userId, userData);
+                } else {
+                    await createUser(userData);
+                }
+                
+                modal.style.display = 'none';
+                loadUsers();
+            } catch (error) {
+                alert('Error saving user: ' + error.message);
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Cybersecurity Admin Panel</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2><i class="fas fa-shield-alt"></i> SecAdmin</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="{% url 'users' %}" class="nav-link {% if request.resolver_match.url_name == 'users' %}active{% endif %}">
+                    <i class="fas fa-users"></i> Users
+                </a>
+                <a href="{% url 'roles' %}" class="nav-link {% if request.resolver_match.url_name == 'roles' %}active{% endif %}">
+                    <i class="fas fa-user-tag"></i> Roles
+                </a>
+                <a href="{% url 'devices' %}" class="nav-link {% if request.resolver_match.url_name == 'devices' %}active{% endif %}">
+                    <i class="fas fa-desktop"></i> Devices
+                </a>
+                <a href="{% url 'logs' %}" class="nav-link  {% if request.resolver_match.url_name == 'logs' %}active{% endif %}">
+                    <i class="fas fa-clipboard-list"></i> Access Logs
+                </a>
+            </nav>
+        </aside>
+        <script src="{% static 'js/api.js' %}"></script>
+        <script src="{% static 'js/auth.js' %}"></script>
+        <script src="{% static 'js/devices.js' %}"></script>
+        <script src="{% static 'js/guard.js' %}"></script>
+        <script src="{% static 'js/logs.js' %}"></script>
+        <script src="{% static 'js/roles.js' %}"></script>
+        <script src="{% static 'js/users.js' %}"></script>
+
+        <main class="main-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+    
+    
+
+</body>
+</html>
