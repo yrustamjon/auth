@@ -11,7 +11,7 @@ const PROTECTED_PATHS = [
     '/logs/'
 ];
 
-const LOGIN_PATH = '/login/';
+
 
 /**
  * Check auth via DRF
@@ -60,3 +60,5 @@ async function checkSession() {
 
 // Init guard
 document.addEventListener('DOMContentLoaded', checkSession);
+
+

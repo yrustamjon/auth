@@ -10,6 +10,7 @@
  * @returns {Promise<Object>} - Login response
  */
 
+
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
