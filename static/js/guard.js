@@ -11,7 +11,7 @@ const PROTECTED_PATHS = [
     '/logs/'
 ];
 
-const LOGIN_PATH = '/login/';
+
 
 /**
  * Check auth via DRF

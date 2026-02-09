@@ -12,6 +12,7 @@ def login_page(request):
         return redirect('dashboard')
     return render(request, "login.html")
 
+
 @login_required
 def dashboard(request):
     return render(request, "dashboard.html")
@@ -42,7 +43,7 @@ from django.contrib.auth import logout
 
 class AdminLogin(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    # authentication_classes = []
 
     def post(self, request):
         username = request.data.get("username")
@@ -70,6 +71,6 @@ class AdminLogin(APIView):
 class AdminLogout(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request):        
         logout(request)
         return Response({"ok": True})

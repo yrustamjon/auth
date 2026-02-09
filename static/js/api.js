@@ -4,7 +4,7 @@
  */
 
 // Base API URL (configure this based on your backend)
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 /**
  * Wrapper for fetch with authentication
@@ -32,7 +32,7 @@ async function fetchWithAuth(url, options = {}) {
         localStorage.removeItem('isAuthenticated');
         
         // Redirect to login page
-        window.location.href = 'login.html';
+        window.location.href = '/login/';
         throw new Error('Session expired. Please login again.');
     }
     
