@@ -1,0 +1,149 @@
+{% load static %}
+<header class="header">
+    <div class="header-left">
+        <h1>
+            <i class="{{ page_icon }}"></i>
+            <span>{{ page_title }}</span>
+
+        </h1>
+        
+    </div>
+    
+    <div class="header-right">
+        <div class="user-profile-section">
+            <div class="profile-dropdown" id="profileDropdown">
+                <button class="profile-trigger">
+                    <div class="profile-avatar">
+                        <span class="avatar-initial">{{ request.user.username|first|upper }}</span>
+                    </div>
+                    <div class="profile-text">
+                        <span class="profile-name">{{ request.user.username }}</span>
+                        <span class="profile-role">
+                            {% if request.user.is_superuser %}
+                                Super Admin
+                            {% else %}
+                                Admin
+                            {% endif %}
+                        </span>
+                    </div>
+                    <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                
+                <div class="dropdown-menu compact-menu">
+                    <!-- Kichik header -->
+                    <div class="dropdown-header compact-header">
+                        <div class="header-avatar compact-avatar">
+                            <span class="avatar-initial-large">{{ username|first|upper }}</span>
+                        </div>
+                        <div class="header-info compact-info">
+                            <h4 class="compact-name">{{ username }}</h4>
+                            <p class="compact-org">{{ organization }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Kichik ma'lumotlar bloki -->
+                    <div class="user-details-section compact">
+                        <div class="compact-info-grid">
+                            <div class="compact-info-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM7 10H9V17H7V10ZM11 7H13V17H11V7ZM15 13H17V17H15V13Z" fill="currentColor"/>
+                                </svg>
+                                <div class="compact-label-value">
+                                    <div class="compact-label">Tashkilot</div>
+                                    <div class="compact-value">{{ organization|truncatechars:20 }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="compact-info-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="currentColor"/>
+                                </svg>
+                                <div class="compact-label-value">
+                                    <div class="compact-label">Foydalanuvchi</div>
+                                    <div class="compact-value">{{ username|truncatechars:15 }}</div>
+                                </div>
+                            </div>
+                            <div class="compact-info-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24">
+                                    <path d="M12 8V12L15 15" stroke="currentColor"
+                                    stroke-width="2" fill="none"/>
+                                    <circle cx="12" cy="12" r="10"
+                                    stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>
+                            
+                                <div>
+                                    <div class="compact-label">Yaratilgan vaqt</div>
+                                    <div class="compact-value">
+                                        {{ created_at|date:"M d, H:i" }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            
+                        </div>
+                    </div>
+                    
+                    
+                    <!-- Chiqish tugmasi -->
+                    <button class="dropdown-item logout-item compact-logout" id="logoutBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12L17 7ZM4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" fill="currentColor"/>
+                        </svg>
+                        <span>Chiqish</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Faqat header uchun CSS -->
+<link rel="stylesheet" href="{% static 'css/styleheader.css' %}">
+
+<!-- Kichiklashtirilgan dropdown uchun qo'shimcha CSS -->
+
+
+<!-- Faqat header uchun JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const profileDropdown = document.getElementById('profileDropdown');
+    
+    if (profileDropdown) {
+        const profileTrigger = profileDropdown.querySelector('.profile-trigger');
+        
+        // Toggle dropdown
+        profileTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('active');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!profileDropdown.contains(e.target)) {
+                profileDropdown.classList.remove('active');
+            }
+        });
+        
+        // Prevent dropdown close when clicking inside dropdown
+        const dropdownMenu = profileDropdown.querySelector('.dropdown-menu');
+        dropdownMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        // Logout functionality
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Haqiqatan ham chiqmoqchimisiz?')) {
+                    // Add your logout logic here
+                    console.log('User logged out');
+                    // window.location.href = '/logout';
+                }
+            });
+        }
+    }
+});
+</script>

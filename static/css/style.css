@@ -352,6 +352,7 @@ tr:hover {
     margin-bottom: 2rem;
 }
 
+
 .stat-card {
     background: white;
     padding: 1.5rem;
@@ -371,6 +372,10 @@ tr:hover {
     font-weight: 600;
     color: #333;
 }
+
+
+
+
 
 /* Responsive */
 @media (max-width: 768px) {

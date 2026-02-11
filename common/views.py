@@ -13,6 +13,7 @@ def sender_about_user(view_func):
             "username": request.user.username,
             "organization": request.user.organization.name if request.user.organization else None,
             "is_superadmin": request.user.is_superadmin,
+            "created_at": request.user.created_at,
         }
         kwargs["data"] = data
         return view_func(request, *args, **kwargs)
@@ -27,28 +28,38 @@ def login_page(request):
 @login_required
 @sender_about_user
 def dashboard(request, data):
+    data["page_title"]="Dashboard"
+    data["page_icon"]="fas fa-tachometer-alt"
     return render(request, "dashboard.html", data)
 
 @login_required
 @sender_about_user
 def users_page(request, data):
     print("Data in users_page:", data)
-    return render(request, "users.html", data)
+    data["page_title"]="User Management"
+    data["page_icon"]="fas fa-users"
+    return render(request, "users.html",data)
 
 @login_required
 @sender_about_user
 def roles_page(request, data):
+    data["page_title"]="Role Management"
+    data["page_icon"]="fas fa-user-tag"
     return render(request, "roles.html", data)
 
 
 @login_required
 @sender_about_user
 def devices_page(request, data):
+    data["page_title"]="Device Management"
+    data["page_icon"]="fas fa-desktop"
     return render(request, "devices.html", data)
 
 @login_required
 @sender_about_user
 def logs_page(request, data):
+    data["page_title"]="Logs"
+    data["page_icon"]="fas fa-clipboard-list"
     return render(request, "logs.html", data)
 
 
