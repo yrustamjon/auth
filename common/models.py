@@ -20,11 +20,11 @@ class AdminUserManager(BaseUserManager):
 
         # agar createsuperuser bilan yaratilsa — default beramiz
         if "organization" not in extra_fields or extra_fields["organization"] is None:
-            default_org = self._get_default_org()
-            if not default_org:
-                raise ValueError("Default organization is not configured")
-            extra_fields["organization"] = default_org
+            if default_org := self._get_default_org():
+                extra_fields["organization"] = default_org
 
+            else:
+                raise ValueError("Default organization is not configured")
         user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -72,14 +72,14 @@ class AdminUser(AbstractBaseUser, PermissionsMixin):
         return bool(self.locked_until and self.locked_until > timezone.now())
     
 
-    def register_failed_attempt(self,max_attempts=5, lock_duration_minutes=15):
+    def register_failed_attempt(self,max_attempts=5, lock_duration_minutes=5):
         if self.is_locked():
             return
     
         self.failed_attempts +=1
 
         if self.failed_attempts >= max_attempts: # 5 ta xato urinishdan keyin bloklash
-            self.locked_until = timezone.now() + timedelta(minutes=lock_duration_minutes) # 15 daqiqa bloklash
+            self.locked_until = timezone.now() + timedelta(minutes=lock_duration_minutes) # 5 daqiqa bloklash
             self.failed_attempts = 0 # urinishlarni reset qilish
         
         self.save(update_fields=['failed_attempts', 'locked_until'])

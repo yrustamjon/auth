@@ -77,13 +77,13 @@ class AdminLogin(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # print(AdminUser.objects.filter(username=request.data.get("username")).first())
-        # user=AdminUser.objects.filter(username=request.data.get("username")).first()
-        # print("User found:", user.is_locked() )
-        # if user and user.is_locked():
-            
-        #     print("Failed attempts after reset:", user.locked_until - timezone.now())
-        #     return Response({"detail": "Account is locked. Try again 5 min later."}, status=403)
+        print(AdminUser.objects.filter(username=request.data.get("username")).first())
+        user=AdminUser.objects.filter(username=request.data.get("username")).first()
+        print("User found:", user.is_locked() )
+        if user and user.is_locked():
+
+            print("Failed attempts after reset:", user.locked_until - timezone.now())
+            return Response({"detail": f"Account is locked.Try again {int((user.locked_until - timezone.now()).total_seconds() // 60)}:{int((user.locked_until - timezone.now()).total_seconds() % 60)} later."}, status=403)
 
         user = authenticate(
             request,
@@ -97,26 +97,24 @@ class AdminLogin(APIView):
             user = AdminUser.objects.filter(username=request.data.get("username")).first()
             if user:
                 user.register_failed_attempt()
-            
+
             return Response({"detail": "Invalid credentials"}, status=401)
 
         active_sessions = Session.objects.filter(
             expire_date__gte=timezone.now()
         )
-        
+
         print("Active sessions:", active_sessions.count())
-        user_sessions = list(
+        if user_sessions := list(
             filter(
-                lambda s: s.get_decoded().get("_auth_user_id") == str(user.id), 
-                active_sessions
-                )
+                lambda s: s.get_decoded().get("_auth_user_id") == str(user.id),
+                active_sessions,
             )
-        
-        if user_sessions:
+        ):
             print(f"User {user.username} has {len(user_sessions)} active sessions. Deleting them.")
             for session in user_sessions:
                 session.delete()
-        
+
 
 
 
