@@ -37,6 +37,7 @@ async function adminLogin(username, password) {
             },
             body: JSON.stringify({ username, password })
         });
+        const data = await response.json();
         
         if (response.ok) {
             return {
@@ -44,13 +45,14 @@ async function adminLogin(username, password) {
                 message: 'Login successful'
             };
         } else {
+            console.log('Login failed:', data);
             return {
                 success: false,
-                message: 'Invalid credentials'
+                message: data.detail || 'Invalid credentials'
             };
         }
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('Login error:', error, response );
         return {
             success: false,
             message: 'Network error. Please try again.'
@@ -84,28 +86,28 @@ async function adminLogout() {
  * Redirects to login if not authenticated
  */
 async function validateSession() {
-    const currentPage = window.location.pathname.split('/').pop();
-    
-    // Don't validate on login page
-    if (currentPage === '/login' || currentPage === '') {
-        return;
+
+    // Login sahifada tekshirmaymiz
+    if (window.location.pathname.startsWith('/login')) {
+        return true;
     }
-    
+
     try {
         const isAuthenticated = await checkAuthStatus();
-        
+
         if (!isAuthenticated) {
-            // Redirect to login page
-            window.location.href = '/login';
+            window.location.replace('/login');
             return false;
         }
-        
+
         return true;
+
     } catch (error) {
         console.error('Session validation error:', error);
-        window.location.href = '/login';
+        window.location.replace('/login');
         return false;
     }
 }
+
 
 

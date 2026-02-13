@@ -76,20 +76,28 @@ from django.utils import timezone
 class AdminLogin(APIView):
     permission_classes = [AllowAny]
 
-
     def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
+        # print(AdminUser.objects.filter(username=request.data.get("username")).first())
+        # user=AdminUser.objects.filter(username=request.data.get("username")).first()
+        # print("User found:", user.is_locked() )
+        # if user and user.is_locked():
+            
+        #     print("Failed attempts after reset:", user.locked_until - timezone.now())
+        #     return Response({"detail": "Account is locked. Try again 5 min later."}, status=403)
 
         user = authenticate(
             request,
-            username=username,
-            password=password
+            username=request.data.get("username"),
+            password=request.data.get("password")
         )
 
         print("User", user is not None, "logged in")
 
         if not user:
+            user = AdminUser.objects.filter(username=request.data.get("username")).first()
+            if user:
+                user.register_failed_attempt()
+            
             return Response({"detail": "Invalid credentials"}, status=401)
 
         active_sessions = Session.objects.filter(
