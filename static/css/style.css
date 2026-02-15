@@ -37,6 +37,32 @@ body {
     font-size: 1.8rem;
 }
 
+
+.login-footer {
+    text-align: center;
+    border-top: 1px solid #e1e1e1;
+    padding-top: 20px;
+    margin-top: 10px;
+}
+
+.login-footer p {
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.login-footer a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.login-footer a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
 .form-group {
     margin-bottom: 1.5rem;
 }

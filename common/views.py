@@ -8,6 +8,29 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from .models import *
+from functools import wraps
+
+def user_role(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+
+        if not request.user.is_authenticated:
+            return redirect('login')
+
+        # Superadmin bo‘lmaganlar system sahifaga kira olmaydi
+        if request.path.startswith('/system'):
+            if not request.user.is_superadmin:
+                return redirect('dashboard')
+
+        # Oddiy admin system dashboardga kira olmaydi
+        if request.path == '/system/dashboard/':
+            if not request.user.is_superadmin:
+                return redirect('dashboard')
+
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
 
 def sender_about_user(view_func):
     def wrapper(request, *args, **kwargs):
@@ -27,14 +50,16 @@ def login_page(request):
         return redirect('dashboard')
     return render(request, "login.html")
 
-@login_required
+
+@user_role
 @sender_about_user
 def dashboard(request, data):
     data["page_title"]="Dashboard"
     data["page_icon"]="fas fa-tachometer-alt"
     return render(request, "dashboard.html", data)
 
-@login_required
+
+@user_role
 @sender_about_user
 def users_page(request, data):
     print("Data in users_page:", data)
@@ -42,7 +67,7 @@ def users_page(request, data):
     data["page_icon"]="fas fa-users"
     return render(request, "users.html",data)
 
-@login_required
+@user_role
 @sender_about_user
 def roles_page(request, data):
     data["page_title"]="Role Management"
@@ -50,19 +75,28 @@ def roles_page(request, data):
     return render(request, "roles.html", data)
 
 
-@login_required
+@user_role
 @sender_about_user
 def devices_page(request, data):
     data["page_title"]="Device Management"
     data["page_icon"]="fas fa-desktop"
     return render(request, "devices.html", data)
 
-@login_required
+@user_role
 @sender_about_user
 def logs_page(request, data):
     data["page_title"]="Logs"
     data["page_icon"]="fas fa-clipboard-list"
     return render(request, "logs.html", data)
+
+
+def System_Login(request):
+    return render(request, "superadmin/login.html")
+
+@user_role
+def System_Dashboard(request):
+    return render(request, "superadmin/dashboard.html")
+
 
 
 class AdminLogin(APIView):
@@ -72,8 +106,12 @@ class AdminLogin(APIView):
         print(AdminUser.objects.filter(username=request.data.get("username")).first())
         user=AdminUser.objects.filter(username=request.data.get("username")).first()
         print("User found:", user.is_locked() )
-        if user and user.is_locked():
 
+        if user.organization.slug == "system":
+            return Response({"detail": "System users cannot log in through\n this interface. Please use the system login portal."}, status=403)
+
+
+        if user and user.is_locked():
             print("Failed attempts after reset:", user.locked_until - timezone.now())
             return Response({"detail": f"Account is locked.Try again {int((user.locked_until - timezone.now()).total_seconds() // 60)}:{int((user.locked_until - timezone.now()).total_seconds() % 60)} later."}, status=403)
 
@@ -109,9 +147,9 @@ class AdminLogin(APIView):
 
 
 
-
+        
         login(request, user)
-
+            
         return Response({"ok": True})
 
 
@@ -165,7 +203,71 @@ class Admin_Users(APIView):
         #     "role": new_user.role,
         #     "created_at": new_user.created_at,
         # })
-        return Response({"detail": "User creation endpoint is not implemented yet."}, status=501)
+        return Response({"users": "User creation endpoint is under development."})
         
 
+class SuperAdmin_Login(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        print(AdminUser.objects.filter(username=request.data.get("username")).first())
+        user=AdminUser.objects.filter(username=request.data.get("username")).first()
+        
+
+        if not user.is_superadmin:
+            return Response(
+                {"detail": "This login interface is only for system administrators."},
+                status=403
+            )
+
+
+
+        if user and user.is_locked():
+            print("Failed attempts after reset:", user.locked_until - timezone.now())
+            return Response({"detail": f"Account is locked.Try again {int((user.locked_until - timezone.now()).total_seconds() // 60)}:{int((user.locked_until - timezone.now()).total_seconds() % 60)} later."}, status=403)
+
+        user = authenticate(
+            request,
+            username=request.data.get("username"),
+            password=request.data.get("password")
+        )
+
+        print("User", user is not None, "logged in")
+
+        if not user:
+            user = AdminUser.objects.filter(username=request.data.get("username")).first()
+            if user:
+                user.register_failed_attempt()
+
+            return Response({"detail": "Invalid credentials"}, status=401)
+
+        active_sessions = Session.objects.filter(
+            expire_date__gte=timezone.now()
+        )
+
+        print("Active sessions:", active_sessions.count())
+        if user_sessions := list(
+            filter(
+                lambda s: s.get_decoded().get("_auth_user_id") == str(user.id),
+                active_sessions,
+            )
+        ):
+            print(f"User {user.username} has {len(user_sessions)} active sessions. Deleting them.")
+            for session in user_sessions:
+                session.delete()
+
+
+
+        
+        login(request, user)
+            
+        return Response({"ok": True})
+
+
+class SuperAdmin_Logout(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        logout(request)
+        
 

@@ -3,7 +3,9 @@ from . import views
 
 urlpatterns = [
     path("login/", views.login_page, name="login"),
+    path("system/login/", views.System_Login, name="system_login"),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("system/dashboard/", views.System_Dashboard, name="system_dashboard"),
     path("users/", views.users_page, name="users"),
     path("roles/", views.roles_page, name="roles"),
     path("devices/", views.devices_page, name="devices"),
@@ -11,4 +13,6 @@ urlpatterns = [
     path("api/admin/login", views.AdminLogin.as_view(), name="admin_login"),
     path("api/admin/logout", views.AdminLogout.as_view(), name="logout"),
     path("api/users", views.Admin_Users.as_view(), name="admin_users"),
+    path("api/system/login", views.SuperAdmin_Login.as_view()),
+    path("api/system/logout", views.SuperAdmin_Logout.as_view()),
 ]
