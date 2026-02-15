@@ -103,6 +103,7 @@ class Users(models.Model):
     lavozim=models.CharField(max_length=255) # lavozim
     username=models.CharField(max_length=255)
     status=models.BooleanField(default=True) # true - active, false - inactive(bloklangan hardoim atkaz)
+    creted_at=models.DateTimeField(auto_now_add=True, null=True)
 
     failed_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)

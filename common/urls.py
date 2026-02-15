@@ -10,4 +10,5 @@ urlpatterns = [
     path("logs/", views.logs_page, name="logs"),
     path("api/admin/login", views.AdminLogin.as_view(), name="admin_login"),
     path("api/admin/logout", views.AdminLogout.as_view(), name="logout"),
+    path("api/users", views.Admin_Users.as_view(), name="admin_users"),
 ]

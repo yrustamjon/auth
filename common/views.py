@@ -1,11 +1,13 @@
+from django.utils import timezone
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import authenticate, login
-from .models import *
+from django.contrib.sessions.models import Session
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
+from .models import *
 
 def sender_about_user(view_func):
     def wrapper(request, *args, **kwargs):
@@ -63,16 +65,6 @@ def logs_page(request, data):
     return render(request, "logs.html", data)
 
 
-
-
-from django.contrib.auth import authenticate, login
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from django.contrib.auth import logout
-from django.contrib.sessions.models import Session
-from django.utils import timezone
-
 class AdminLogin(APIView):
     permission_classes = [AllowAny]
 
@@ -129,3 +121,51 @@ class AdminLogout(APIView):
     def post(self, request):
         logout(request)
         return Response({"ok": True})
+
+
+class Admin_Users(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        admin=AdminUser.objects.get(id=request.user.id)
+        users=Users.objects.filter(organization=admin.organization)
+        print("Admin's organization:", admin.organization)
+        print("Users in organization:", users)
+        
+        users_data = [
+            {
+                "id": user.id,
+                "username": user.username,
+                "is_superadmin": user.is_superadmin,
+                "created_at": user.created_at,
+                "is_locked": user.is_locked(),
+            }
+            for user in users
+        ]
+        return Response({"users": users_data})
+    
+    def post(self, request):
+        admin=AdminUser.objects.get(id=request.user.id)
+        organization=admin.organization
+        print(request.data, organization)
+        # new_user = Users.objects.create_user(
+        #     role=request.data.get("role"),
+        #     fio=request.data.get("fio"),
+        #     username=request.data.get("username"),
+        #     lavozim=request.data.get("lavozim"),
+        #     organization=organization,
+        # )
+        
+
+        # return Response({
+        #     "id": new_user.id,
+        #     "username": new_user.username,
+        #     "fio": new_user.fio,
+        #     "lavozim": new_user.lavozim,
+        #     "role": new_user.role,
+        #     "created_at": new_user.created_at,
+        # })
+        return Response({"detail": "User creation endpoint is not implemented yet."}, status=501)
+        
+
+

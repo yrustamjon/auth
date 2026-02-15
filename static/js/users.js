@@ -16,7 +16,6 @@ async function loadUsers() {
         
         displayUsers(users);
     } catch (error) {
-        console.error('Error loading users:', error);
         alert('Error loading users: ' + error.message);
     }
 }

@@ -45,29 +45,41 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="fio">Full Name *</label>
+                        <label for="fio">FIO *</label>
                         <input type="text" id="fio" name="fio" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="lavozim">Position *</label>
+                        <label for="lavozim">Lavozim*</label>
                         <input type="text" id="lavozim" name="lavozim" required>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="status">
-                        <input type="checkbox" id="status" name="status" checked>
-                        Active Status
-                    </label>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="role">Role *</label>
+                        <input type="text" id="role" name="role" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="username">Username *</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
                 </div>
+                
+                
+                <label for="status">
+                    <input type="checkbox" id="status" name="status" checked>
+                    Active Status
+                </label>
+                
                 
                 <div class="form-actions">
                     <button type="submit" class="btn-primary" id="saveUserBtn">
-                        Save User
+                        Saqlash
                     </button>
                     <button type="button" class="btn-secondary" id="cancelBtn">
-                        Cancel
+                        Bekor qilish
                     </button>
                 </div>
             </form>
@@ -126,6 +138,8 @@
             const userData = {
                 fio: document.getElementById('fio').value,
                 lavozim: document.getElementById('lavozim').value,
+                role: document.getElementById('role').value,
+                username: document.getElementById('username').value,
                 status: document.getElementById('status').checked
             };
             
