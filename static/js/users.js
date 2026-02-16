@@ -77,6 +77,7 @@ function getUserRoles(userId) {
  */
 async function createUser(userData) {
     try {
+        console.log('Creating user with data:', userData);
         const response = await fetchWithAuth('/api/users', {
             method: 'POST',
             body: JSON.stringify(userData)

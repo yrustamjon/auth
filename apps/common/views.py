@@ -244,26 +244,27 @@ class Admin_Users(APIView):
         return Response({"users": users_data})
     
     def post(self, request):
-        admin=AdminUser.objects.get(id=request.user.id)
-        organization=admin.organization
+        organization=admin.organizations.filter(id=request.session.get("current_org_id")).first()
+        role= Role.objects.filter(id=request.data.get("role_id"), organization=organization).first()
         print(request.data, organization)
-        new_user = Users.objects.create_user(
-            role=request.data.get("role"),
-            fio=request.data.get("fio"),
-            username=request.data.get("username"),
-            lavozim=request.data.get("lavozim"),
-            organization=organization,
-        )
+        # new_user = Users.objects.create_user(
+        #     role=role,
+        #     fio=request.data.get("fio"),
+        #     username=request.data.get("username"),
+        #     lavozim=request.data.get("lavozim"),
+        #     organization=organization,
+        # )
         
 
-        return Response({
-            "id": new_user.id,
-            "username": new_user.username,
-            "fio": new_user.fio,
-            "lavozim": new_user.lavozim,
-            "role": new_user.role,
-            "created_at": new_user.created_at,
-        })
+        # return Response({
+        #     "id": new_user.id,
+        #     "username": new_user.username,
+        #     "fio": new_user.fio,
+        #     "lavozim": new_user.lavozim,
+        #     "role": new_user.role,
+        #     "created_at": new_user.created_at,
+        # })
+        return Response({"users": "User creation endpoint is under development."}, status=200)
         
 
 class Super_AdminLogin(AdminLogin):
@@ -276,7 +277,6 @@ class Super_AdminLogout(APIView):
     def post(self, request):
         logout(request)
         
-
 
 
 

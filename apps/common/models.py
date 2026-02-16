@@ -150,6 +150,10 @@ class Users(models.Model):
 class Roles(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="roles")
     name=models.CharField(max_length=255) # Admin, User, etc.
+    created_at=models.DateTimeField(auto_now_add=True, null=True)
+    created_by=models.ForeignKey(AdminUser, on_delete=models.SET_NULL, null=True, related_name="created_roles")
+    is_active=models.BooleanField(default=True)
+    
     def __str__(self):
         return self.name
 

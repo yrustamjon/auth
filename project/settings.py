@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'apps.common',
     'apps.org',
+    'apps.role',
 ]
 LOGGING = {
     "version": 1,

@@ -22,6 +22,7 @@ async function fetchWithAuth(url, options = {}) {
         credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
             ...options.headers
         }
     };

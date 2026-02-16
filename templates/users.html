@@ -147,9 +147,10 @@
                 if (userId) {
                     await updateUser(userId, userData);
                 } else {
+                    console.log('Creating user with data:', userData);
                     await createUser(userData);
                 }
-                
+                console.log('User saved successfully');
                 modal.style.display = 'none';
                 loadUsers();
             } catch (error) {
