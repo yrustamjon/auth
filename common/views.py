@@ -58,7 +58,8 @@ def sender_about_user(view_func):
         return view_func(request, *args, **kwargs)
     return wrapper
 
-
+def _(request):
+    return redirect('login')
 
 def login_page(request):
     if request.user.is_authenticated:
@@ -121,11 +122,19 @@ def System_Login(request):
 @login_required
 @role_required("superadmin")
 def System_Dashboard(request):
-    if not request.user.is_superadmin:
-        return redirect('dashboard')
     return render(request, "superadmin/dashboard.html")
 
 
+@login_required
+@role_required("superadmin")
+def system_orgag(request):
+    return render(request, "superadmin/organizations/organizations_list.html")
+
+
+@login_required
+@role_required("superadmin")
+def system_admins(request):
+    return render(request, "superadmin/admins.html")
 
 class AdminLogin(APIView):
     permission_classes = [AllowAny]

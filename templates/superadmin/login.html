@@ -108,6 +108,15 @@
             font-size: 18px;
         }
 
+        .error-message {
+            background-color: #fee;
+            color: #c33;
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border: 1px solid #fcc;
+            display: none;
+        }
         .form-control {
             height: 50px;
             padding: 10px 15px;
@@ -313,15 +322,6 @@
 <body>
     <div class="login-container">
         <!-- Xabarlar (agar mavjud bo'lsa) -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-
         <div class="login-header">
             <div class="admin-badge">
                 <i class="fas fa-shield-alt me-2"></i>
@@ -330,6 +330,9 @@
             <h2>Xush kelibsiz!</h2>
             <p>Tizimga kirish uchun ma'lumotlaringizni kiriting</p>
         </div>
+        <div class="error-message" id="errorMessage">
+                Invalid username or password
+            </div>
 
         <form id="SystemLoginForm">
 
