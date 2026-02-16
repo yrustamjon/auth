@@ -38,11 +38,57 @@
             </div>
 
             <div class="login-footer">
-                <p>Super admin huquqiga ega emasmisiz?</p>
+                <p>Super admin huquqiga egamisiz?</p>
                 <a href="{% url 'system_login' %}">
                     <i class="fas fa-arrow-left me-1"></i>
                     System Login Page 
                 </a>
+            </div>
+            <style>
+                .security-badge {
+                    margin-top: 1.2rem;
+                    padding: 10px 16px;
+                    border-radius: 12px;
+                    background: rgba(40, 167, 69, 0.08);
+                    color: #2ecc71;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    letter-spacing: 0.3px;
+                    border: 1px solid rgba(40, 167, 69, 0.25);
+                    backdrop-filter: blur(6px);
+                    transition: all 0.25s ease;
+                }
+                
+                /* hover efekti */
+                .security-badge:hover {
+                    background: rgba(40, 167, 69, 0.15);
+                    box-shadow: 0 0 14px rgba(46, 204, 113, 0.35);
+                    transform: translateY(-1px);
+                }
+                
+                /* ikonka pulse */
+                .security-badge i:first-child {
+                    animation: pulseLock 2s infinite;
+                }
+                
+                @keyframes pulseLock {
+                    0% { opacity: 0.5; transform: scale(0.9); }
+                    50% { opacity: 1; transform: scale(1.1); }
+                    100% { opacity: 0.5; transform: scale(0.9); }
+                }
+                
+                /* qalqon rang */
+                .security-badge i:last-child {
+                    color: #27ae60;
+                }
+            </style>                
+            <div class="security-badge">
+                <i class="fas fa-lock"></i>
+                <span >Xavfsiz ulanish | SSL sertifikatlangan</span>
+                <i class="fas fa-shield-alt"></i>
             </div>
         </div>
     </div>

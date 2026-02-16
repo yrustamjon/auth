@@ -10,26 +10,40 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import *
 from functools import wraps
 
-def user_role(view_func):
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
+from functools import wraps
+from django.shortcuts import redirect
 
-        if not request.user.is_authenticated:
-            return redirect('login')
+from functools import wraps
+from django.shortcuts import redirect
 
-        # Superadmin bo‘lmaganlar system sahifaga kira olmaydi
-        if request.path.startswith('/system'):
-            if not request.user.is_superadmin:
+def role_required(role):
+    """
+    role = 'admin' | 'superadmin'
+    """
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+
+            # login yo‘q
+            if not request.user.is_authenticated:
+                return redirect('login')
+
+            is_super = getattr(request.user, "is_superadmin", False)
+
+            # superadmin panel
+            if role == "superadmin" and not is_super:
                 return redirect('dashboard')
 
-        # Oddiy admin system dashboardga kira olmaydi
-        if request.path == '/system/dashboard/':
-            if not request.user.is_superadmin:
-                return redirect('dashboard')
+            # admin panel
+            if role == "admin" and is_super:
+                return redirect('system_dashboard')
 
-        return view_func(request, *args, **kwargs)
+            return view_func(request, *args, **kwargs)
 
-    return wrapper
+        return wrapper
+    return decorator
+
 
 
 def sender_about_user(view_func):
@@ -44,113 +58,149 @@ def sender_about_user(view_func):
         return view_func(request, *args, **kwargs)
     return wrapper
 
+
+
 def login_page(request):
-    print(request.user.is_authenticated)
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        if request.user.is_superadmin:
+            return redirect('system_dashboard')
+        else:
+            return redirect('dashboard')
     return render(request, "login.html")
 
-
-@user_role
+@login_required
+@role_required("admin")
 @sender_about_user
 def dashboard(request, data):
     data["page_title"]="Dashboard"
     data["page_icon"]="fas fa-tachometer-alt"
     return render(request, "dashboard.html", data)
 
-
-@user_role
+@login_required
+@role_required("admin")
 @sender_about_user
 def users_page(request, data):
     print("Data in users_page:", data)
     data["page_title"]="User Management"
     data["page_icon"]="fas fa-users"
     return render(request, "users.html",data)
-
-@user_role
+@login_required
+@role_required("admin")
 @sender_about_user
 def roles_page(request, data):
     data["page_title"]="Role Management"
     data["page_icon"]="fas fa-user-tag"
     return render(request, "roles.html", data)
 
-
-@user_role
+@login_required
+@role_required("admin")
 @sender_about_user
 def devices_page(request, data):
     data["page_title"]="Device Management"
     data["page_icon"]="fas fa-desktop"
     return render(request, "devices.html", data)
 
-@user_role
+
+
+@login_required
+@role_required("admin")
 @sender_about_user
 def logs_page(request, data):
     data["page_title"]="Logs"
     data["page_icon"]="fas fa-clipboard-list"
     return render(request, "logs.html", data)
 
-
 def System_Login(request):
+    if request.user.is_authenticated:
+        if request.user.is_superadmin:
+            return redirect('system_dashboard')
+        else:
+            return redirect('dashboard')
     return render(request, "superadmin/login.html")
 
-@user_role
+@login_required
+@role_required("superadmin")
 def System_Dashboard(request):
+    if not request.user.is_superadmin:
+        return redirect('dashboard')
     return render(request, "superadmin/dashboard.html")
 
 
 
 class AdminLogin(APIView):
     permission_classes = [AllowAny]
+    allow_superadmin = False  
 
-    def post(self, request):
-        print(AdminUser.objects.filter(username=request.data.get("username")).first())
-        user=AdminUser.objects.filter(username=request.data.get("username")).first()
-        print("User found:", user.is_locked() )
+    def get_user(self, username):
+        return AdminUser.objects.filter(username=username).first()
 
-        if user.organization.slug == "system":
-            return Response({"detail": "System users cannot log in through\n this interface. Please use the system login portal."}, status=403)
+    def validate(self, request):
 
+        username = request.data.get("username")
+        password = request.data.get("password")
 
-        if user and user.is_locked():
-            print("Failed attempts after reset:", user.locked_until - timezone.now())
-            return Response({"detail": f"Account is locked.Try again {int((user.locked_until - timezone.now()).total_seconds() // 60)}:{int((user.locked_until - timezone.now()).total_seconds() % 60)} later."}, status=403)
+        if not username or not password:
+            return None, Response({"detail": "Username and password required"}, status=400)
 
-        user = authenticate(
-            request,
-            username=request.data.get("username"),
-            password=request.data.get("password")
-        )
-
-        print("User", user is not None, "logged in")
+        user = self.get_user(username)
 
         if not user:
-            user = AdminUser.objects.filter(username=request.data.get("username")).first()
-            if user:
-                user.register_failed_attempt()
+            return None, Response({"detail": "User not found"}, status=401)
 
-            return Response({"detail": "Invalid credentials"}, status=401)
 
-        active_sessions = Session.objects.filter(
-            expire_date__gte=timezone.now()
-        )
-
-        print("Active sessions:", active_sessions.count())
-        if user_sessions := list(
-            filter(
-                lambda s: s.get_decoded().get("_auth_user_id") == str(user.id),
-                active_sessions,
+        if user.is_superadmin and not self.allow_superadmin:
+            return None, Response(
+                {"detail": "System users must use system login"},
+                status=403
             )
-        ):
-            print(f"User {user.username} has {len(user_sessions)} active sessions. Deleting them.")
-            for session in user_sessions:
-                session.delete()
+
+        if not user.is_superadmin and self.allow_superadmin:
+            return None, Response(
+                {"detail": "Only system users can use this login. Please use Admin login."},
+                status=403
+            )
 
 
+        if user.is_locked():
+            seconds = int((user.locked_until - timezone.now()).total_seconds())
+            return None, Response(
+                {"detail": f"Account locked {seconds//60}:{seconds%60}"},
+                status=403
+            )
 
-        
+        auth_user = authenticate(request, username=username, password=password)
+
+        if not auth_user:
+            user.register_failed_attempt()
+            return None, Response({"detail": "Password incorrect"}, status=401)
+
+        return auth_user, None
+
+
+    def clear_sessions(self, user):
+        sessions = Session.objects.filter(expire_date__gte=timezone.now())
+        for s in sessions:
+            if s.get_decoded().get("_auth_user_id") == str(user.id):
+                s.delete()
+
+
+    def post(self, request):
+
+        user, error = self.validate(request)
+
+        if error:
+            return error
+
+        self.clear_sessions(user)
         login(request, user)
-            
-        return Response({"ok": True})
+
+        return Response({
+            "ok": True,
+            "redirect": self.get_redirect_url(user)
+        })
+
+    def get_redirect_url(self, user):
+        return "/dashboard/"
 
 
 class AdminLogout(APIView):
@@ -206,65 +256,11 @@ class Admin_Users(APIView):
         return Response({"users": "User creation endpoint is under development."})
         
 
-class SuperAdmin_Login(APIView):
-    permission_classes = [AllowAny]
+class Super_AdminLogin(AdminLogin):
+    allow_superadmin = True
+    
 
-    def post(self, request):
-        print(AdminUser.objects.filter(username=request.data.get("username")).first())
-        user=AdminUser.objects.filter(username=request.data.get("username")).first()
-        
-
-        if not user.is_superadmin:
-            return Response(
-                {"detail": "This login interface is only for system administrators."},
-                status=403
-            )
-
-
-
-        if user and user.is_locked():
-            print("Failed attempts after reset:", user.locked_until - timezone.now())
-            return Response({"detail": f"Account is locked.Try again {int((user.locked_until - timezone.now()).total_seconds() // 60)}:{int((user.locked_until - timezone.now()).total_seconds() % 60)} later."}, status=403)
-
-        user = authenticate(
-            request,
-            username=request.data.get("username"),
-            password=request.data.get("password")
-        )
-
-        print("User", user is not None, "logged in")
-
-        if not user:
-            user = AdminUser.objects.filter(username=request.data.get("username")).first()
-            if user:
-                user.register_failed_attempt()
-
-            return Response({"detail": "Invalid credentials"}, status=401)
-
-        active_sessions = Session.objects.filter(
-            expire_date__gte=timezone.now()
-        )
-
-        print("Active sessions:", active_sessions.count())
-        if user_sessions := list(
-            filter(
-                lambda s: s.get_decoded().get("_auth_user_id") == str(user.id),
-                active_sessions,
-            )
-        ):
-            print(f"User {user.username} has {len(user_sessions)} active sessions. Deleting them.")
-            for session in user_sessions:
-                session.delete()
-
-
-
-        
-        login(request, user)
-            
-        return Response({"ok": True})
-
-
-class SuperAdmin_Logout(APIView):
+class Super_AdminLogout(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
