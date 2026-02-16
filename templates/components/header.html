@@ -52,8 +52,20 @@
                                 </svg>
                                 <div class="compact-label-value">
                                     <div class="compact-label">Tashkilot</div>
-                                    <div class="compact-value">{{ organization|truncatechars:20 }}</div>
-                                </div>
+                                    <div class="compact-value">
+                                        <div class="org-select-wrapper">
+                                            <select class="org-select" id="org-select" onchange="switchOrganization(this.value)">
+                                                {% for org in organizations %}
+                                                {%if "system" != org.slug %}
+                                                    <option value="{{ org.id }}" {% if org.id == current_org_id %}selected{% endif %}>
+                                                            {{ org.name|truncatechars:20 }}
+                                                    </option>
+                                                {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>                                
                             </div>
                             
                             <div class="compact-info-item">
@@ -107,40 +119,79 @@
 
 <!-- Faqat header uchun JavaScript -->
 <script>
+// CSRF cookie olish
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function switchOrganization(orgId) {
+    fetch("/api/switch-organization/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify({ organization_id: orgId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.ok) {
+            location.reload()
+        }
+    })
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const profileDropdown = document.getElementById('profileDropdown');
     
     if (profileDropdown) {
         const profileTrigger = profileDropdown.querySelector('.profile-trigger');
         
-        // Toggle dropdown
         profileTrigger.addEventListener('click', function(e) {
             e.stopPropagation();
             profileDropdown.classList.toggle('active');
         });
         
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             if (!profileDropdown.contains(e.target)) {
                 profileDropdown.classList.remove('active');
             }
         });
         
-        // Prevent dropdown close when clicking inside dropdown
         const dropdownMenu = profileDropdown.querySelector('.dropdown-menu');
         dropdownMenu.addEventListener('click', function(e) {
             e.stopPropagation();
         });
         
-        // Logout functionality
+        // Logout
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 if (confirm('Haqiqatan ham chiqmoqchimisiz?')) {
-                    // Add your logout logic here
-                    console.log('User logged out');
-                    // window.location.href = '/logout';
+                    fetch("/api/logout/", {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": getCookie("csrftoken"),
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.ok) {
+                            window.location.href = "/login/"
+                        }
+                    })
                 }
             });
         }

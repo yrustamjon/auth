@@ -18,10 +18,10 @@ async function loadLogs(queryParams = '') {
             throw new Error(`Failed to load logs: ${response.status}`);
         }
         
-        const logs = await response.json();
-        logsCache = logs;
+        const data = await response.json();
+        logsCache = data.logs;
         
-        displayLogs(logs);
+        displayLogs(logsCache);
     } catch (error) {
         console.error('Error loading logs:', error);
         alert('Error loading access logs: ' + error.message);

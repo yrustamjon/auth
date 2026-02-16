@@ -18,10 +18,10 @@ async function loadRoles() {
             throw new Error(`Failed to load roles: ${response.status}`);
         }
         
-        const roles = await response.json();
-        rolesCache = roles;
+        const data = await response.json();
+        rolesCache = data.roles;
         
-        displayRoles(roles);
+        displayRoles(data.roles);
     } catch (error) {
         console.error('Error loading roles:', error);
         alert('Error loading roles: ' + error.message);

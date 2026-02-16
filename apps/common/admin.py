@@ -12,14 +12,14 @@ class AdminUserAdmin(BaseUserAdmin):
     list_filter = ("is_active", "is_staff", "is_superadmin")
 
     fieldsets = (
-        (None, {"fields": ("username", "organization", "password")}),
-        ("Permissions", {"fields": ("is_staff", "is_superadmin", "is_active")}),
+        (None, {"fields": ("username", "organizations", "password")}),
+        ("Permissions", {"fields": ("is_staff", "is_superadmin", "is_active", "is_admin")}),
     )
 
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("username","organization", "password1", "password2"),
+            "fields": ("username","organizations", "password1", "password2"),
         }),
     )
 

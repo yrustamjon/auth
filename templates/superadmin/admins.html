@@ -1,21 +1,21 @@
 {% extends 'superadmin/base.html' %}
 {% load static %}
 
-{% block title %}Dashboard | Admin Control{% endblock %}
+{% block title %}Admins | Admin Control{% endblock %}
 
 {% block content %}
 <!-- Content JS tomonidan to'ldiriladi -->
-<div id="dashboard-container" data-page="dashboard"></div>
+<div id="admins-container" data-page="admins"></div>
 {% endblock %}
 
 {% block page_js %}
-<script src="{% static 'js/superadmin/pages/dashboard.js' %}"></script>
+<script src="{% static 'js/superadmin/pages/admins.js' %}"></script>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        renderDashboard();
+        renderAdmins();
     });
 </script>
 {% endblock %}

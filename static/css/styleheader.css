@@ -261,3 +261,49 @@ body{
     .sidebar{display:none}
     .main-content{margin-left:0}
 }
+
+
+.org-select-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.org-select-wrapper::before {
+    content: "\f1ad";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.org-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 4px 28px 4px 10px;
+    font-size: 13px;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236c757d'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    max-width: 160px;
+}
+
+.org-select:hover {
+    border-color: #adb5bd;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.org-select:focus {
+    outline: none;
+    border-color: #4dabf7;
+    box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.15);
+    background-color: #fff;
+}

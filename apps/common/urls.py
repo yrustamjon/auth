@@ -18,6 +18,8 @@ urlpatterns = [
     path("api/admin/login", views.AdminLogin.as_view(), name="admin_login"),
     path("api/admin/logout", views.AdminLogout.as_view(), name="logout"),
     path("api/users", views.Admin_Users.as_view(), name="admin_users"),
+
+
     path("api/system/login", views.Super_AdminLogin.as_view()),
     path("api/system/logout", views.Super_AdminLogout.as_view(), name="system_logout"),
 ]

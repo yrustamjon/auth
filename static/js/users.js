@@ -10,11 +10,9 @@ async function loadUsers() {
         if (!response.ok) {
             throw new Error(`Failed to load users: ${response.status}`);
         }
-        
-        const users = await response.json();
-        usersCache = users;
-        
-        displayUsers(users);
+        const data = await response.json(); 
+        usersCache = data.users;  
+        displayUsers(data.users);  
     } catch (error) {
         alert('Error loading users: ' + error.message);
     }
@@ -27,6 +25,10 @@ async function loadUsers() {
 function displayUsers(users) {
     const tbody = document.querySelector('#usersTable tbody');
     tbody.innerHTML = '';
+    if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found.</td></tr>';
+        return;
+    }
     
     users.forEach(user => {
         const row = document.createElement('tr');

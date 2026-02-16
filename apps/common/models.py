@@ -18,22 +18,31 @@ class AdminUserManager(BaseUserManager):
         if not username:
             raise ValueError("Username is required")
 
-        # agar createsuperuser bilan yaratilsa — default beramiz
-        if "organization" not in extra_fields or extra_fields["organization"] is None:
-            if default_org := self._get_default_org():
-                extra_fields["organization"] = default_org
+        # organization ni extra_fields dan olib tashlaymiz
+        # chunki ManyToMany - save() dan KEYIN qo'shiladi
+        org = extra_fields.pop("organization", None)
 
-            else:
-                raise ValueError("Default organization is not configured")
         user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
+
+        # save() dan keyin organizationni qo'shamiz
+        if org:
+            user.organizations.add(org)
+        else:
+            default_org = self._get_default_org()
+            if default_org:
+                user.organizations.add(default_org)
+            else:
+                raise ValueError("Default organization is not configured")
+
         return user
 
     def create_superuser(self, username, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_superadmin", True)
+        extra_fields.setdefault("is_admin", False) # superuser oddiy admin emas, balki faqat system user bo'ladi va keyinchalik qoshilishi mumkin
 
         return self.create_user(username, password, **extra_fields)
 
@@ -50,11 +59,13 @@ class Organization(models.Model):
 
 
 class AdminUser(AbstractBaseUser, PermissionsMixin):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="admin_users")
+    organizations = models.ManyToManyField(Organization, related_name="admin_users", blank=True)
     username = models.CharField(max_length=150, unique=True)  # unique_together orqali tekshiramiz
 
     is_superadmin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    is_admin = models.BooleanField(default=True)  # oddiy adminmi
+
     is_staff = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

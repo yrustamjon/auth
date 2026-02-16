@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'common',
+    'apps.common',
+    'apps.org',
 ]
 LOGGING = {
     "version": 1,
@@ -97,7 +98,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    'common.middleware.SessionHijackProtectionMiddleware',
+    'apps.common.middleware.SessionHijackProtectionMiddleware',
 ]
 
 

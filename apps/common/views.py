@@ -15,42 +15,39 @@ from django.shortcuts import redirect
 
 from functools import wraps
 from django.shortcuts import redirect
-
 def role_required(role):
-    """
-    role = 'admin' | 'superadmin'
-    """
-
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-
-            # login yo‘q
             if not request.user.is_authenticated:
                 return redirect('login')
 
-            is_super = getattr(request.user, "is_superadmin", False)
+            panel = request.session.get("panel")  # ← sessiondan o'qiymiz
 
-            # superadmin panel
-            if role == "superadmin" and not is_super:
+            if role == "superadmin" and panel != "superadmin":
                 return redirect('dashboard')
 
-            # admin panel
-            if role == "admin" and is_super:
+            if role == "admin" and panel != "admin":
                 return redirect('system_dashboard')
 
             return view_func(request, *args, **kwargs)
-
         return wrapper
     return decorator
 
 
-
 def sender_about_user(view_func):
     def wrapper(request, *args, **kwargs):
+        orgs = request.user.organizations.all()
+        
+        # Sessiondan joriy org
+        current_org_id = request.session.get("current_org_id")
+        current_org = orgs.filter(id=current_org_id).first() or orgs.exclude(slug="system").first()
+
         data = {
             "username": request.user.username,
-            "organization": request.user.organization.name if request.user.organization else None,
+            "organizations": list(orgs.exclude(slug="system").values("id", "name")),
+            "current_org_id": current_org.id if current_org else None,
+            "organization": current_org.name if current_org else None,
             "is_superadmin": request.user.is_superadmin,
             "created_at": request.user.created_at,
         }
@@ -73,8 +70,11 @@ def login_page(request):
 @role_required("admin")
 @sender_about_user
 def dashboard(request, data):
+    
     data["page_title"]="Dashboard"
     data["page_icon"]="fas fa-tachometer-alt"
+    print("Data in dashboard:", data)
+    print("Request user:", request.session.get("current_org_id"))
     return render(request, "dashboard.html", data)
 
 @login_required
@@ -122,19 +122,19 @@ def System_Login(request):
 @login_required
 @role_required("superadmin")
 def System_Dashboard(request):
-    return render(request, "superadmin/dashboard.html")
+     return render(request, 'superadmin/dashboard.html', {'active_page': 'dashboard'})
 
 
 @login_required
 @role_required("superadmin")
 def system_orgag(request):
-    return render(request, "superadmin/organizations/organizations_list.html")
+    return render(request, "superadmin/organizations.html", {'active_page': 'organizations'})
 
 
 @login_required
 @role_required("superadmin")
 def system_admins(request):
-    return render(request, "superadmin/admins.html")
+    return render(request, "superadmin/admins.html", {'active_page': 'admins'})
 
 class AdminLogin(APIView):
     permission_classes = [AllowAny]
@@ -157,17 +157,13 @@ class AdminLogin(APIView):
             return None, Response({"detail": "User not found"}, status=401)
 
 
-        if user.is_superadmin and not self.allow_superadmin:
-            return None, Response(
-                {"detail": "System users must use system login"},
-                status=403
-            )
-
-        if not user.is_superadmin and self.allow_superadmin:
-            return None, Response(
-                {"detail": "Only system users can use this login. Please use Admin login."},
-                status=403
-            )
+        # validate metodida:
+        if self.allow_superadmin:
+            if not user.is_superadmin:
+                return None, Response({"detail": "Only system users..."}, status=403)
+        else:
+            if not user.is_admin:
+                return None, Response({"detail": "System users must use system login"}, status=403)
 
 
         if user.is_locked():
@@ -192,24 +188,29 @@ class AdminLogin(APIView):
             if s.get_decoded().get("_auth_user_id") == str(user.id):
                 s.delete()
 
+    def get_redirect_url(self):
+        if self.allow_superadmin:
+            return "/system/dashboard/"
+        return "/dashboard/"
 
     def post(self, request):
-
         user, error = self.validate(request)
-
         if error:
             return error
 
         self.clear_sessions(user)
         login(request, user)
 
+        # Session ga panel turini yozamiz
+        request.session["panel"] = "superadmin" if self.allow_superadmin else "admin"
+        default_org = user.organizations.exclude(slug="system").first()
+        request.session["current_org_id"] = default_org.id if default_org else None
+        request.session.save()
+
         return Response({
             "ok": True,
-            "redirect": self.get_redirect_url(user)
+            "redirect": self.get_redirect_url()
         })
-
-    def get_redirect_url(self, user):
-        return "/dashboard/"
 
 
 class AdminLogout(APIView):
@@ -224,9 +225,10 @@ class Admin_Users(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        
         admin=AdminUser.objects.get(id=request.user.id)
-        users=Users.objects.filter(organization=admin.organization)
-        print("Admin's organization:", admin.organization)
+        users=Users.objects.filter(organization=request.session.get("current_org_id"))
+        print("Admin's organization:", admin.organizations)
         print("Users in organization:", users)
         
         users_data = [
@@ -245,24 +247,23 @@ class Admin_Users(APIView):
         admin=AdminUser.objects.get(id=request.user.id)
         organization=admin.organization
         print(request.data, organization)
-        # new_user = Users.objects.create_user(
-        #     role=request.data.get("role"),
-        #     fio=request.data.get("fio"),
-        #     username=request.data.get("username"),
-        #     lavozim=request.data.get("lavozim"),
-        #     organization=organization,
-        # )
+        new_user = Users.objects.create_user(
+            role=request.data.get("role"),
+            fio=request.data.get("fio"),
+            username=request.data.get("username"),
+            lavozim=request.data.get("lavozim"),
+            organization=organization,
+        )
         
 
-        # return Response({
-        #     "id": new_user.id,
-        #     "username": new_user.username,
-        #     "fio": new_user.fio,
-        #     "lavozim": new_user.lavozim,
-        #     "role": new_user.role,
-        #     "created_at": new_user.created_at,
-        # })
-        return Response({"users": "User creation endpoint is under development."})
+        return Response({
+            "id": new_user.id,
+            "username": new_user.username,
+            "fio": new_user.fio,
+            "lavozim": new_user.lavozim,
+            "role": new_user.role,
+            "created_at": new_user.created_at,
+        })
         
 
 class Super_AdminLogin(AdminLogin):
@@ -275,4 +276,7 @@ class Super_AdminLogout(APIView):
     def post(self, request):
         logout(request)
         
+
+
+
 
