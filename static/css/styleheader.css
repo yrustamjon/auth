@@ -1,309 +1,318 @@
-/* ================= RESET ================= */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+/* =============================================
+   CYBERSECURITY ADMIN PANEL — styleheader.css
+   ============================================= */
+
+/* ===== LAYER VARS ===== */
+:root {
+    --z-sidebar:   100;
+    --z-header:    500;
+    --z-dropdown:  1000;
+    --z-modal:     2000;
 }
 
-body{
-    font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-    background:#f5f5f5;
-    color:#333;
+/* ===== LAYOUT (header-aware) ===== */
+.admin-container {
+    display: flex;
+    min-height: 100vh;
 }
 
-/* ================= LAYER SYSTEM ================= */
-:root{
-    --z-sidebar:100;
-    --z-header:500;
-    --z-dropdown:1000;
-    --z-modal:2000;
+.sidebar {
+    width: 252px;
+    position: fixed;
+    height: 100vh;
+    background: #18181b;
+    z-index: var(--z-sidebar);
 }
 
-/* ================= LAYOUT ================= */
-.admin-container{
-    display:flex;
-    min-height:100vh;
+.main-content {
+    flex: 1;
+    margin-left: 252px;
+    overflow: visible;  /* dropdown kesilmasin */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
-/* ===== SIDEBAR ===== */
-.sidebar{
-    width:250px;
-    position:fixed;
-    height:100vh;
-    background:linear-gradient(135deg,#2c3e50,#34495e);
-    z-index:var(--z-sidebar);
+/* =============================================
+   ADMIN HEADER
+   ============================================= */
+.admin-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-header);
+
+    height: 64px;
+    background: #ffffff;
+    border-bottom: 1px solid #e4e4e7;
+    padding: 0 2rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 
-/* ===== MAIN ===== */
-.main-content{
-    flex:1;
-    margin-left:250px;
-    padding:2rem;
-    overflow:visible; /* 🔥 dropdown kesilmasin */
+/* Page title */
+.admin-header h1 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #18181b;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
 }
 
-/* ================= ADMIN HEADER ================= */
-.admin-header{
-    position:sticky;
-    top:0;
-    z-index:var(--z-header);
+.admin-header h1 i,
+.admin-header__left h1 i { color: #6366f1; }
 
-    height:70px;
-    background:#fff;
-    border-bottom:1px solid #e2e8f0;
+/* =============================================
+   PROFILE DROPDOWN
+   ============================================= */
+.profile-dropdown { position: relative; }
 
-    padding:0 2rem;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
+.profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .35rem .6rem .35rem .35rem;
+    border-radius: 10px;
+    border: 1.5px solid #e4e4e7;
+    background: #fff;
+    cursor: pointer;
+    transition: all .18s ease;
 }
 
-/* title */
-.admin-header h1{
-    font-size:1.4rem;
-    display:flex;
-    align-items:center;
-    gap:.6rem;
+.profile-trigger:hover {
+    background: #f4f4f5;
+    border-color: #c7d2fe;
 }
 
-.admin-header i{
-    color:#2563eb;
+/* Avatar */
+.profile-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: .85rem;
+    flex-shrink: 0;
 }
 
-/* ================= PROFILE ================= */
-.profile-dropdown{
-    position:relative;
+/* Text block */
+.profile-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    text-align: left;
 }
 
-.profile-trigger{
-    display:flex;
-    align-items:center;
-    gap:.6rem;
-
-    padding:.45rem .7rem;
-    border-radius:12px;
-    border:1px solid #e2e8f0;
-    background:#fff;
-    cursor:pointer;
+.profile-name {
+    font-size: .84rem;
+    font-weight: 600;
+    color: #18181b;
 }
 
-.profile-avatar{
-    width:38px;
-    height:38px;
-    border-radius:50%;
-    background:linear-gradient(135deg,#667eea,#764ba2);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#fff;
-    font-weight:600;
+.profile-role {
+    font-size: .71rem;
+    color: #71717a;
 }
 
-.profile-text{
-    display:flex;
-    flex-direction:column;
+/* Arrow */
+.dropdown-arrow {
+    color: #a1a1aa;
+    flex-shrink: 0;
+    transition: transform .22s;
 }
 
-.profile-name{
-    font-size:.85rem;
-    font-weight:600;
+.profile-dropdown.active .dropdown-arrow {
+    transform: rotate(180deg);
 }
 
-.profile-role{
-    font-size:.72rem;
-    color:#64748b;
+/* =============================================
+   DROPDOWN MENU
+   ============================================= */
+.dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+
+    width: 265px;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e4e4e7;
+    box-shadow: 0 16px 48px rgba(0,0,0,.12);
+
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all .22s ease;
+
+    z-index: var(--z-dropdown);
+    overflow: hidden;
 }
 
-.dropdown-arrow{
-    transition:.3s;
+.profile-dropdown.active .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 
-.profile-dropdown.active .dropdown-arrow{
-    transform:rotate(180deg);
+/* ---- Dropdown header ---- */
+.dropdown-header {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .85rem 1rem;
+    background: linear-gradient(135deg, #eef2ff, #ede9fe);
+    border-bottom: 1px solid #e4e4e7;
 }
 
-/* ================= DROPDOWN MENU ================= */
-.dropdown-menu{
-    position:absolute;
-    right:0;
-    top:calc(100% + 8px);
-
-    width:280px;
-    background:#fff;
-    border-radius:14px;
-    box-shadow:0 20px 60px rgba(0,0,0,.15);
-
-    opacity:0;
-    visibility:hidden;
-    transform:translateY(-8px);
-    transition:.25s;
-
-    z-index:var(--z-dropdown);
+.header-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: .9rem;
+    flex-shrink: 0;
 }
 
-.profile-dropdown.active .dropdown-menu{
-    opacity:1;
-    visibility:visible;
-    transform:translateY(0);
+.header-info h4 {
+    font-size: .88rem;
+    font-weight: 600;
+    color: #18181b;
+    line-height: 1.2;
 }
 
-/* header */
-.dropdown-header{
-    display:flex;
-    gap:.7rem;
-    padding:.8rem;
-    background:linear-gradient(135deg,#f8fafc,#e2e8f0);
-    border-bottom:1px solid #e2e8f0;
+.header-info p {
+    font-size: .73rem;
+    color: #71717a;
 }
 
-.header-avatar{
-    width:42px;
-    height:42px;
-    border-radius:50%;
-    background:linear-gradient(135deg,#667eea,#764ba2);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#fff;
-    font-weight:700;
+/* ---- Info items ---- */
+.user-details-section { padding: .5rem .6rem; }
+
+.compact-info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: .55rem;
+    padding: .5rem .55rem;
+    background: #f4f4f5;
+    border-radius: 8px;
+    margin-bottom: .35rem;
 }
 
-.header-info h4{
-    font-size:.9rem;
+.compact-info-item:last-child { margin-bottom: 0; }
+
+.compact-label {
+    font-size: .68rem;
+    color: #a1a1aa;
+    line-height: 1;
+    margin-bottom: 2px;
 }
 
-.header-info p{
-    font-size:.75rem;
-    color:#64748b;
+.compact-value {
+    font-size: .8rem;
+    font-weight: 600;
+    color: #18181b;
 }
 
-/* info cards */
-.user-details-section{
-    padding:.6rem;
+/* ---- Logout ---- */
+.logout-item {
+    width: 100%;
+    border: none;
+    background: none;
+    padding: .72rem 1rem;
+    border-top: 1px solid #f1f1f1;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    color: #f43f5e;
+    font-size: .85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .18s;
 }
 
-.compact-info-item{
-    display:flex;
-    gap:.6rem;
-    padding:.55rem;
-    background:#f8fafc;
-    border-radius:10px;
-    margin-bottom:.45rem;
-}
+.logout-item:hover { background: #fff1f2; }
 
-.compact-info-item:last-child{
-    margin-bottom:0;
-}
-
-.compact-label{
-    font-size:.7rem;
-    color:#64748b;
-}
-
-.compact-value{
-    font-size:.82rem;
-    font-weight:600;
-}
-
-/* logout */
-.logout-item{
-    width:100%;
-    border:none;
-    background:none;
-    padding:.75rem;
-    margin-top:.4rem;
-    border-top:1px solid #e5e7eb;
-
-    display:flex;
-    align-items:center;
-    gap:.5rem;
-
-    color:#ef4444;
-    cursor:pointer;
-}
-
-.logout-item:hover{
-    background:#fef2f2;
-}
-
-/* ================= CONTENT HEADER ================= */
-.content-header{
-    background:#fff;
-    padding:1.5rem;
-    border-radius:8px;
-    box-shadow:0 2px 10px rgba(0,0,0,.05);
-    margin-bottom:2rem;
-
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-/* ================= MODAL ================= */
-.modal{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.5);
-    z-index:var(--z-modal);
-    display:none;
-    align-items:center;
-    justify-content:center;
-}
-
-/* ================= RESPONSIVE ================= */
-@media(max-width:768px){
-    .sidebar{width:200px}
-    .main-content{margin-left:200px}
-    .profile-text{display:none}
-}
-
-@media(max-width:576px){
-    .sidebar{display:none}
-    .main-content{margin-left:0}
-}
-
-
+/* =============================================
+   ORG SELECT
+   ============================================= */
 .org-select-wrapper {
-    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-}
-
-.org-select-wrapper::before {
-    content: "\f1ad";
-    font-family: "Font Awesome 5 Free";
-    font-weight: 900;
-    color: #6c757d;
-    font-size: 12px;
+    position: relative;
 }
 
 .org-select {
     appearance: none;
     -webkit-appearance: none;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 4px 28px 4px 10px;
-    font-size: 13px;
-    color: #495057;
+    background-color: #fff;
+    border: 1.5px solid #e4e4e7;
+    border-radius: 6px;
+    padding: 3px 22px 3px 7px;
+    font-size: .78rem;
+    font-weight: 600;
+    color: #18181b;
     cursor: pointer;
-    transition: all 0.2s ease;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236c757d'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 10px center;
-    max-width: 160px;
+    background-position: right 7px center;
+    max-width: 145px;
+    transition: border-color .18s;
 }
 
-.org-select:hover {
-    border-color: #adb5bd;
-    background-color: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+.org-select:hover  { border-color: #a5b4fc; }
+.org-select:focus  { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+
+/* =============================================
+   CONTENT HEADER (legacy)
+   ============================================= */
+.content-header {
+    background: #fff;
+    padding: 1.25rem 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    border: 1px solid #e4e4e7;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.org-select:focus {
-    outline: none;
-    border-color: #4dabf7;
-    box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.15);
-    background-color: #fff;
+/* =============================================
+   MODAL z-index
+   ============================================= */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(24,24,27,.55);
+    z-index: var(--z-modal);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+@media (max-width: 768px) {
+    .sidebar        { width: 200px; }
+    .main-content   { margin-left: 200px; }
+    .profile-text   { display: none; }
+}
+
+@media (max-width: 576px) {
+    .sidebar        { display: none; }
+    .main-content   { margin-left: 0; }
 }

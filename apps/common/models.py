@@ -59,7 +59,7 @@ class Organization(models.Model):
 
 
 class AdminUser(AbstractBaseUser, PermissionsMixin):
-    organizations = models.ManyToManyField(Organization, related_name="admin_users", blank=True)
+    organizations = models.ManyToManyField(Organization, related_name="admin_users", blank=True,null=True)
     username = models.CharField(max_length=150, unique=True)  # unique_together orqali tekshiramiz
 
     is_superadmin = models.BooleanField(default=False)

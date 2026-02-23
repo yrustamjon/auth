@@ -1,360 +1,375 @@
-// ========================================
-// DASHBOARD PAGE
-// ========================================
+// ============================================================
+// dashboard.js — System Dashboard Page  (requires api.js)
+// ============================================================
 
-// Global state
-const AppState = {
-    organizations: [],
-    admins: []
+// ===== API CALLS =====
+
+async function apiFetchOrgs() {
+    const res = await fetchWithAuth('/api/organizations/');
+    if (!res.ok) throw new Error(res.status);
+    return res.json();
+}
+
+async function apiFetchAdmins() {
+    const res = await fetchWithAuth('/api/system/admins/');
+    if (!res.ok) throw new Error(res.status);
+    return res.json();
+}
+
+// async function apiFetchRecentLogins() {
+//     const res = await fetchWithAuth('/api/system/dashboard/recent-logins/');
+//     if (!res.ok) throw new Error(res.status);
+//     return res.json();
+// }
+
+// async function apiFetchRecentOrgs() {
+//     const res = await fetchWithAuth('/api/system/dashboard/recent-organizations/');
+//     if (!res.ok) throw new Error(res.status);
+//     return res.json();
+// }
+
+// ===== DESIGN TOKENS (barcha page lar bilan bir xil) =====
+const DC = {
+    primary:  '#4e73df',
+    primary2: '#224abe',
+    indigo:   '#6366f1',
+    violet:   '#8b5cf6',
+    success:  '#10b981',
+    danger:   '#ef4444',
+    warning:  '#f59e0b',
+    text:     '#1e1e2e',
+    muted:    '#6b7280',
+    border:   '#e5e7eb',
+    bg:       '#f9fafb',
+    white:    '#ffffff',
 };
+const DGRAD  = `linear-gradient(135deg, ${DC.primary}, ${DC.primary2})`;
+const DGVIVID= `linear-gradient(135deg, ${DC.indigo}, ${DC.violet})`;
 
-// Dummy data
-const DummyData = {
-    organizations: [
-        { id: 1, name: 'TechCorp Solutions', slug: 'techcorp', active: true, adminCount: 5, createdDate: '2024-01-15' },
-        { id: 2, name: 'Global Security Inc', slug: 'globalsec', active: true, adminCount: 3, createdDate: '2024-01-20' },
-        { id: 3, name: 'FinSecure Bank', slug: 'finsecure', active: false, adminCount: 2, createdDate: '2024-02-01' },
-        { id: 4, name: 'HealthCare Plus', slug: 'healthcare', active: true, adminCount: 4, createdDate: '2024-02-10' },
-        { id: 5, name: 'EduTech Systems', slug: 'edutech', active: true, adminCount: 6, createdDate: '2024-02-15' }
-    ],
-    
-    admins: [
-        { id: 1, username: 'john.doe', organization: 'TechCorp Solutions', orgId: 1, superAdmin: true, locked: false, failedAttempts: 0, lastLogin: '2024-03-10 14:30' },
-        { id: 2, username: 'jane.smith', organization: 'Global Security Inc', orgId: 2, superAdmin: false, locked: true, failedAttempts: 5, lastLogin: '2024-03-09 09:15' },
-        { id: 3, username: 'mike.wilson', organization: 'FinSecure Bank', orgId: 3, superAdmin: false, locked: false, failedAttempts: 2, lastLogin: '2024-03-08 16:45' },
-        { id: 4, username: 'sarah.johnson', organization: 'HealthCare Plus', orgId: 4, superAdmin: true, locked: false, failedAttempts: 0, lastLogin: '2024-03-10 11:20' },
-        { id: 5, username: 'robert.brown', organization: 'EduTech Systems', orgId: 5, superAdmin: false, locked: false, failedAttempts: 1, lastLogin: '2024-03-07 10:00' }
-    ],
-    
-    adminLogins: [
-        { username: 'john.doe', organization: 'TechCorp Solutions', loginTime: '2024-03-10 14:30:00', status: 'success' },
-        { username: 'sarah.johnson', organization: 'HealthCare Plus', loginTime: '2024-03-10 11:20:00', status: 'success' },
-        { username: 'jane.smith', organization: 'Global Security Inc', loginTime: '2024-03-09 09:15:00', status: 'locked' },
-        { username: 'mike.wilson', organization: 'FinSecure Bank', loginTime: '2024-03-08 16:45:00', status: 'success' },
-        { username: 'robert.brown', organization: 'EduTech Systems', loginTime: '2024-03-07 10:00:00', status: 'failed' }
-    ],
-    
-    recentOrganizations: [
-        { name: 'EduTech Systems', createdBy: 'john.doe', date: '2024-02-15' },
-        { name: 'HealthCare Plus', createdBy: 'sarah.johnson', date: '2024-02-10' },
-        { name: 'FinSecure Bank', createdBy: 'mike.wilson', date: '2024-02-01' }
-    ]
-};
-
-// Utility functions
-function showLoading() {
-    let spinner = document.querySelector('.spinner-overlay');
-    if (!spinner) {
-        spinner = document.createElement('div');
-        spinner.className = 'spinner-overlay';
-        spinner.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-        document.body.appendChild(spinner);
-    }
-    spinner.style.display = 'flex';
+// ===== HELPERS =====
+function dFormatDate(val) {
+    if (!val) return '—';
+    const d = new Date(val);
+    if (isNaN(d)) return val;
+    return d.toLocaleDateString('en-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
 }
 
-function hideLoading() {
-    const spinner = document.querySelector('.spinner-overlay');
-    if (spinner) {
-        spinner.style.display = 'none';
-    }
-}
-
-function showToast(message, type = 'success') {
-    const toastContainer = document.querySelector('.toast-container');
-    const toastId = 'toast-' + Date.now();
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.id = toastId;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    
-    toast.innerHTML = `
-        <div class="toast-header bg-${type} text-white">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
-            <strong class="me-auto">${type === 'success' ? 'Success' : 'Error'}</strong>
-            <small>just now</small>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-            ${message}
-        </div>
-    `;
-    
-    toastContainer.appendChild(toast);
-    
-    const bsToast = new bootstrap.Toast(toast, { autohide: true, delay: 3000 });
-    bsToast.show();
-    
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
+function dFormatTime(val) {
+    if (!val) return '—';
+    const d = new Date(val);
+    if (isNaN(d)) return val;
+        return d.toLocaleString('en-RU', {
+                        day:'2-digit', month:'2-digit', year:'numeric',
+                    hour:'2-digit', minute:'2-digit'
     });
 }
 
-function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+function dBadge(text, type) {
+    const map = {
+        success:  { bg:'#d1fae5', color:'#065f46', dot:'#10b981' },
+        failed:   { bg:'#fee2e2', color:'#991b1b', dot:'#ef4444' },
+        locked:   { bg:'#fef3c7', color:'#92400e', dot:'#f59e0b' },
+        active:   { bg:'#d1fae5', color:'#065f46', dot:'#10b981' },
+        inactive: { bg:'#fee2e2', color:'#991b1b', dot:'#ef4444' },
+        normal:   { bg:'#f3f4f6', color:'#4b5563', dot:'#9ca3af' },
+    };
+    const s = map[type] || map.normal;
+    return `<span style="display:inline-flex;align-items:center;gap:5px;
+        padding:3px 10px 3px 7px;background:${s.bg};color:${s.color};
+        border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;">
+        <span style="width:6px;height:6px;border-radius:50%;background:${s.dot};flex-shrink:0;"></span>
+        ${text}</span>`;
 }
 
-// API functions
-async function simulateAPI(data, delay = 500) {
-    showLoading();
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            hideLoading();
-            resolve(data);
-        }, delay);
-    });
+function dAvatar(letter, size = 32, radius = 8, grad = DGVIVID) {
+    return `<div style="width:${size}px;height:${size}px;border-radius:${radius}px;flex-shrink:0;
+        background:${grad};display:flex;align-items:center;justify-content:center;
+        color:#fff;font-weight:800;font-size:${Math.round(size*0.38)}px;
+        box-shadow:0 2px 6px rgba(99,102,241,.25);">${letter}</div>`;
 }
 
-async function fetchOrganizations() {
-    return await simulateAPI(DummyData.organizations);
-}
+const DTH = `style="padding:11px 16px;text-align:left;font-size:10.5px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.07em;color:${DC.primary};
+    border-bottom:2px solid ${DC.border};background:${DC.bg};white-space:nowrap;"`;
 
-async function fetchAdmins() {
-    return await simulateAPI(DummyData.admins);
-}
+const DTD = `style="padding:12px 16px;border-bottom:1px solid #f3f4f6;
+    color:${DC.text};vertical-align:middle;font-size:13.5px;"`;
 
-// Logout functions
-async function System_Logout() {
-    try {
-        await fetch(`/api/system/logout`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            }
-        });
-    } catch (error) {
-        console.error('Logout error:', error);
-        return;
-    }
-
-    sessionStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('isAuthenticated');
-}
-
-async function logout() {
-    showConfirmation(
-        'Logout',
-        'Are you sure you want to logout?',
-        async () => {
-            try {   
-                await System_Logout();
-            } catch (error) {
-                console.error('Logout failed:', error);
-                showToast('Logout failed. Please try again.', 'danger');
-            }
-            showToast('Logged out successfully');
-            window.location.href = '/system/login/';
-        }
-    );
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-function showConfirmation(title, message, onConfirm) {
-    const modalId = 'confirmModal-' + Date.now();
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.id = modalId;
-    modal.setAttribute('tabindex', '-1');
-    
-    modal.innerHTML = `
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">${title}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>${message}</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmBtn">Confirm</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    const bsModal = new bootstrap.Modal(modal);
-    bsModal.show();
-    
-    document.getElementById('confirmBtn').addEventListener('click', () => {
-        bsModal.hide();
-        onConfirm();
-        modal.addEventListener('hidden.bs.modal', () => {
-            modal.remove();
-        });
-    });
-    
-    modal.addEventListener('hidden.bs.modal', () => {
-        modal.remove();
-    });
-}
-
-// Render dashboard
+// ===== RENDER =====
 async function renderDashboard() {
     const container = document.getElementById('page-content');
     if (!container) return;
-    
-    const organizations = await fetchOrganizations();
-    const admins = await fetchAdmins();
-    
-    const stats = {
-        totalOrgs: organizations.length,
-        totalAdmins: admins.length,
-        activeAdmins: admins.filter(a => !a.locked).length,
-        lockedAdmins: admins.filter(a => a.locked).length
-    };
-    
-    const adminLoginsHTML = DummyData.adminLogins.map(login => `
-        <tr>
-            <td><strong>${login.username}</strong></td>
-            <td>${login.organization}</td>
-            <td>${login.loginTime}</td>
-            <td>
-                <span class="badge bg-${login.status === 'success' ? 'success' : login.status === 'locked' ? 'danger' : 'warning'}">
-                    ${login.status}
-                </span>
-            </td>
-        </tr>
-    `).join('');
-    
-    const recentOrgsHTML = DummyData.recentOrganizations.map(org => `
-        <tr>
-            <td><strong>${org.name}</strong></td>
-            <td>${org.createdBy}</td>
-            <td>${formatDate(org.date)}</td>
-        </tr>
-    `).join('');
-    
+
+    showLoading();
+    let admins = [], orgs=[],recentLogins = [], recentOrgs = [];
+    try {
+        [admins,orgs,] = await Promise.all([
+            apiFetchAdmins(),
+            apiFetchOrgs(),
+            // apiFetchRecentLogins(),
+            // apiFetchRecentOrgs()
+        ]);
+    } catch (err) {
+        showToast('Failed to load dashboard: ' + err.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+    console.log('Admins:', admins);
+
+    // ===== STAT CARDS =====
+    const statDefs = [
+        { icon:'fas fa-building',             color:DC.indigo,   label:'Organizations',  val: orgs.length ?? 0 },
+        { icon:'fas fa-user-shield',          color:DC.violet,   label:'Total Admins',   val: admins.length ?? 0 },
+        { icon:'fas fa-user-check',           color:DC.success,  label:'Active Admins',  val: admins.filter(a => a.is_active === true).length ?? 0 },
+        { icon:'fas fa-user-lock',            color:DC.danger,   label:'Locked Admins',  val: admins.filter(a => a.locked === true).length ?? 0 },
+    ];
+
+    const statCards = statDefs.map((s, i) => `
+        <div style="flex:1;min-width:160px;background:${DC.white};border-radius:16px;
+            padding:22px 20px;border:1.5px solid ${DC.border};
+            border-top:3px solid ${s.color};
+            box-shadow:0 2px 8px rgba(0,0,0,.04);
+            display:flex;flex-direction:column;align-items:center;text-align:center;
+            transition:transform .2s,box-shadow .2s;cursor:default;
+            animation:dCardIn .4s ease both;animation-delay:${i*0.08}s;"
+            onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.1)'"
+            onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(0,0,0,.04)'">
+            <div style="width:50px;height:50px;border-radius:14px;
+                background:${s.color}15;
+                display:flex;align-items:center;justify-content:center;
+                font-size:20px;color:${s.color};margin-bottom:14px;
+                box-shadow:0 2px 8px ${s.color}25;">
+                <i class="${s.icon}"></i>
+            </div>
+            <div style="font-size:32px;font-weight:900;color:${s.color};line-height:1;margin-bottom:6px;">
+                ${s.val}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:${DC.muted};
+                text-transform:uppercase;letter-spacing:.06em;">${s.label}</div>
+        </div>`).join('');
+
+    // ===== RECENT LOGINS =====
+    const loginRows = recentLogins.length
+        ? recentLogins.map((l, i) => {
+            const statusType = l.status === 'success' ? 'success'
+                             : l.status === 'locked'  ? 'locked'
+                             : 'failed';
+            const username = l.username || '—';
+            const org = l.organization_name ?? l.organization ?? '—';
+            const time = dFormatTime(l.login_time ?? l.loginTime);
+            return `
+            <tr style="transition:background .12s;animation:dRowIn .3s ease both;animation-delay:${i*0.04}s;"
+                onmouseover="this.style.background='${DC.bg}'"
+                onmouseout="this.style.background=''">
+                <td ${DTD}>
+                    <div style="display:flex;align-items:center;gap:9px;">
+                        ${dAvatar(username[0].toUpperCase())}
+                        <strong style="font-size:13px;">${username}</strong>
+                    </div>
+                </td>
+                <td ${DTD}>
+                    <span style="font-size:12.5px;color:${DC.muted};display:flex;align-items:center;gap:5px;">
+                        <i class="fas fa-building" style="opacity:.4;font-size:11px;"></i>${org}
+                    </span>
+                </td>
+                <td ${DTD} style="color:${DC.muted};font-size:12.5px;white-space:nowrap;">
+                    <i class="fas fa-clock" style="margin-right:5px;opacity:.4;"></i>${time}
+                </td>
+                <td ${DTD}>${dBadge(l.status, statusType)}</td>
+            </tr>`;
+        }).join('')
+        : `<tr><td colspan="4" style="text-align:center;padding:2.5rem;color:${DC.muted};font-size:13px;">
+                <i class="fas fa-clock" style="font-size:2rem;opacity:.15;display:block;margin-bottom:8px;"></i>
+                No recent logins</td></tr>`;
+
+    // ===== RECENT ORGS =====
+    const orgRows = recentOrgs.length
+        ? recentOrgs.map((o, i) => `
+            <tr style="transition:background .12s;animation:dRowIn .3s ease both;animation-delay:${i*0.04}s;"
+                onmouseover="this.style.background='${DC.bg}'"
+                onmouseout="this.style.background=''">
+                <td ${DTD}>
+                    <div style="display:flex;align-items:center;gap:9px;">
+                        ${dAvatar(o.name[0].toUpperCase(), 32, 8, DGRAD)}
+                        <div>
+                            <strong style="font-size:13px;display:block;">${o.name}</strong>
+                            <code style="font-size:11px;color:${DC.muted};background:#f1f5f9;
+                                padding:1px 6px;border-radius:4px;">${o.slug ?? ''}</code>
+                        </div>
+                    </div>
+                </td>
+                <td ${DTD}>
+                    <span style="font-size:12.5px;color:${DC.muted};">
+                        ${o.created_by ?? o.createdBy ?? '—'}
+                    </span>
+                </td>
+                <td ${DTD} style="color:${DC.muted};font-size:12.5px;white-space:nowrap;">
+                    <i class="fas fa-calendar-alt" style="margin-right:5px;opacity:.4;"></i>
+                    ${dFormatDate(o.created_at ?? o.date)}
+                </td>
+                <td ${DTD}>${dBadge(o.active ? 'Active' : 'Inactive', o.active ? 'active' : 'inactive')}</td>
+            </tr>`).join('')
+        : `<tr><td colspan="4" style="text-align:center;padding:2.5rem;color:${DC.muted};font-size:13px;">
+                <i class="fas fa-building" style="font-size:2rem;opacity:.15;display:block;margin-bottom:8px;"></i>
+                No recent organizations</td></tr>`;
+
+    // ===== TABLE CARD BUILDER =====
+    function tableCard(title, icon, color, rows, heads, extraBadge = '') {
+        const thCells = heads.map(h => `<th ${DTH}>${h}</th>`).join('');
+        return `
+            <div style="background:${DC.white};border-radius:16px;
+                border:1.5px solid ${DC.border};
+                box-shadow:0 4px 20px rgba(0,0,0,.05);overflow:hidden;
+                display:flex;flex-direction:column;">
+
+                <!-- Card header -->
+                <div style="padding:14px 20px;border-bottom:1.5px solid ${DC.border};
+                    background:${DC.bg};display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:13px;font-weight:700;color:${DC.text};
+                        display:flex;align-items:center;gap:9px;">
+                        <span style="width:32px;height:32px;border-radius:9px;
+                            background:${color}15;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:13px;color:${color};">
+                            <i class="${icon}"></i>
+                        </span>
+                        ${title}
+                    </span>
+                    ${extraBadge}
+                </div>
+
+                <!-- Table -->
+                <div style="overflow-x:auto;flex:1;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead><tr>${thCells}</tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    }
+
+    // ===== QUICK ACTIONS =====
+    const quickActions = [
+        { icon:'fas fa-user-plus',   label:'Create Admin',        color:DC.primary, onclick:"window.location.href='/system/admins/'" },
+        { icon:'fas fa-building',    label:'New Organization',    color:DC.violet,  onclick:"window.location.href='/system/organizations/'" },
+        { icon:'fas fa-rotate-left', label:'Reset Attempts',      color:DC.warning, onclick:"window.location.href='/system/admins/'" },
+        { icon:'fas fa-shield-halved',label:'Security Overview',  color:DC.success, onclick:"window.location.href='/system/admins/'" },
+    ].map(a => `
+        <button onclick="${a.onclick}"
+            style="display:flex;flex-direction:column;align-items:center;gap:9px;
+                padding:18px 12px;background:${DC.white};border:1.5px solid ${DC.border};
+                border-radius:13px;cursor:pointer;flex:1;min-width:110px;
+                box-shadow:0 2px 6px rgba(0,0,0,.04);
+                transition:transform .18s,box-shadow .18s,border-color .18s;"
+            onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 24px rgba(0,0,0,.1)';this.style.borderColor='${a.color}'"
+            onmouseout="this.style.transform='';this.style.boxShadow='0 2px 6px rgba(0,0,0,.04)';this.style.borderColor='${DC.border}'">
+            <div style="width:42px;height:42px;border-radius:12px;background:${a.color}15;
+                display:flex;align-items:center;justify-content:center;
+                font-size:17px;color:${a.color};">
+                <i class="${a.icon}"></i>
+            </div>
+            <span style="font-size:11.5px;font-weight:700;color:${DC.text};text-align:center;line-height:1.3;">
+                ${a.label}
+            </span>
+        </button>`).join('');
+
+    // ===== ASSEMBLE PAGE =====
     container.innerHTML = `
-        <div class="fade-in">
-            <h2 class="mb-4">Dashboard</h2>
-            
-            <div class="row g-4 mb-4">
-                <div class="col-xl-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="icon primary">
-                            <i class="fas fa-building"></i>
-                        </div>
-                        <h3>${stats.totalOrgs}</h3>
-                        <p>Total Organizations</p>
-                    </div>
+        <style>
+            @keyframes dPageIn  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+            @keyframes dCardIn  { from{opacity:0;transform:translateY(8px)}  to{opacity:1;transform:translateY(0)} }
+            @keyframes dRowIn   { from{opacity:0;transform:translateY(5px)}  to{opacity:1;transform:translateY(0)} }
+        </style>
+
+        <div style="padding:2rem;animation:dPageIn .4s ease both;">
+
+            <!-- Header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                margin-bottom:1.75rem;flex-wrap:wrap;gap:1rem;">
+                <div>
+                    <h2 style="margin:0 0 3px;font-size:20px;font-weight:800;color:${DC.text};
+                        display:flex;align-items:center;gap:10px;">
+                        <span style="width:38px;height:38px;border-radius:10px;background:${DGRAD};
+                            display:inline-flex;align-items:center;justify-content:center;
+                            box-shadow:0 4px 14px rgba(78,115,223,.35);">
+                            <i class="fas fa-gauge-high" style="color:#fff;font-size:15px;"></i>
+                        </span>
+                        Dashboard
+                    </h2>
+                    <p style="margin:0;font-size:12.5px;color:${DC.muted};">
+                        System overview and recent activity
+                    </p>
                 </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="icon success">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
-                        <h3>${stats.totalAdmins}</h3>
-                        <p>Total Admins</p>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="icon info">
-                            <i class="fas fa-user-check"></i>
-                        </div>
-                        <h3>${stats.activeAdmins}</h3>
-                        <p>Active Admins</p>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="icon warning">
-                            <i class="fas fa-user-lock"></i>
-                        </div>
-                        <h3>${stats.lockedAdmins}</h3>
-                        <p>Locked Admins</p>
-                    </div>
+
+                <!-- Live clock -->
+                <div style="display:flex;align-items:center;gap:8px;
+                    padding:8px 16px;background:${DC.white};border:1.5px solid ${DC.border};
+                    border-radius:10px;font-size:12.5px;color:${DC.muted};
+                    box-shadow:0 2px 6px rgba(0,0,0,.04);">
+                    <i class="fas fa-clock" style="color:${DC.primary};"></i>
+                    <span id="dashClock">—</span>
                 </div>
             </div>
-            
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="table-container">
-                        <h5><i class="fas fa-history me-2"></i>Latest Admin Logins</h5>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Username</th>
-                                        <th>Organization</th>
-                                        <th>Login Time</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${adminLoginsHTML}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+
+            <!-- Stat cards -->
+            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:1.75rem;">
+                ${statCards}
+            </div>
+
+            <!-- Quick actions -->
+            <div style="background:${DC.white};border-radius:16px;border:1.5px solid ${DC.border};
+                box-shadow:0 4px 20px rgba(0,0,0,.05);overflow:hidden;margin-bottom:1.75rem;">
+                <div style="padding:14px 20px;border-bottom:1.5px solid ${DC.border};background:${DC.bg};">
+                    <span style="font-size:13px;font-weight:700;color:${DC.text};
+                        display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-bolt" style="color:${DC.warning};"></i>
+                        Quick Actions
+                    </span>
                 </div>
-                
-                <div class="col-lg-6">
-                    <div class="table-container">
-                        <h5><i class="fas fa-clock me-2"></i>Recently Created Organizations</h5>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Organization</th>
-                                        <th>Created By</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${recentOrgsHTML}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;">
+                    ${quickActions}
                 </div>
             </div>
-        </div>
-    `;
+
+            <!-- Tables grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+                ${tableCard(
+                    'Recent Logins',
+                    'fas fa-clock-rotate-left',
+                    DC.indigo,
+                    loginRows,
+                    ['User', 'Organization', 'Time', 'Status']
+                )}
+
+                ${tableCard(
+                    'New Organizations',
+                    'fas fa-building-circle-check',
+                    DC.violet,
+                    orgRows,
+                    ['Organization', 'Created By', 'Date', 'Status']
+                )}
+
+            </div>
+        </div>`;
+
+    // Live clock
+    function tickClock() {
+        const el = document.getElementById('dashClock');
+        if (!el) return;
+        const now = new Date();
+        el.textContent = now.toLocaleString('ru-RU', {
+            weekday:'short', day:'2-digit', month:'2-digit',
+            hour:'2-digit', minute:'2-digit', second:'2-digit'
+        });
+    }
+    tickClock();
+    setInterval(tickClock, 1000);
 }
 
-// Initialize
+// ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-    // Sidebar toggle
-    const sidebarCollapse = document.getElementById('sidebarCollapse');
-    if (sidebarCollapse) {
-        sidebarCollapse.addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('active');
-        });
-    }
-    
-    // Logout button
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            await logout();
-        });
-    }
-    
-    // Render dashboard
     renderDashboard();
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.addEventListener('click', e => { e.preventDefault(); logout(); });
 });

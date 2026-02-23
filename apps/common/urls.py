@@ -20,6 +20,11 @@ urlpatterns = [
     path("api/users", views.Admin_Users.as_view(), name="admin_users"),
 
 
+    path("api/system/admins/", views.Admin.as_view(), name="system_admins_api"),
+    path("api/system/admins/<int:id>/", views.Admin.as_view()),
+    
+
+
     path("api/system/login", views.Super_AdminLogin.as_view()),
     path("api/system/logout", views.Super_AdminLogout.as_view(), name="system_logout"),
 ]

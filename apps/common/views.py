@@ -162,7 +162,7 @@ class AdminLogin(APIView):
             if not user.is_superadmin:
                 return None, Response({"detail": "Only system users..."}, status=403)
         else:
-            if not user.is_admin:
+            if user.is_superadmin:
                 return None, Response({"detail": "System users must use system login"}, status=403)
 
 
@@ -194,6 +194,7 @@ class AdminLogin(APIView):
         return "/dashboard/"
 
     def post(self, request):
+        print("Login attempt data:", request.data)
         user, error = self.validate(request)
         if error:
             return error
@@ -276,7 +277,118 @@ class Super_AdminLogout(APIView):
 
     def post(self, request):
         logout(request)
+        return Response({"ok": True})
+    
+class Admin(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        
+        org_id = request.query_params.get("organization_id")
+        if org_id:
+            admins = AdminUser.objects.filter(organizations__id=org_id)
+        else:
+            admins = AdminUser.objects.all()
         
 
+        admin_data = [
+            {
+                "id": admin.id,
+                "username": admin.username,
+                "superadmin": admin.is_superadmin,
+                "is_active": admin.is_active,
+                "locked": admin.is_locked(),
+                "failed_attempts": admin.failed_attempts,
+                "organization": [org.name for org in admin.organizations.all() if not org.slug == "system"],
+                "created_at": admin.created_at,
+            }for admin in admins
+        ]
+        return Response(admin_data)
+    
 
+    def post(self, request,id=None,reset_attempts=None):
+        print(request.data)
+        new_admin = AdminUser.objects.create_superuser(
+            username=request.data.get("username"),
+            password=request.data.get("password"),
+            is_superadmin=request.data.get("is_superuser", False)
+        )
+        if request.data.get("organization_id"):
+            new_admin.organizations.add(Organization.objects.filter(id=request.data.get("organization_id")).first())
+        
+        
+        return Response({
+            "id": new_admin.id,
+            "username": new_admin.username,
+            "superadmin": new_admin.is_superadmin,
+            "locked": new_admin.is_locked(),
+            "is_active": new_admin.is_active,
+        })
 
+    
+    def patch(self, request, id):
+        print(f"Received PATCH request for admin id {id} with data:", request.data)
+        
+            
+            
+        org_id = request.query_params.get("organization_id")
+        print(f"Updating admin with id {id} for organization_id: {org_id}")
+        admin = AdminUser.objects.filter(id=id).first()
+        if not admin:
+            return Response({"detail": "Admin not found"}, status=404)
+
+        if 'username' in request.data or 'is_superuser' in request.data:
+            username = request.data.get("username")
+            is_superadmin = request.data.get("is_superuser")
+            
+            if username:
+                admin.username = username
+            if is_superadmin is not None:
+                admin.is_superadmin = is_superadmin
+            
+            admin.save()
+            return Response({"ok": True})
+        
+        if passsword := request.data.get("password"):
+            admin.set_password(passsword)
+            admin.save()
+            return Response({"ok": True})
+
+        if org_id:
+            org = Organization.objects.filter(id=org_id).first()
+            if not org:
+                return Response({"detail": "Organization not found"}, status=404)
+            if org in admin.organizations.all():
+                admin.organizations.remove(org)
+                action = "removed from"
+            else:
+                admin.organizations.add(org)
+                action = "added to"
+            return Response({"ok": True, "detail": f"Admin {action} organization"})
+
+        try:
+            if request.data['locked'] is not None:
+                print(f"Locking admin {admin.username} until {admin.locked_until}")
+                if request.data['locked'] is True and not admin.is_locked():
+                    admin.locked_until = timezone.now() + timezone.timedelta(minutes=15)
+                elif request.data['locked'] is False:
+                    admin.locked_until = None
+                admin.save()
+                return Response({"ok": True})
+        except KeyError:
+            print("No 'locked' field in request data")
+        return Response({"detail": "Invalid data"}, status=400)
+    
+
+    def delete(self, request, id):
+        admin = AdminUser.objects.filter(id=id).first()
+        org_id = request.query_params.get("organization_id")
+        print(f"Attempting to delete admin with id {id} from organization_id: {org_id}")
+        if org_id:
+            admin.organizations.remove(Organization.objects.filter(id=org_id).first())
+            return Response({"ok": True})
+        print(f"Attempting to delete admin with id {id}: {'Found' if admin else 'Not found'}")
+        if admin:
+            admin.delete()
+            return Response({"ok": True})
+        return Response({"detail": "Admin not found"}, status=404)
