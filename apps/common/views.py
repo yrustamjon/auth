@@ -19,8 +19,10 @@ def role_required(role):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            if not request.user.is_authenticated:
-                return redirect('login')
+            if not request.user.is_authenticated :
+                if not request.user.is_superadmin:
+                    return redirect('login')
+                return redirect('system/login')
 
             panel = request.session.get("panel")  # ← sessiondan o'qiymiz
 
@@ -64,7 +66,10 @@ def login_page(request):
             return redirect('system_dashboard')
         else:
             return redirect('dashboard')
-    return render(request, "login.html")
+    else:
+        if request.session.get("panel") == "superadmin":
+            return redirect('system/login')
+        return render(request, "login.html")
 
 @login_required
 @role_required("admin")
@@ -162,8 +167,10 @@ class AdminLogin(APIView):
             if not user.is_superadmin:
                 return None, Response({"detail": "Only system users..."}, status=403)
         else:
-            if user.is_superadmin:
+            if user.is_superadmin and user.organizations.count() == 1 and user.organizations.first().slug == "system":
                 return None, Response({"detail": "System users must use system login"}, status=403)
+            
+        
 
 
         if user.is_locked():
@@ -235,9 +242,14 @@ class Admin_Users(APIView):
         users_data = [
             {
                 "id": user.id,
+                "fio": user.fio,
+                "lavozim": user.lavozim,
                 "username": user.username,
-                "is_superadmin": user.is_superadmin,
-                "created_at": user.created_at,
+                "role": {
+                    "id": user.role.id if user.role else None,
+                    "name": user.role.name if user.role else None,
+                },
+                "creted_at": user.creted_at,
                 "is_locked": user.is_locked(),
             }
             for user in users
@@ -245,27 +257,29 @@ class Admin_Users(APIView):
         return Response({"users": users_data})
     
     def post(self, request):
-        organization=admin.organizations.filter(id=request.session.get("current_org_id")).first()
-        role= Role.objects.filter(id=request.data.get("role_id"), organization=organization).first()
+        organization=Organization.objects.filter(id=request.session.get("current_org_id")).first()
+        role= Roles.objects.filter(id=request.data.get("role_id"), organization=organization).first()
         print(request.data, organization)
-        # new_user = Users.objects.create_user(
-        #     role=role,
-        #     fio=request.data.get("fio"),
-        #     username=request.data.get("username"),
-        #     lavozim=request.data.get("lavozim"),
-        #     organization=organization,
-        # )
+        new_user = Users.objects.create(
+            role=role,
+            fio=request.data.get("fio"),
+            username=request.data.get("username"),
+            lavozim=request.data.get("lavozim"),
+            organization=organization,
+        )
         
 
-        # return Response({
-        #     "id": new_user.id,
-        #     "username": new_user.username,
-        #     "fio": new_user.fio,
-        #     "lavozim": new_user.lavozim,
-        #     "role": new_user.role,
-        #     "created_at": new_user.created_at,
-        # })
-        return Response({"users": "User creation endpoint is under development."}, status=200)
+        return Response({
+            "id": new_user.id,
+            "username": new_user.username,
+            "fio": new_user.fio,
+            "lavozim": new_user.lavozim,
+            "role": {
+                "id": role.id,
+                "name": role.name,
+            },
+            "creted_at": new_user.created_at,
+        })
         
 
 class Super_AdminLogin(AdminLogin):

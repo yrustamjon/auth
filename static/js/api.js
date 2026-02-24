@@ -34,7 +34,7 @@ async function fetchWithAuth(url, options = {}) {
         // Clear any cached session data
         sessionStorage.removeItem('isAuthenticated');
         localStorage.removeItem('isAuthenticated');
-        
+    
 
         window.location.href = '/login/';
 

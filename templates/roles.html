@@ -1,211 +1,156 @@
 {% extends "index.html" %}
 {% block title %}Role Management{% endblock %}
 
+{% block content %}
 
+<style>
+    .badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-active   { background: #d1fae5; color: #065f46; }
+    .badge-inactive { background: #fee2e2; color: #991b1b; }
+    .inactive-row   { opacity: 0.5; }
+    .empty-msg      { text-align: center; padding: 2rem; color: #888; }
 
-{% block content %}    
-            <div class="content-box">
-                <div class="header" style="margin-bottom: 2rem;">
-                    <h2>Roles List</h2>
-                    <button class="btn-primary" id="addRoleBtn">
-                        <i class="fas fa-plus"></i> Add Role
-                    </button>
-                </div>
+    .actions { display: flex; gap: 0.4rem; }
+    .btn-sm   { padding: 0.3rem 0.55rem; font-size: 0.8rem; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-warning  { background: #f59e0b; color: #fff; }
+    .btn-success  { background: #10b981; color: #fff; }
+    .btn-secondary{ background: #6b7280; color: #fff; }
+    .btn-danger   { background: #ef4444; color: #fff; }
 
-                <div class="table-container">
-                    <table id="rolesTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Role Name</th>
-                                <th>Created At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Roles will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <h3 style="margin-top: 3rem; margin-bottom: 1rem;">User Role Assignments</h3>
-                <div class="table-container">
-                    <table id="userRolesTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>User</th>
-                                <th>Role</th>
-                                <th>Assigned At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- User roles will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    /* Toast */
+    .toast {
+        position: fixed; bottom: 2rem; right: 2rem;
+        padding: 0.85rem 1.4rem; border-radius: 10px;
+        font-size: 0.9rem; font-weight: 500;
+        opacity: 0; transform: translateY(10px);
+        transition: all 0.3s ease; z-index: 9999;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .toast.show      { opacity: 1; transform: translateY(0); }
+    .toast-success   { background: #d1fae5; color: #065f46; }
+    .toast-error     { background: #fee2e2; color: #991b1b; }
+</style>
 
-    
-
-    <!-- Add Role Modal -->
-    <div class="modal" id="roleModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Add New Role</h3>
-                <button class="close-modal" id="closeRoleModal">&times;</button>
-            </div>
-            
-            <form id="roleForm">
-                <div class="form-group">
-                    <label for="roleName">Role Name *</label>
-                    <input type="text" id="roleName" name="name" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">
-                        Save Role
-                    </button>
-                    <button type="button" class="btn-secondary" id="cancelRoleBtn">
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
+<div class="content-box">
+    <div class="header" style="margin-bottom: 2rem;">
+        <h2>Rollar</h2>
+        <button class="btn-primary" id="addRoleBtn">
+            <i class="fas fa-plus"></i> Yangi Rol
+        </button>
     </div>
 
-    <!-- Assign Role Modal -->
-    <div class="modal" id="assignRoleModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Assign Role to User</h3>
-                <button class="close-modal" id="closeAssignModal">&times;</button>
-            </div>
-            
-            <form id="assignRoleForm">
-                <div class="form-group">
-                    <label for="assignUser">Select User *</label>
-                    <select id="assignUser" name="user_id" required>
-                        <option value="">Select user...</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="assignRole">Select Role *</label>
-                    <select id="assignRole" name="role_id" required>
-                        <option value="">Select role...</option>
-                    </select>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">
-                        Assign Role
-                    </button>
-                    <button type="button" class="btn-secondary" id="cancelAssignBtn">
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
+    <div class="table-container">
+        <table id="rolesTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nomi</th>
+                    <th>Holati</th>
+                    <th>Yaratilgan</th>
+                    <th>Amallar</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
+</div>
 
+<!-- Create Modal -->
+<div class="modal" id="roleModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Yangi Rol Qo'shish</h3>
+            <button class="close-modal" id="closeRoleModal">&times;</button>
+        </div>
+        <form id="roleForm">
+            <div class="form-group">
+                <label for="roleName">Rol nomi *</label>
+                <input type="text" id="roleName" name="name" required placeholder="Masalan: Moderator">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Saqlash</button>
+                <button type="button" class="btn-secondary" id="cancelRoleBtn">Bekor</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    
-    <script>
-        // Initialize session protection
-        // checkSession();
-        
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            adminLogout();
-            window.location.href = '{% url "login" %}';
-        });
-        
-        // Load roles when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            loadRoles();
-            loadUserRoles();
-            loadUsersForAssignment();
-            loadRolesForAssignment();
-        });
-        
-        // Role modal controls
-        const roleModal = document.getElementById('roleModal');
-        const assignRoleModal = document.getElementById('assignRoleModal');
-        const addRoleBtn = document.getElementById('addRoleBtn');
-        
-        addRoleBtn.addEventListener('click', () => {
-            document.getElementById('roleForm').reset();
-            roleModal.style.display = 'flex';
-        });
-        
-        document.getElementById('closeRoleModal').addEventListener('click', () => {
+<!-- Edit Modal -->
+<div class="modal" id="editRoleModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Rolni Tahrirlash</h3>
+            <button class="close-modal" id="closeEditModal">&times;</button>
+        </div>
+        <form id="editRoleForm">
+            <input type="hidden" id="editRoleId">
+            <div class="form-group">
+                <label for="editRoleName">Rol nomi *</label>
+                <input type="text" id="editRoleName" name="name" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Yangilash</button>
+                <button type="button" class="btn-secondary" id="cancelEditBtn">Bekor</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        adminLogout();
+        window.location.href = '{% url "login" %}';
+    });
+
+    document.addEventListener('DOMContentLoaded', () => loadRoles());
+
+    // ── Create modal ──
+    const roleModal = document.getElementById('roleModal');
+
+    document.getElementById('addRoleBtn').addEventListener('click', () => {
+        document.getElementById('roleForm').reset();
+        roleModal.style.display = 'flex';
+    });
+    document.getElementById('closeRoleModal').addEventListener('click', () => roleModal.style.display = 'none');
+    document.getElementById('cancelRoleBtn').addEventListener('click', () => roleModal.style.display = 'none');
+
+    document.getElementById('roleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await createRole({ name: document.getElementById('roleName').value.trim() });
             roleModal.style.display = 'none';
-        });
-        
-        document.getElementById('cancelRoleBtn').addEventListener('click', () => {
-            roleModal.style.display = 'none';
-        });
-        
-        // Assign role modal controls
-        document.getElementById('closeAssignModal').addEventListener('click', () => {
-            assignRoleModal.style.display = 'none';
-        });
-        
-        document.getElementById('cancelAssignBtn').addEventListener('click', () => {
-            assignRoleModal.style.display = 'none';
-        });
-        
-        // Show assign role modal
-        window.showAssignRoleModal = function() {
-            assignRoleModal.style.display = 'flex';
-        };
-        
-        // Close modals when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === roleModal) {
-                roleModal.style.display = 'none';
-            }
-            if (e.target === assignRoleModal) {
-                assignRoleModal.style.display = 'none';
-            }
-        });
-        
-        // Handle role form submission
-        document.getElementById('roleForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const roleData = {
-                name: document.getElementById('roleName').value
-            };
-            
-            try {
-                await createRole(roleData);
-                roleModal.style.display = 'none';
-                loadRoles();
-                loadRolesForAssignment();
-            } catch (error) {
-                alert('Error saving role: ' + error.message);
-            }
-        });
-        
-        // Handle assign role form submission
-        document.getElementById('assignRoleForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const assignmentData = {
-                user_id: parseInt(document.getElementById('assignUser').value),
-                role_id: parseInt(document.getElementById('assignRole').value)
-            };
-            
-            try {
-                await assignRoleToUser(assignmentData);
-                assignRoleModal.style.display = 'none';
-                loadUserRoles();
-            } catch (error) {
-                alert('Error assigning role: ' + error.message);
-            }
-        });
-    </script>
+        } catch (error) {
+            showToast('Xato: ' + error.message, 'error');
+        }
+    });
+
+    // ── Edit modal ──
+    const editRoleModal = document.getElementById('editRoleModal');
+
+    document.getElementById('closeEditModal').addEventListener('click', () => editRoleModal.style.display = 'none');
+    document.getElementById('cancelEditBtn').addEventListener('click', () => editRoleModal.style.display = 'none');
+
+    document.getElementById('editRoleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editRoleId').value;
+        const name = document.getElementById('editRoleName').value.trim();
+        try {
+            await updateRole(id, { name });
+            editRoleModal.style.display = 'none';
+        } catch (error) {
+            showToast('Xato: ' + error.message, 'error');
+        }
+    });
+
+    // ── Close on outside click ──
+    window.addEventListener('click', (e) => {
+        if (e.target === roleModal) roleModal.style.display = 'none';
+        if (e.target === editRoleModal) editRoleModal.style.display = 'none';
+    });
+</script>
 {% endblock %}

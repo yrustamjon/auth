@@ -1,93 +1,133 @@
-
-
 /**
- * Load all users and display in table
+ * users.js
+ * rolesCache va usersCache — roles.js dan keladi (var bilan e'lon qilingan)
+ * Bu faylda qayta e'lon qilinmaydi
  */
+
+// ─── Load & Display ───────────────────────────────────────────────
+
 async function loadUsers() {
     try {
         const response = await fetchWithAuth('/api/users');
-        
-        if (!response.ok) {
-            throw new Error(`Failed to load users: ${response.status}`);
-        }
-        const data = await response.json(); 
-        usersCache = data.users;  
-        displayUsers(data.users);  
+        if (!response.ok) throw new Error(`${response.status}`);
+
+        const data = await response.json();
+        usersCache = Array.isArray(data) ? data : (data.users ?? []);
+        displayUsers(usersCache);
     } catch (error) {
-        alert('Error loading users: ' + error.message);
+        console.error('Error loading users:', error);
+        showToast('Foydalanuvchilarni yuklashda xato: ' + error.message, 'error');
     }
 }
 
-/**
- * Display users in the table
- * @param {Array} users - Array of user objects
- */
 function displayUsers(users) {
     const tbody = document.querySelector('#usersTable tbody');
+    if (!tbody) return;
+
     tbody.innerHTML = '';
+
     if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">Foydalanuvchilar topilmadi.</td></tr>`;
         return;
     }
-    
+
     users.forEach(user => {
         const row = document.createElement('tr');
-        
-        // Get user roles
-        const userRoles = getUserRoles(user.id);
-        
-        row.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.fio}</td>
-            <td>${user.lavozim}</td>
-            <td>
-                <span class="${user.status ? 'status-active' : 'status-inactive'}">
-                    ${user.status ? 'Active' : 'Inactive'}
-                </span>
-            </td>
-            <td>${userRoles.join(', ') || 'No roles'}</td>
-            <td class="actions">
-                <button class="btn-primary btn-sm" onclick="editUser(${user.id})">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="btn-danger btn-sm" onclick="deleteUser(${user.id})">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
-            </td>
-        `;
-        
+        if (!user.status) row.classList.add('inactive-row');
+
+        const role = rolesCache.find(r => r.id === (user.role ?? user.role_id));
+
+        const idCell = document.createElement('td');
+        idCell.textContent = user.id;
+
+        const fioCell = document.createElement('td');
+        fioCell.textContent = user.fio;
+
+        const lavozimCell = document.createElement('td');
+        lavozimCell.textContent = user.lavozim;
+
+        const usernameCell = document.createElement('td');
+        usernameCell.textContent = user.username;
+
+        const roleCell = document.createElement('td');
+        roleCell.textContent = role ? role.name : '—';
+
+        const statusCell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = user.status ? 'badge badge-active' : 'badge badge-inactive';
+        badge.textContent = user.status ? 'Active' : 'Inactive';
+        statusCell.appendChild(badge);
+
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn-warning btn-sm';
+        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+        editBtn.title = 'Tahrirlash';
+        editBtn.addEventListener('click', () => openUserModal(user));
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = user.status ? 'btn-secondary btn-sm' : 'btn-success btn-sm';
+        toggleBtn.innerHTML = user.status ? '<i class="fas fa-ban"></i>' : '<i class="fas fa-check"></i>';
+        toggleBtn.title = user.status ? 'Deactivate' : 'Activate';
+        toggleBtn.addEventListener('click', () => toggleUserStatus(user));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-danger btn-sm';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        deleteBtn.title = "O'chirish";
+        deleteBtn.addEventListener('click', () => deleteUser(user.id));
+
+        actionsCell.append(editBtn, toggleBtn, deleteBtn);
+        row.append(idCell, fioCell, lavozimCell, usernameCell, roleCell, statusCell, actionsCell);
         tbody.appendChild(row);
     });
 }
 
-/**
- * Get roles assigned to a user
- * @param {number} userId - User ID
- * @returns {Array} - Array of role names
- */
-function getUserRoles(userId) {
-    // This would ideally come from the API
-    // For now, we'll implement it when we have user-roles data
-    return [];
+// ─── Modal ────────────────────────────────────────────────────────
+
+function openUserModal(user = null) {
+    const isEdit = !!user;
+
+    document.getElementById('modalTitle').textContent = isEdit ? 'Foydalanuvchini Tahrirlash' : 'Yangi Foydalanuvchi';
+    document.getElementById('userId').value   = isEdit ? user.id : '';
+    document.getElementById('fio').value      = isEdit ? user.fio : '';
+    document.getElementById('lavozim').value  = isEdit ? user.lavozim : '';
+    document.getElementById('username').value = isEdit ? user.username : '';
+    document.getElementById('status').checked = isEdit ? user.status : true;
+    populateRoleSelect(isEdit ? (user.role ?? user.role_id) : null);
+
+    document.getElementById('userModal').style.display = 'flex';
 }
 
-/**
- * Create a new user
- * @param {Object} userData - User data {fio, lavozim, status}
- */
+function populateRoleSelect(selectedRoleId = null) {
+    const select = document.getElementById('roleSelect');
+    select.innerHTML = '<option value="">— Rol tanlang —</option>';
+
+    rolesCache
+        .filter(r => r.is_active !== false)
+        .forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.id;
+            option.textContent = role.name;
+            if (role.id === selectedRoleId) option.selected = true;
+            select.appendChild(option);
+        });
+}
+
+// ─── CRUD ─────────────────────────────────────────────────────────
+
 async function createUser(userData) {
     try {
-        console.log('Creating user with data:', userData);
         const response = await fetchWithAuth('/api/users', {
             method: 'POST',
             body: JSON.stringify(userData)
         });
-        
-        if (!response.ok) {
-            throw new Error(`Failed to create user: ${response.status}`);
-        }
-        
-        alert('User created successfully!');
+        if (!response.ok) throw new Error(`${response.status}`);
+
+        showToast('Foydalanuvchi yaratildi!', 'success');
+        await loadUsers();
         return await response.json();
     } catch (error) {
         console.error('Error creating user:', error);
@@ -95,23 +135,16 @@ async function createUser(userData) {
     }
 }
 
-/**
- * Update an existing user
- * @param {number} userId - User ID
- * @param {Object} userData - Updated user data
- */
 async function updateUser(userId, userData) {
     try {
         const response = await fetchWithAuth(`/api/users/${userId}`, {
-            method: 'PUT',
+            method: 'PATCH',
             body: JSON.stringify(userData)
         });
-        
-        if (!response.ok) {
-            throw new Error(`Failed to update user: ${response.status}`);
-        }
-        
-        alert('User updated successfully!');
+        if (!response.ok) throw new Error(`${response.status}`);
+
+        showToast('Foydalanuvchi yangilandi!', 'success');
+        await loadUsers();
         return await response.json();
     } catch (error) {
         console.error('Error updating user:', error);
@@ -119,60 +152,35 @@ async function updateUser(userId, userData) {
     }
 }
 
-/**
- * Delete a user
- * @param {number} userId - User ID to delete
- */
-async function deleteUser(userId) {
-    if (!confirm('Are you sure you want to delete this user?')) {
-        return;
+async function toggleUserStatus(user) {
+    if (!confirm(`Foydalanuvchini ${user.status ? "o'chirishni" : 'aktivlashtirishni'} tasdiqlaysizmi?`)) return;
+
+    try {
+        const response = await fetchWithAuth(`/api/users/${user.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: !user.status })
+        });
+        if (!response.ok) throw new Error(`${response.status}`);
+
+        showToast(`Foydalanuvchi ${user.status ? 'deaktivlandi' : 'aktivlandi'}!`, 'success');
+        await loadUsers();
+    } catch (error) {
+        showToast("Holatni o'zgartirishda xato: " + error.message, 'error');
     }
-    
+}
+
+async function deleteUser(userId) {
+    if (!confirm("Foydalanuvchini o'chirishni tasdiqlaysizmi?")) return;
+
     try {
         const response = await fetchWithAuth(`/api/users/${userId}`, {
             method: 'DELETE'
         });
-        
-        if (!response.ok) {
-            throw new Error(`Failed to delete user: ${response.status}`);
-        }
-        
-        alert('User deleted successfully!');
-        loadUsers();
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Error deleting user: ' + error.message);
-    }
-}
+        if (!response.ok) throw new Error(`${response.status}`);
 
-/**
- * Edit user - populate modal with user data
- * @param {number} userId - User ID to edit
- */
-async function editUser(userId) {
-    try {
-        const user = usersCache.find(u => u.id === userId);
-        
-        if (!user) {
-            // Fetch user if not in cache
-            const response = await fetchWithAuth(`/api/users/${userId}`);
-            if (!response.ok) {
-                throw new Error('User not found');
-            }
-            user = await response.json();
-        }
-        
-        // Populate modal
-        document.getElementById('modalTitle').textContent = 'Edit User';
-        document.getElementById('userId').value = user.id;
-        document.getElementById('fio').value = user.fio;
-        document.getElementById('lavozim').value = user.lavozim;
-        document.getElementById('status').checked = user.status;
-        
-        // Show modal
-        document.getElementById('userModal').style.display = 'flex';
+        showToast("Foydalanuvchi o'chirildi!", 'success');
+        await loadUsers();
     } catch (error) {
-        console.error('Error loading user for edit:', error);
-        alert('Error loading user data: ' + error.message);
+        showToast("O'chirishda xato: " + error.message, 'error');
     }
 }

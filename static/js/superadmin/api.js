@@ -250,8 +250,9 @@ function formatDate(dateString) {
 // ===== SYSTEM LOGOUT =====
 async function System_Logout() {
     try {
-        await fetchWithAuth('/api/system/logout/', {
+        await fetchWithAuth('/api/system/logout', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'X-CSRFToken': getCookie('csrftoken') }
         });
     } catch (e) {
@@ -264,6 +265,7 @@ async function System_Logout() {
 async function logout() {
     showConfirmation('Logout', 'Are you sure you want to logout?', async () => {
         await System_Logout();
+        console.log('Logged out successfully');
         showToast('Logged out successfully');
         setTimeout(() => window.location.href = '/system/login/', 800);
     });

@@ -1,161 +1,691 @@
 {% extends "index.html" %}
-
-
+{% block title %}User Management{% endblock %}
 
 {% block content %}
+<style>
+    .badge { padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .badge-active  { background: #d1fae5; color: #065f46; }
+    .badge-inactive{ background: #fee2e2; color: #991b1b; }
+    .badge-yes     { background: #dbeafe; color: #1e40af; }
+    .badge-no      { background: #f3f4f6; color: #9ca3af; }
+    .inactive-row  { opacity: 0.5; }
+    .empty-msg     { text-align: center; padding: 2rem; color: #888; }
+    .actions       { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .btn-sm        { padding: 0.3rem 0.6rem; font-size: 0.8rem; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-warning   { background: #f59e0b; color: #fff; }
+    .btn-success   { background: #10b981; color: #fff; }
+    .btn-secondary { background: #6b7280; color: #fff; }
+    .btn-danger    { background: #ef4444; color: #fff; }
+    .btn-bio       { background: #6366f1; color: #fff; }
 
-            <div class="content-box">
-                <div class="header" style="margin-bottom: 2rem;">
-                    <h2>Users List</h2>
-                    <button class="btn-primary" id="addUserBtn">
-                        <i class="fas fa-plus"></i> Add User
-                    </button>
-                </div>
+    .toast {
+        position: fixed; bottom: 2rem; right: 2rem;
+        padding: 0.85rem 1.4rem; border-radius: 10px; font-size: 0.9rem;
+        opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 9999;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .toast.show    { opacity: 1; transform: translateY(0); }
+    .toast-success { background: #d1fae5; color: #065f46; }
+    .toast-error   { background: #fee2e2; color: #991b1b; }
 
-                <div class="table-container">
-                    <table id="usersTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Full Name</th>
-                                <th>Position</th>
-                                <th>Status</th>
-                                <th>Roles</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Users will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    select.form-control {
+        width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db;
+        border-radius: 8px; font-size: 0.9rem; background: #fff; box-sizing: border-box;
+    }
 
+    /* Bio modal */
+    .bio-tabs    { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem; }
+    .bio-tab     { padding: 0.65rem 1.5rem; cursor: pointer; font-weight: 500; border-bottom: 3px solid transparent; margin-bottom: -2px; color: #6b7280; transition: 0.2s; }
+    .bio-tab.active { border-bottom-color: #6366f1; color: #6366f1; }
+    .bio-panel      { display: none; }
+    .bio-panel.active { display: block; }
 
-    <!-- Add/Edit User Modal -->
-    <div class="modal" id="userModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Add New User</h3>
-                <button class="close-modal" id="closeModal">&times;</button>
-            </div>
-            
-            <form id="userForm">
-                <input type="hidden" id="userId">
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="fio">FIO *</label>
-                        <input type="text" id="fio" name="fio" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="lavozim">Lavozim*</label>
-                        <input type="text" id="lavozim" name="lavozim" required>
-                    </div>
-                </div>
+    .bio-status { display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 500; font-size: 0.9rem; }
+    .bio-status.ok { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+    .bio-status.no { background: #fef9c3; border: 1px solid #fde68a; color: #92400e; }
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="role">Role *</label>
-                        <input type="text" id="role" name="role" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="username">Username *</label>
-                        <input type="text" id="username" name="username" required>
-                    </div>
-                </div>
-                
-                
-                <label for="status">
-                    <input type="checkbox" id="status" name="status" checked>
-                    Active Status
-                </label>
-                
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary" id="saveUserBtn">
-                        Saqlash
-                    </button>
-                    <button type="button" class="btn-secondary" id="cancelBtn">
-                        Bekor qilish
-                    </button>
-                </div>
-            </form>
-        </div>
+    /* Upload zone (yuz uchun) */
+    .upload-zone {
+        border: 2px dashed #d1d5db; border-radius: 10px; padding: 1.5rem;
+        text-align: center; cursor: pointer; background: #fafafa; transition: 0.2s; margin-bottom: 0.75rem;
+    }
+    .upload-zone:hover   { border-color: #6366f1; }
+    .upload-zone.filled  { border-color: #10b981; background: #f0fdf4; }
+    .upload-zone i       { font-size: 1.8rem; color: #9ca3af; display: block; margin-bottom: 0.4rem; }
+    .upload-zone.filled i{ color: #10b981; }
+    .upload-zone small   { color: #9ca3af; font-size: 0.78rem; display: block; margin-top: 0.3rem; }
+    .preview-img { max-width: 140px; max-height: 140px; border-radius: 8px; margin: 0.5rem auto; display: block; object-fit: cover; }
+
+    /* Webcam */
+    #webcamVideo { width: 100%; border-radius: 10px; display: none; margin-bottom: 0.5rem; background: #000; }
+    #webcamCanvas { display: none; }
+    .webcam-actions { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .webcam-actions button { flex: 1; padding: 0.5rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+
+    /* Mobil QR */
+    .qr-box { text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; }
+    .qr-box canvas, .qr-box img { margin: 0.75rem auto; display: block; }
+    .qr-box p { font-size: 0.85rem; color: #64748b; margin: 0; }
+    .qr-status { margin-top: 1rem; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 500; text-align: center; }
+    .qr-status.waiting  { background: #f1f5f9; color: #64748b; }
+    .qr-status.received { background: #d1fae5; color: #065f46; }
+
+    .or-divider { display: flex; align-items: center; gap: 0.75rem; margin: 0.75rem 0; color: #9ca3af; font-size: 0.8rem; }
+    .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+
+    .del-bio-btn { width: 100%; padding: 0.45rem; background: #fee2e2; color: #991b1b; border: none; border-radius: 8px; cursor: pointer; margin-top: 0.75rem; font-size: 0.85rem; }
+    .del-bio-btn:hover { background: #fecaca; }
+</style>
+
+<!-- Users table -->
+<div class="content-box">
+    <div class="header" style="margin-bottom:2rem;">
+        <h2>Foydalanuvchilar</h2>
+        <button class="btn-primary" id="addUserBtn"><i class="fas fa-plus"></i> Yangi</button>
     </div>
+    <div class="table-container">
+        <table id="usersTable">
+            <thead>
+                <tr>
+                    <th>ID</th><th>FIO</th><th>Lavozim</th><th>Username</th>
+                    <th>Rol</th><th>Yuz</th><th>Barmoq</th><th>Holat</th><th>Amallar</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
 
+<!-- User create/edit modal -->
+<div class="modal" id="userModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Yangi Foydalanuvchi</h3>
+            <button class="close-modal" id="closeModal">&times;</button>
+        </div>
+        <form id="userForm">
+            <input type="hidden" id="userId">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>FIO *</label>
+                    <input type="text" id="fio" required placeholder="Ism Familiya">
+                </div>
+                <div class="form-group">
+                    <label>Lavozim *</label>
+                    <input type="text" id="lavozim" required placeholder="Masalan: Buxgalter">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Username *</label>
+                    <input type="text" id="username" required placeholder="login_nomi">
+                </div>
+                <div class="form-group">
+                    <label>Rol *</label>
+                    <select id="roleSelect" class="form-control" required>
+                        <option value="">— Rol tanlang —</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" id="passwordGroup">
+                <label>Parol *</label>
+                <input type="password" id="password" placeholder="Kamida 6 ta belgi">
+            </div>
+            <div class="form-group" style="margin-top:0.5rem;">
+                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                    <input type="checkbox" id="status" checked> Faol (Active)
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Saqlash</button>
+                <button type="button" class="btn-secondary" id="cancelBtn">Bekor</button>
+            </div>
+        </form>
+    </div>
+</div>
 
+<!-- Biometric modal -->
+<div class="modal" id="bioModal">
+    <div class="modal-content" style="max-width:500px;">
+        <div class="modal-header">
+            <h3 id="bioModalTitle">Biometrik</h3>
+            <button class="close-modal" id="closeBioModal">&times;</button>
+        </div>
 
-    
-    <script>
-        // Initialize session protection
-        // checkSession();
+        <div class="bio-tabs">
+            <div class="bio-tab active" data-tab="face"><i class="fas fa-user-circle"></i> Yuz</div>
+            <div class="bio-tab" data-tab="finger"><i class="fas fa-fingerprint"></i> Barmoq izi</div>
+        </div>
+
+        <!-- ══ YUZ PANEL ══ -->
+        <div class="bio-panel active" id="facePanel">
+            <div class="bio-status" id="faceStatus">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span id="faceStatusText">Yuklanmoqda...</span>
+            </div>
+
+            <!-- Webcam -->
+            <video id="webcamVideo" autoplay playsinline></video>
+            <canvas id="webcamCanvas"></canvas>
+            <div class="webcam-actions" id="webcamActions" style="display:none;">
+                <button id="captureBtn" style="background:#6366f1;color:#fff;">
+                    <i class="fas fa-camera"></i> Suratga olish
+                </button>
+                <button id="stopWebcamBtn" style="background:#f3f4f6;color:#374151;">
+                    <i class="fas fa-times"></i> Yopish
+                </button>
+            </div>
+
+            <!-- Rasm yuklash -->
+            <div class="upload-zone" id="faceZone">
+                <i class="fas fa-image"></i>
+                <div>Rasm tanlash uchun bosing</div>
+                <small>JPG / PNG • Yuz aniq ko'rinsin</small>
+                <img class="preview-img" id="facePreview" style="display:none;">
+            </div>
+            <input type="file" id="faceFile" accept="image/*" style="display:none;">
+
+            <div class="or-divider">yoki</div>
+
+            <button class="btn-secondary" style="width:100%;padding:0.5rem;" id="startWebcamBtn">
+                <i class="fas fa-video"></i> Webcam orqali olish
+            </button>
+
+            <button class="btn-primary" style="width:100%;margin-top:0.75rem;" id="saveFaceBtn" disabled>
+                <i class="fas fa-save"></i> Yuzni Saqlash
+            </button>
+            <button class="del-bio-btn" id="deleteFaceBtn" style="display:none;">
+                <i class="fas fa-trash"></i> Yuz embeddingini o'chirish
+            </button>
+        </div>
+
+        <!-- ══ BARMOQ IZI PANEL ══ -->
+        <div class="bio-panel" id="fingerPanel">
+            <div class="bio-status" id="fingerStatus">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span id="fingerStatusText">Yuklanmoqda...</span>
+            </div>
+
+            <div class="qr-box" id="qrBox">
+                <p style="margin-bottom:0.5rem;font-weight:500;">
+                    <i class="fas fa-mobile-alt"></i> Mobil telefon orqali skanerlang
+                </p>
+                <canvas id="qrCanvas"></canvas>
+                <p>Mobil ilovani oching va QR ni skanerlang.<br>Barmoq izi avtomatik yuklanadi.</p>
+
+                <div class="qr-status waiting" id="qrStatus">
+                    <i class="fas fa-hourglass-half"></i> Kutilmoqda...
+                </div>
+
+                <button class="btn-secondary btn-sm" id="refreshQrBtn" style="margin-top:0.75rem;width:100%;">
+                    <i class="fas fa-sync"></i> QR ni yangilash
+                </button>
+            </div>
+
+            <button class="del-bio-btn" id="deleteFingerBtn" style="display:none;">
+                <i class="fas fa-trash"></i> Barmoq izi embeddingini o'chirish
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- QR kutubxonasi -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+var rolesCache = rolesCache || [];
+var usersCache = usersCache || [];
+var currentBioUserId = null;
+var webcamStream = null;
+var faceImageBlob = null;
+var fingerPollInterval = null;
+var currentSessionToken = null;
+
+// ── Load ──────────────────────────────────────────────────────────
+
+async function loadRoles() {
+    try {
+        const res = await fetchWithAuth('/api/roles');
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        rolesCache = Array.isArray(data) ? data : (data.roles ?? []);
+    } catch(e) { console.error('loadRoles:', e); }
+}
+
+async function loadUsers() {
+    try {
+        const res = await fetchWithAuth('/api/users');
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        usersCache = Array.isArray(data) ? data : (data.users ?? []);
+        displayUsers(usersCache);
+    } catch(e) { showToast('Foydalanuvchilarni yuklashda xato', 'error'); }
+}
+
+// ── Display ───────────────────────────────────────────────────────
+
+function displayUsers(users) {
+    const tbody = document.querySelector('#usersTable tbody');
+    tbody.innerHTML = '';
+    if (!users.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-msg">Foydalanuvchilar topilmadi.</td></tr>`;
+        return;
+    }
+    users.forEach(user => {
+        const row = document.createElement('tr');
+        if (!user.status) row.classList.add('inactive-row');
         
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            adminLogout();
-            window.location.href = '{% url "login" %}';
+
+        [user.id, user.fio, user.lavozim, user.username, user.role.name  ??'—'].forEach(val => {
+            const td = document.createElement('td');
+            td.textContent = val;
+            row.appendChild(td);
         });
-        
-        // Load users when page loads
-        document.addEventListener('DOMContentLoaded', loadUsers);
-        
-        // Modal controls
-        const modal = document.getElementById('userModal');
-        const addUserBtn = document.getElementById('addUserBtn');
-        const closeModal = document.getElementById('closeModal');
-        const cancelBtn = document.getElementById('cancelBtn');
-        
-        addUserBtn.addEventListener('click', () => {
-            document.getElementById('modalTitle').textContent = 'Add New User';
-            document.getElementById('userForm').reset();
-            document.getElementById('userId').value = '';
-            modal.style.display = 'flex';
+
+        // Yuz badge
+        const faceTd = document.createElement('td');
+        const fb = document.createElement('span');
+        fb.className = user.has_face ? 'badge badge-yes' : 'badge badge-no';
+        fb.textContent = user.has_face ? '✓ Bor' : '—';
+        faceTd.appendChild(fb); row.appendChild(faceTd);
+
+        // Barmoq badge
+        const fingerTd = document.createElement('td');
+        const fnb = document.createElement('span');
+        fnb.className = user.has_fingerprint ? 'badge badge-yes' : 'badge badge-no';
+        fnb.textContent = user.has_fingerprint ? '✓ Bor' : '—';
+        fingerTd.appendChild(fnb); row.appendChild(fingerTd);
+
+        // Status badge
+        const stTd = document.createElement('td');
+        const stb = document.createElement('span');
+        stb.className = user.status ? 'badge badge-active' : 'badge badge-inactive';
+        stb.textContent = user.status ? 'Active' : 'Inactive';
+        stTd.appendChild(stb); row.appendChild(stTd);
+
+        // Actions
+        const actTd = document.createElement('td');
+        actTd.className = 'actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn-warning btn-sm';
+        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+        editBtn.title = 'Tahrirlash';
+        editBtn.addEventListener('click', () => openUserModal(user));
+
+        const bioBtn = document.createElement('button');
+        bioBtn.className = 'btn-bio btn-sm';
+        bioBtn.innerHTML = '<i class="fas fa-fingerprint"></i>';
+        bioBtn.title = 'Biometrik';
+        bioBtn.addEventListener('click', () => openBioModal(user));
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = user.status ? 'btn-secondary btn-sm' : 'btn-success btn-sm';
+        toggleBtn.innerHTML = user.status ? '<i class="fas fa-ban"></i>' : '<i class="fas fa-check"></i>';
+        toggleBtn.addEventListener('click', () => toggleUserStatus(user));
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-danger btn-sm';
+        delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        delBtn.addEventListener('click', () => deleteUser(user.id));
+
+        actTd.append(editBtn, bioBtn, toggleBtn, delBtn);
+        row.appendChild(actTd);
+        tbody.appendChild(row);
+    });
+}
+
+// ── User Modal ────────────────────────────────────────────────────
+
+function openUserModal(user = null) {
+    const isEdit = !!user;
+    document.getElementById('modalTitle').textContent = isEdit ? 'Foydalanuvchini Tahrirlash' : 'Yangi Foydalanuvchi';
+    document.getElementById('userId').value   = isEdit ? user.id : '';
+    document.getElementById('fio').value      = isEdit ? user.fio : '';
+    document.getElementById('lavozim').value  = isEdit ? user.lavozim : '';
+    document.getElementById('username').value = isEdit ? user.username : '';
+    document.getElementById('status').checked = isEdit ? user.status : true;
+    document.getElementById('passwordGroup').style.display = isEdit ? 'none' : 'block';
+    document.getElementById('password').required = !isEdit;
+    document.getElementById('password').value = '';
+
+    const select = document.getElementById('roleSelect');
+    select.innerHTML = '<option value="">— Rol tanlang —</option>';
+    const cur = isEdit ? (user.role ?? user.role_id) : null;
+    rolesCache.filter(r => r.is_active !== false).forEach(role => {
+        const opt = document.createElement('option');
+        opt.value = role.id; opt.textContent = role.name;
+        if (role.id === cur) opt.selected = true;
+        select.appendChild(opt);
+    });
+    document.getElementById('userModal').style.display = 'flex';
+}
+
+// ── Bio Modal ─────────────────────────────────────────────────────
+
+async function openBioModal(user) {
+    currentBioUserId = user.id;
+    document.getElementById('bioModalTitle').textContent = `Biometrik — ${user.fio}`;
+    switchBioTab('face');
+    resetFacePanel();
+    document.getElementById('bioModal').style.display = 'flex';
+    await loadBioStatus(user.id);
+}
+
+async function loadBioStatus(userId) {
+    try {
+        const res = await fetchWithAuth(`/api/users/${userId}/biometric-status/`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+
+        const faceOk = data.has_face;
+        document.getElementById('faceStatus').className = `bio-status ${faceOk ? 'ok' : 'no'}`;
+        document.getElementById('faceStatusText').textContent = faceOk
+            ? 'Yuz embeddigi mavjud' : 'Yuz embeddigi yo\'q — rasm yuklang yoki webcam dan oling';
+        document.getElementById('deleteFaceBtn').style.display = faceOk ? 'block' : 'none';
+
+        const fingerOk = data.has_fingerprint;
+        document.getElementById('fingerStatus').className = `bio-status ${fingerOk ? 'ok' : 'no'}`;
+        document.getElementById('fingerStatusText').textContent = fingerOk
+            ? 'Barmoq izi embeddigi mavjud' : 'Barmoq izi embeddigi yo\'q';
+        document.getElementById('deleteFingerBtn').style.display = fingerOk ? 'block' : 'none';
+    } catch(e) { console.error('loadBioStatus:', e); }
+}
+
+function switchBioTab(tab) {
+    document.querySelectorAll('.bio-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.bio-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.bio-tab[data-tab="${tab}"]`).classList.add('active');
+    document.getElementById(tab === 'face' ? 'facePanel' : 'fingerPanel').classList.add('active');
+
+    if (tab === 'finger') startFingerSession();
+    else stopFingerPoll();
+}
+
+// ── Yuz: Rasm yuklash ─────────────────────────────────────────────
+
+function resetFacePanel() {
+    stopWebcam();
+    faceImageBlob = null;
+    document.getElementById('faceZone').classList.remove('filled');
+    document.getElementById('facePreview').style.display = 'none';
+    document.getElementById('facePreview').src = '';
+    document.getElementById('faceFile').value = '';
+    document.getElementById('saveFaceBtn').disabled = true;
+}
+
+function setFaceImage(blob, previewUrl) {
+    faceImageBlob = blob;
+    const preview = document.getElementById('facePreview');
+    preview.src = previewUrl;
+    preview.style.display = 'block';
+    document.getElementById('faceZone').classList.add('filled');
+    document.getElementById('saveFaceBtn').disabled = false;
+}
+
+// ── Yuz: Webcam ───────────────────────────────────────────────────
+
+async function startWebcam() {
+    try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.getElementById('webcamVideo');
+        video.srcObject = webcamStream;
+        video.style.display = 'block';
+        document.getElementById('webcamActions').style.display = 'flex';
+        document.getElementById('faceZone').style.display = 'none';
+        document.getElementById('startWebcamBtn').style.display = 'none';
+    } catch(e) {
+        showToast('Kameraga ruxsat berilmagan: ' + e.message, 'error');
+    }
+}
+
+function stopWebcam() {
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+    }
+    document.getElementById('webcamVideo').style.display = 'none';
+    document.getElementById('webcamActions').style.display = 'none';
+    document.getElementById('faceZone').style.display = 'block';
+    document.getElementById('startWebcamBtn').style.display = 'block';
+}
+
+function captureFromWebcam() {
+    const video  = document.getElementById('webcamVideo');
+    const canvas = document.getElementById('webcamCanvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        setFaceImage(blob, url);
+        stopWebcam();
+    }, 'image/jpeg', 0.92);
+}
+
+// ── Yuz: Saqlash ──────────────────────────────────────────────────
+
+async function saveFace() {
+    if (!faceImageBlob) return;
+    const btn = document.getElementById('saveFaceBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saqlanmoqda...';
+
+    try {
+        const formData = new FormData();
+        formData.append('image', faceImageBlob, 'face.jpg');
+
+        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        const res = await fetch(`/api/users/${currentBioUserId}/face/`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
         });
-        
-        closeModal.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-        
-        cancelBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-        
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-        
-        // Handle form submission
-        document.getElementById('userForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const userId = document.getElementById('userId').value;
-            const userData = {
-                fio: document.getElementById('fio').value,
-                lavozim: document.getElementById('lavozim').value,
-                role: document.getElementById('role').value,
-                username: document.getElementById('username').value,
-                status: document.getElementById('status').checked
-            };
-            
-            try {
-                if (userId) {
-                    await updateUser(userId, userData);
-                } else {
-                    console.log('Creating user with data:', userData);
-                    await createUser(userData);
-                }
-                console.log('User saved successfully');
-                modal.style.display = 'none';
-                loadUsers();
-            } catch (error) {
-                alert('Error saving user: ' + error.message);
-            }
-        });
-    </script>
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || err.message || res.status);
+        }
+        showToast('Yuz embeddigi saqlandi!', 'success');
+        resetFacePanel();
+        await loadBioStatus(currentBioUserId);
+        await loadUsers();
+    } catch(e) {
+        showToast('Xato: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Yuzni Saqlash';
+    }
+}
+
+// ── Barmoq izi: Mobil sessiya + QR ───────────────────────────────
+
+async function startFingerSession() {
+    stopFingerPoll();
+    document.getElementById('qrStatus').className = 'qr-status waiting';
+    document.getElementById('qrStatus').innerHTML = '<i class="fas fa-hourglass-half"></i> Sessiya yaratilmoqda...';
+
+    try {
+        // Serverdan vaqtinchalik token olamiz
+        const res = await fetchWithAuth(`/api/users/${currentBioUserId}/fingerprint-session/`, { method: 'POST' });
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        currentSessionToken = data.session_token;
+
+        // QR ga mobil link yozamiz
+        const mobileUrl = `${window.location.origin}/mobile/fingerprint/?token=${currentSessionToken}`;
+        generateQR(mobileUrl);
+
+        document.getElementById('qrStatus').innerHTML = '<i class="fas fa-hourglass-half"></i> Mobil qurilma kutilmoqda...';
+
+        // Har 2 soniyada polling — mobil yubordi mi?
+        fingerPollInterval = setInterval(() => pollFingerStatus(currentSessionToken), 2000);
+
+    } catch(e) {
+        document.getElementById('qrStatus').className = 'qr-status waiting';
+        document.getElementById('qrStatus').innerHTML = '⚠️ Sessiya yaratishda xato: ' + e.message;
+    }
+}
+
+function generateQR(url) {
+    const canvas = document.getElementById('qrCanvas');
+    canvas.innerHTML = '';
+    // QRCode kutubxonasi canvas ga chizadi
+    new QRCode(canvas, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+}
+
+async function pollFingerStatus(token) {
+    try {
+        const res = await fetchWithAuth(`/api/fingerprint-session/${token}/status/`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data.status === 'completed') {
+            stopFingerPoll();
+            document.getElementById('qrStatus').className = 'qr-status received';
+            document.getElementById('qrStatus').innerHTML = '✓ Barmoq izi muvaffaqiyatli olindi!';
+            showToast('Barmoq izi embeddigi saqlandi!', 'success');
+            await loadBioStatus(currentBioUserId);
+            await loadUsers();
+        } else if (data.status === 'expired') {
+            stopFingerPoll();
+            document.getElementById('qrStatus').innerHTML = '⌛ Sessiya muddati tugadi. Yangilang.';
+        }
+    } catch(e) { /* tinch kutamiz */ }
+}
+
+function stopFingerPoll() {
+    if (fingerPollInterval) { clearInterval(fingerPollInterval); fingerPollInterval = null; }
+}
+
+// ── Bio o'chirish ─────────────────────────────────────────────────
+
+async function deleteBiometric(type) {
+    if (!confirm(`${type === 'face' ? 'Yuz' : 'Barmoq izi'} embeddingini o'chirishni tasdiqlaysizmi?`)) return;
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    const url = type === 'face'
+        ? `/api/users/${currentBioUserId}/face/`
+        : `/api/users/${currentBioUserId}/fingerprint/`;
+    const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }});
+    if (!res.ok) { showToast("O'chirishda xato", 'error'); return; }
+    showToast("Embedding o'chirildi!", 'success');
+    await loadBioStatus(currentBioUserId);
+    await loadUsers();
+}
+
+// ── User CRUD ─────────────────────────────────────────────────────
+
+async function createUser(userData) {
+    const res = await fetchWithAuth('/api/users', { method: 'POST', body: JSON.stringify(userData) });
+    if (!res.ok) throw new Error(res.status);
+    showToast('Foydalanuvchi yaratildi!', 'success');
+    await loadUsers();
+}
+
+async function updateUser(userId, userData) {
+    const res = await fetchWithAuth(`/api/users/${userId}`, { method: 'PATCH', body: JSON.stringify(userData) });
+    if (!res.ok) throw new Error(res.status);
+    showToast('Foydalanuvchi yangilandi!', 'success');
+    await loadUsers();
+}
+
+async function toggleUserStatus(user) {
+    if (!confirm(`Foydalanuvchini ${user.status ? "bloklashni" : 'aktivlashtirishni'} tasdiqlaysizmi?`)) return;
+    const res = await fetchWithAuth(`/api/users/${user.id}`, { method: 'PATCH', body: JSON.stringify({ status: !user.status }) });
+    if (!res.ok) { showToast('Xato', 'error'); return; }
+    showToast('Holat yangilandi!', 'success');
+    await loadUsers();
+}
+
+async function deleteUser(userId) {
+    if (!confirm("Foydalanuvchini o'chirishni tasdiqlaysizmi?")) return;
+    const res = await fetchWithAuth(`/api/users/${userId}`, { method: 'DELETE' });
+    if (!res.ok) { showToast("O'chirishda xato", 'error'); return; }
+    showToast("O'chirildi!", 'success');
+    await loadUsers();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+
+function showToast(message, type = 'success') {
+    const ex = document.getElementById('toast');
+    if (ex) ex.remove();
+    const t = document.createElement('div');
+    t.id = 'toast'; t.className = `toast toast-${type}`; t.textContent = message;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// ── Events ────────────────────────────────────────────────────────
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+    adminLogout();
+    window.location.href = '{% url "login" %}';
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadRoles();
+    await loadUsers();
+});
+
+// User modal
+const userModal = document.getElementById('userModal');
+document.getElementById('addUserBtn').addEventListener('click', () => openUserModal());
+document.getElementById('closeModal').addEventListener('click', () => userModal.style.display = 'none');
+document.getElementById('cancelBtn').addEventListener('click', () => userModal.style.display = 'none');
+document.getElementById('userForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const userId = document.getElementById('userId').value;
+    const roleId = document.getElementById('roleSelect').value;
+    const password = document.getElementById('password').value;
+    const userData = {
+        fio:      document.getElementById('fio').value.trim(),
+        lavozim:  document.getElementById('lavozim').value.trim(),
+        username: document.getElementById('username').value.trim(),
+        role_id:  roleId ? parseInt(roleId) : null,
+        status:   document.getElementById('status').checked,
+    };
+    if (!userId && password) userData.password = password;
+    try {
+        userId ? await updateUser(parseInt(userId), userData) : await createUser(userData);
+        userModal.style.display = 'none';
+    } catch(e) { showToast('Xato: ' + e.message, 'error'); }
+});
+
+// Bio modal
+const bioModal = document.getElementById('bioModal');
+document.getElementById('closeBioModal').addEventListener('click', () => {
+    stopWebcam(); stopFingerPoll();
+    bioModal.style.display = 'none';
+});
+document.querySelectorAll('.bio-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchBioTab(tab.dataset.tab));
+});
+
+// Yuz
+document.getElementById('faceZone').addEventListener('click', () => document.getElementById('faceFile').click());
+document.getElementById('faceFile').addEventListener('change', () => {
+    const file = document.getElementById('faceFile').files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => setFaceImage(file, e.target.result);
+    reader.readAsDataURL(file);
+});
+document.getElementById('startWebcamBtn').addEventListener('click', startWebcam);
+document.getElementById('captureBtn').addEventListener('click', captureFromWebcam);
+document.getElementById('stopWebcamBtn').addEventListener('click', stopWebcam);
+document.getElementById('saveFaceBtn').addEventListener('click', saveFace);
+document.getElementById('deleteFaceBtn').addEventListener('click', () => deleteBiometric('face'));
+
+// Barmoq
+document.getElementById('refreshQrBtn').addEventListener('click', () => startFingerSession());
+document.getElementById('deleteFingerBtn').addEventListener('click', () => deleteBiometric('finger'));
+
+window.addEventListener('click', e => {
+    if (e.target === userModal) userModal.style.display = 'none';
+    if (e.target === bioModal) { stopWebcam(); stopFingerPoll(); bioModal.style.display = 'none'; }
+});
+</script>
 {% endblock %}

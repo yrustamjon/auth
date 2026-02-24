@@ -10,15 +10,19 @@ class RoleListView(APIView):
 
     def get(self, request):
         org = request.session.get("current_org_id")
-        roles= Role.objects.filter(organization_id=org)
+        roles= Roles.objects.filter(organization_id=org)
 
-        return Response({
-            "roles": roles
-            })
+        return Response([
+            {
+                "id": role.id,
+                "name": role.name,
+                "created_at": role.created_at,
+            } for role in roles
+        ])
     
     def post(self, request):
         org = request.session.get("current_org_id")
-        role = Role.objects.create(
+        role = Roles.objects.create(
             organization_id=org,
             name=request.data.get("name"),
             created_by_id=request.user.id

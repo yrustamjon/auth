@@ -74,12 +74,13 @@
                 
                 if (users.ok) {
                     const usersData = await users.json();
-                    document.getElementById('totalUsers').textContent = usersData.length;
+                    console.log("Users data:", usersData);
+                    document.getElementById('totalUsers').textContent = usersData.length ?? 0;
                 }
                 
                 if (devices.ok) {
                     const devicesData = await devices.json();
-                    document.getElementById('totalDevices').textContent = devicesData.length;
+                    document.getElementById('totalDevices').textContent = devicesData.length ?? 0;
                 }
                 
                 if (roles.ok) {
