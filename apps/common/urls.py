@@ -17,11 +17,13 @@ urlpatterns = [
 
     path("api/admin/login", views.AdminLogin.as_view(), name="admin_login"),
     path("api/admin/logout", views.AdminLogout.as_view(), name="logout"),
-    path("api/users", views.Admin_Users.as_view(), name="admin_users"),
+    path("api/users/", views.Admin_Users.as_view(), name="admin_users"),
+    path("api/users/<int:id>/", views.Admin_Users.as_view()),
 
 
     path("api/system/admins/", views.Admin.as_view(), name="system_admins_api"),
     path("api/system/admins/<int:id>/", views.Admin.as_view()),
+    
     
 
 

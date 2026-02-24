@@ -33,6 +33,32 @@
         border-radius: 8px; font-size: 0.9rem; background: #fff; box-sizing: border-box;
     }
 
+    /* ── Search bar ───────────────────────────────────────────────── */
+    .search-bar-row {
+        display: flex; gap: 0.6rem; align-items: center;
+        flex-wrap: wrap; margin-bottom: 1.25rem;
+    }
+    .search-bar-row .search-wrap {
+        position: relative; flex: 1; min-width: 200px;
+    }
+    .search-bar-row .search-wrap i {
+        position: absolute; left: 0.7rem; top: 50%;
+        transform: translateY(-50%); color: #9ca3af; font-size: 0.85rem; pointer-events: none;
+    }
+    .search-bar-row input[type="text"] {
+        width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+        border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;
+        box-sizing: border-box; outline: none; transition: border-color 0.2s;
+    }
+    .search-bar-row input[type="text"]:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+    .search-bar-row select {
+        padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;
+        font-size: 0.875rem; background: #fff; cursor: pointer; outline: none;
+        transition: border-color 0.2s; min-width: 130px;
+    }
+    .search-bar-row select:focus { border-color: #6366f1; }
+    #resultCount { font-size: 0.8rem; color: #6b7280; white-space: nowrap; }
+
     /* Bio modal */
     .bio-tabs    { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem; }
     .bio-tab     { padding: 0.65rem 1.5rem; cursor: pointer; font-weight: 500; border-bottom: 3px solid transparent; margin-bottom: -2px; color: #6b7280; transition: 0.2s; }
@@ -44,7 +70,7 @@
     .bio-status.ok { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
     .bio-status.no { background: #fef9c3; border: 1px solid #fde68a; color: #92400e; }
 
-    /* Upload zone (yuz uchun) */
+    /* Upload zone */
     .upload-zone {
         border: 2px dashed #d1d5db; border-radius: 10px; padding: 1.5rem;
         text-align: center; cursor: pointer; background: #fafafa; transition: 0.2s; margin-bottom: 0.75rem;
@@ -75,14 +101,41 @@
 
     .del-bio-btn { width: 100%; padding: 0.45rem; background: #fee2e2; color: #991b1b; border: none; border-radius: 8px; cursor: pointer; margin-top: 0.75rem; font-size: 0.85rem; }
     .del-bio-btn:hover { background: #fecaca; }
+
+    /* Highlight */
+    mark { background: #fef08a; border-radius: 2px; padding: 0; }
 </style>
 
 <!-- Users table -->
 <div class="content-box">
-    <div class="header" style="margin-bottom:2rem;">
+    <div class="header" style="margin-bottom: 1rem;">
         <h2>Foydalanuvchilar</h2>
         <button class="btn-primary" id="addUserBtn"><i class="fas fa-plus"></i> Yangi</button>
     </div>
+
+    <!-- ── SEARCH BAR ─────────────────────────────────────────────── -->
+    <div class="search-bar-row">
+        <div class="search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput"
+                   placeholder="FIO, lavozim yoki username bo'yicha qidiring..."
+                   oninput="filterUsers()">
+        </div>
+        <select id="roleFilter" onchange="filterUsers()">
+            <option value="">Barcha rollar</option>
+        </select>
+        <select id="statusFilter" onchange="filterUsers()">
+            <option value="">Barcha holat</option>
+            <option value="active">✅ Faol</option>
+            <option value="inactive">🚫 Nofaol</option>
+        </select>
+        <button class="btn-sm btn-secondary" onclick="clearSearch()" title="Filtrlarni tozalash"
+                style="white-space:nowrap;">
+            <i class="fas fa-times"></i> Tozalash
+        </button>
+        <span id="resultCount"></span>
+    </div>
+
     <div class="table-container">
         <table id="usersTable">
             <thead>
@@ -164,7 +217,6 @@
                 <span id="faceStatusText">Yuklanmoqda...</span>
             </div>
 
-            <!-- Webcam -->
             <video id="webcamVideo" autoplay playsinline></video>
             <canvas id="webcamCanvas"></canvas>
             <div class="webcam-actions" id="webcamActions" style="display:none;">
@@ -176,7 +228,6 @@
                 </button>
             </div>
 
-            <!-- Rasm yuklash -->
             <div class="upload-zone" id="faceZone">
                 <i class="fas fa-image"></i>
                 <div>Rasm tanlash uchun bosing</div>
@@ -230,7 +281,6 @@
     </div>
 </div>
 
-<!-- QR kutubxonasi -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
@@ -250,22 +300,84 @@ async function loadRoles() {
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
         rolesCache = Array.isArray(data) ? data : (data.roles ?? []);
+
+        // Populate form select
+        const select = document.getElementById('roleSelect');
+        rolesCache.filter(r => r.is_active !== false).forEach(role => {
+            const opt = document.createElement('option');
+            opt.value = role.id; opt.textContent = role.name;
+            select.appendChild(opt);
+        });
+
+        // Populate filter dropdown
+        const rf = document.getElementById('roleFilter');
+        rolesCache.filter(r => r.is_active !== false).forEach(role => {
+            const opt = document.createElement('option');
+            opt.value = role.name; opt.textContent = role.name;
+            rf.appendChild(opt);
+        });
     } catch(e) { console.error('loadRoles:', e); }
 }
 
 async function loadUsers() {
     try {
-        const res = await fetchWithAuth('/api/users');
+        const res = await fetchWithAuth('/api/users/');
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
         usersCache = Array.isArray(data) ? data : (data.users ?? []);
-        displayUsers(usersCache);
+        filterUsers(); // render through filter to update count
     } catch(e) { showToast('Foydalanuvchilarni yuklashda xato', 'error'); }
+}
+
+// ── Search & Filter ───────────────────────────────────────────────
+
+function filterUsers() {
+    const q    = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+    const role = (document.getElementById('roleFilter').value || '').toLowerCase();
+    const stat = document.getElementById('statusFilter').value;
+
+    const filtered = usersCache.filter(u => {
+        const matchQ = !q ||
+            (u.fio       || '').toLowerCase().includes(q) ||
+            (u.lavozim   || '').toLowerCase().includes(q) ||
+            (u.username  || '').toLowerCase().includes(q);
+        const matchR = !role || (u.role?.name || '').toLowerCase() === role;
+        const matchS = !stat ||
+            (stat === 'active'   &&  u.status) ||
+            (stat === 'inactive' && !u.status);
+        return matchQ && matchR && matchS;
+    });
+
+    displayUsers(filtered, q);
+
+    const rc = document.getElementById('resultCount');
+    if (filtered.length === usersCache.length) {
+        rc.textContent = `${usersCache.length} ta`;
+    } else {
+        rc.textContent = `${filtered.length} / ${usersCache.length} ta natija`;
+        rc.style.color = filtered.length === 0 ? '#ef4444' : '#6b7280';
+    }
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('roleFilter').value  = '';
+    document.getElementById('statusFilter').value = '';
+    filterUsers();
+}
+
+function highlight(text, q) {
+    if (!q || !text) return String(text || '');
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(text).replace(
+        new RegExp(escaped, 'gi'),
+        m => `<mark>${m}</mark>`
+    );
 }
 
 // ── Display ───────────────────────────────────────────────────────
 
-function displayUsers(users) {
+function displayUsers(users, q = '') {
     const tbody = document.querySelector('#usersTable tbody');
     tbody.innerHTML = '';
     if (!users.length) {
@@ -275,13 +387,23 @@ function displayUsers(users) {
     users.forEach(user => {
         const row = document.createElement('tr');
         if (!user.status) row.classList.add('inactive-row');
-        
 
-        [user.id, user.fio, user.lavozim, user.username, user.role.name  ??'—'].forEach(val => {
+        // ID (no highlight)
+        const idTd = document.createElement('td');
+        idTd.textContent = user.id;
+        row.appendChild(idTd);
+
+        // FIO, Lavozim, Username — with search highlight
+        [user.fio, user.lavozim, user.username].forEach(val => {
             const td = document.createElement('td');
-            td.textContent = val;
+            td.innerHTML = q ? highlight(val, q) : (val || '—');
             row.appendChild(td);
         });
+
+        // Rol (plain)
+        const roleTd = document.createElement('td');
+        roleTd.textContent = user.role?.name ?? '—';
+        row.appendChild(roleTd);
 
         // Yuz badge
         const faceTd = document.createElement('td');
@@ -323,11 +445,13 @@ function displayUsers(users) {
         const toggleBtn = document.createElement('button');
         toggleBtn.className = user.status ? 'btn-secondary btn-sm' : 'btn-success btn-sm';
         toggleBtn.innerHTML = user.status ? '<i class="fas fa-ban"></i>' : '<i class="fas fa-check"></i>';
+        toggleBtn.title = user.status ? 'Bloklash' : 'Aktivlashtirish';
         toggleBtn.addEventListener('click', () => toggleUserStatus(user));
 
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-danger btn-sm';
         delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        delBtn.title = "O'chirish";
         delBtn.addEventListener('click', () => deleteUser(user.id));
 
         actTd.append(editBtn, bioBtn, toggleBtn, delBtn);
@@ -346,13 +470,10 @@ function openUserModal(user = null) {
     document.getElementById('lavozim').value  = isEdit ? user.lavozim : '';
     document.getElementById('username').value = isEdit ? user.username : '';
     document.getElementById('status').checked = isEdit ? user.status : true;
-    document.getElementById('passwordGroup').style.display = isEdit ? 'none' : 'block';
-    document.getElementById('password').required = !isEdit;
-    document.getElementById('password').value = '';
 
     const select = document.getElementById('roleSelect');
     select.innerHTML = '<option value="">— Rol tanlang —</option>';
-    const cur = isEdit ? (user.role ?? user.role_id) : null;
+    const cur = isEdit ? (user.role?.id ?? user.role_id) : null;
     rolesCache.filter(r => r.is_active !== false).forEach(role => {
         const opt = document.createElement('option');
         opt.value = role.id; opt.textContent = role.name;
@@ -398,12 +519,11 @@ function switchBioTab(tab) {
     document.querySelectorAll('.bio-panel').forEach(p => p.classList.remove('active'));
     document.querySelector(`.bio-tab[data-tab="${tab}"]`).classList.add('active');
     document.getElementById(tab === 'face' ? 'facePanel' : 'fingerPanel').classList.add('active');
-
     if (tab === 'finger') startFingerSession();
     else stopFingerPoll();
 }
 
-// ── Yuz: Rasm yuklash ─────────────────────────────────────────────
+// ── Yuz ──────────────────────────────────────────────────────────
 
 function resetFacePanel() {
     stopWebcam();
@@ -424,8 +544,6 @@ function setFaceImage(blob, previewUrl) {
     document.getElementById('saveFaceBtn').disabled = false;
 }
 
-// ── Yuz: Webcam ───────────────────────────────────────────────────
-
 async function startWebcam() {
     try {
         webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -441,10 +559,7 @@ async function startWebcam() {
 }
 
 function stopWebcam() {
-    if (webcamStream) {
-        webcamStream.getTracks().forEach(t => t.stop());
-        webcamStream = null;
-    }
+    if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); webcamStream = null; }
     document.getElementById('webcamVideo').style.display = 'none';
     document.getElementById('webcamActions').style.display = 'none';
     document.getElementById('faceZone').style.display = 'block';
@@ -454,39 +569,24 @@ function stopWebcam() {
 function captureFromWebcam() {
     const video  = document.getElementById('webcamVideo');
     const canvas = document.getElementById('webcamCanvas');
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-
-    canvas.toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-        setFaceImage(blob, url);
-        stopWebcam();
-    }, 'image/jpeg', 0.92);
+    canvas.toBlob(blob => { setFaceImage(blob, URL.createObjectURL(blob)); stopWebcam(); }, 'image/jpeg', 0.92);
 }
-
-// ── Yuz: Saqlash ──────────────────────────────────────────────────
 
 async function saveFace() {
     if (!faceImageBlob) return;
     const btn = document.getElementById('saveFaceBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saqlanmoqda...';
-
     try {
         const formData = new FormData();
         formData.append('image', faceImageBlob, 'face.jpg');
-
         const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
         const res = await fetch(`/api/users/${currentBioUserId}/face/`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
+            method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData
         });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || err.message || res.status);
-        }
+        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || err.message || res.status); }
         showToast('Yuz embeddigi saqlandi!', 'success');
         resetFacePanel();
         await loadBioStatus(currentBioUserId);
@@ -499,31 +599,21 @@ async function saveFace() {
     }
 }
 
-// ── Barmoq izi: Mobil sessiya + QR ───────────────────────────────
+// ── Barmoq izi ───────────────────────────────────────────────────
 
 async function startFingerSession() {
     stopFingerPoll();
     document.getElementById('qrStatus').className = 'qr-status waiting';
     document.getElementById('qrStatus').innerHTML = '<i class="fas fa-hourglass-half"></i> Sessiya yaratilmoqda...';
-
     try {
-        // Serverdan vaqtinchalik token olamiz
         const res = await fetchWithAuth(`/api/users/${currentBioUserId}/fingerprint-session/`, { method: 'POST' });
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
         currentSessionToken = data.session_token;
-
-        // QR ga mobil link yozamiz
-        const mobileUrl = `${window.location.origin}/mobile/fingerprint/?token=${currentSessionToken}`;
-        generateQR(mobileUrl);
-
+        generateQR(`${window.location.origin}/mobile/fingerprint/?token=${currentSessionToken}`);
         document.getElementById('qrStatus').innerHTML = '<i class="fas fa-hourglass-half"></i> Mobil qurilma kutilmoqda...';
-
-        // Har 2 soniyada polling — mobil yubordi mi?
         fingerPollInterval = setInterval(() => pollFingerStatus(currentSessionToken), 2000);
-
     } catch(e) {
-        document.getElementById('qrStatus').className = 'qr-status waiting';
         document.getElementById('qrStatus').innerHTML = '⚠️ Sessiya yaratishda xato: ' + e.message;
     }
 }
@@ -531,7 +621,6 @@ async function startFingerSession() {
 function generateQR(url) {
     const canvas = document.getElementById('qrCanvas');
     canvas.innerHTML = '';
-    // QRCode kutubxonasi canvas ga chizadi
     new QRCode(canvas, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
 }
 
@@ -540,7 +629,6 @@ async function pollFingerStatus(token) {
         const res = await fetchWithAuth(`/api/fingerprint-session/${token}/status/`);
         if (!res.ok) return;
         const data = await res.json();
-
         if (data.status === 'completed') {
             stopFingerPoll();
             document.getElementById('qrStatus').className = 'qr-status received';
@@ -552,14 +640,14 @@ async function pollFingerStatus(token) {
             stopFingerPoll();
             document.getElementById('qrStatus').innerHTML = '⌛ Sessiya muddati tugadi. Yangilang.';
         }
-    } catch(e) { /* tinch kutamiz */ }
+    } catch(e) { /* silent */ }
 }
 
 function stopFingerPoll() {
     if (fingerPollInterval) { clearInterval(fingerPollInterval); fingerPollInterval = null; }
 }
 
-// ── Bio o'chirish ─────────────────────────────────────────────────
+// ── Bio delete ────────────────────────────────────────────────────
 
 async function deleteBiometric(type) {
     if (!confirm(`${type === 'face' ? 'Yuz' : 'Barmoq izi'} embeddingini o'chirishni tasdiqlaysizmi?`)) return;
@@ -577,14 +665,14 @@ async function deleteBiometric(type) {
 // ── User CRUD ─────────────────────────────────────────────────────
 
 async function createUser(userData) {
-    const res = await fetchWithAuth('/api/users', { method: 'POST', body: JSON.stringify(userData) });
+    const res = await fetchWithAuth('/api/users/', { method: 'POST', body: JSON.stringify(userData) });
     if (!res.ok) throw new Error(res.status);
     showToast('Foydalanuvchi yaratildi!', 'success');
     await loadUsers();
 }
 
 async function updateUser(userId, userData) {
-    const res = await fetchWithAuth(`/api/users/${userId}`, { method: 'PATCH', body: JSON.stringify(userData) });
+    const res = await fetchWithAuth(`/api/users/${userId}/`, { method: 'PATCH', body: JSON.stringify(userData) });
     if (!res.ok) throw new Error(res.status);
     showToast('Foydalanuvchi yangilandi!', 'success');
     await loadUsers();
@@ -592,7 +680,7 @@ async function updateUser(userId, userData) {
 
 async function toggleUserStatus(user) {
     if (!confirm(`Foydalanuvchini ${user.status ? "bloklashni" : 'aktivlashtirishni'} tasdiqlaysizmi?`)) return;
-    const res = await fetchWithAuth(`/api/users/${user.id}`, { method: 'PATCH', body: JSON.stringify({ status: !user.status }) });
+    const res = await fetchWithAuth(`/api/users/${user.id}/`, { method: 'PATCH', body: JSON.stringify({ status: !user.status }) });
     if (!res.ok) { showToast('Xato', 'error'); return; }
     showToast('Holat yangilandi!', 'success');
     await loadUsers();
@@ -600,7 +688,7 @@ async function toggleUserStatus(user) {
 
 async function deleteUser(userId) {
     if (!confirm("Foydalanuvchini o'chirishni tasdiqlaysizmi?")) return;
-    const res = await fetchWithAuth(`/api/users/${userId}`, { method: 'DELETE' });
+    const res = await fetchWithAuth(`/api/users/${userId}/`, { method: 'DELETE' });
     if (!res.ok) { showToast("O'chirishda xato", 'error'); return; }
     showToast("O'chirildi!", 'success');
     await loadUsers();

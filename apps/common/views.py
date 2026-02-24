@@ -280,11 +280,28 @@ class Admin_Users(APIView):
             },
             "creted_at": new_user.created_at,
         })
-        
+    
+    def patch(self, request, id):
+        status=request.data.get("status")
+        user=Users.objects.filter(id=id).first()
+        # {'fio': 'Rustamjon Yolchiyev', 'lavozim': 'IT manager', 'username': 'coder05', 'role_id': 1, 'status': False}
+        if (
+            'fio' not in request.data
+            and 'lavozim' not in request.data
+            and 'username' not in request.data
+            and 'role_id' not in request.data
+            and 'status' not in request.data
+        ):
+            user.status=not user.status
+            user.save()
+            return Response({"ok": True})
+
+        print(request.data)
+        return Response({"ok": True})
 
 class Super_AdminLogin(AdminLogin):
     allow_superadmin = True
-    
+
 
 class Super_AdminLogout(APIView):
     permission_classes = [IsAuthenticated]
