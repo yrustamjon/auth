@@ -155,9 +155,16 @@
 
     /* ── Table ─────────────────────────────────────────────────── */
     .table-container {
-        overflow-x: auto;
+        overflow: auto;
         border-radius: 12px;
         border: 1px solid #f0f0f5;
+        max-height: calc(88vh - 240px);
+    }
+
+    #logsTable thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
 
     #logsTable {
