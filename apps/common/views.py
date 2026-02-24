@@ -251,6 +251,7 @@ class Admin_Users(APIView):
                 },
                 "creted_at": user.creted_at,
                 "is_locked": user.is_locked(),
+                "status": user.status
             }
             for user in users
         ]
@@ -278,26 +279,34 @@ class Admin_Users(APIView):
                 "id": role.id,
                 "name": role.name,
             },
-            "creted_at": new_user.created_at,
+            "creted_at": new_user.creted_at,
         })
     
     def patch(self, request, id):
         status=request.data.get("status")
         user=Users.objects.filter(id=id).first()
+        print("Updating user:", user, "with data:", request.data)
+        print(user.status, status)
+        
         # {'fio': 'Rustamjon Yolchiyev', 'lavozim': 'IT manager', 'username': 'coder05', 'role_id': 1, 'status': False}
-        if (
-            'fio' not in request.data
-            and 'lavozim' not in request.data
-            and 'username' not in request.data
-            and 'role_id' not in request.data
-            and 'status' not in request.data
-        ):
-            user.status=not user.status
-            user.save()
-            return Response({"ok": True})
-
-        print(request.data)
+        if all(['fio'  in request.data,'lavozim'  in request.data,'username'  in request.data,'role_id'  in request.data]):
+            organization=Organization.objects.filter(id=request.session.get("current_org_id")).first()
+            role= Roles.objects.filter(id=request.data.get("role_id"), organization=organization).first()
+            user.role=role
+            user.fio=request.data.get("fio")
+            user.username=request.data.get("username")
+            user.lavozim=request.data.get("lavozim")
+        user.status=status
+        user.save()
         return Response({"ok": True})
+    
+    def delete(self, request, id):
+        user=Users.objects.filter(id=id).first()
+        if user:
+            user.delete()
+            return Response({"ok": True})
+        return Response({"detail": "User not found"}, status=404)
+
 
 class Super_AdminLogin(AdminLogin):
     allow_superadmin = True

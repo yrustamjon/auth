@@ -1,121 +1,358 @@
 {% extends "index.html" %}
-
-
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
+<style>
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .dashboard-container {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
 
-    <div class="dashboard-container">
-        
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Total Users</h3>
-                    <div class="number" id="totalUsers">0</div>
-                </div>
-                
-                <div class="stat-card">
-                    <h3>Active Devices</h3>
-                    <div class="number" id="totalDevices">0</div>
-                </div>
-                
-                <div class="stat-card">
-                    <h3>Today's Logs</h3>
-                    <div class="number" id="todayLogs">0</div>
-                </div>
-                
-                <div class="stat-card">
-                    <h3>Active Roles</h3>
-                    <div class="number" id="totalRoles">0</div>
-                </div>
-            </div>
+    /* ── Stats Grid ─────────────────────────────────────────────── */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
 
-            <div class="content-box">
-                <h2><i class="fas fa-info-circle"></i> System Overview</h2>
-                <p>Welcome to the Cybersecurity Access Control System Admin Panel.</p>
-                
-                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Recent Activity</h3>
-                <div class="table-container">
-                    <table id="recentLogs">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>User</th>
-                                <th>Device</th>
-                                <th>Action</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Recent logs will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    .stat-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .stat-card:nth-child(1)::before { background: #6c63ff; }
+    .stat-card:nth-child(2)::before { background: #16a34a; }
+    .stat-card:nth-child(3)::before { background: #d97706; }
+    .stat-card:nth-child(4)::before { background: #1d4ed8; }
+
+    .stat-icon {
+        width: 40px; height: 40px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-card:nth-child(1) .stat-icon { background: #ede9fe; color: #6c63ff; }
+    .stat-card:nth-child(2) .stat-icon { background: #dcfce7; color: #16a34a; }
+    .stat-card:nth-child(3) .stat-icon { background: #fef3c7; color: #d97706; }
+    .stat-card:nth-child(4) .stat-icon { background: #dbeafe; color: #1d4ed8; }
+
+    .stat-card h3 {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0;
+    }
+
+    .stat-card .number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1a1a2e;
+        line-height: 1;
+    }
+
+    .stat-card .stat-sub {
+        font-size: 0.76rem;
+        color: #9ca3af;
+    }
+
+    /* ── Content Box ─────────────────────────────────────────────── */
+    .content-box {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        padding: 2rem;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-header h2 i { color: #6c63ff; }
+
+    .btn-view-all {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #ede9fe;
+        color: #6c63ff;
+        border: none;
+        border-radius: 9px;
+        padding: 0.45rem 1rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+    .btn-view-all:hover { background: #ddd6fe; }
+
+    /* ── Table ───────────────────────────────────────────────────── */
+    .table-container {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #f0f0f5;
+    }
+
+    #recentLogs {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+    #recentLogs thead th {
+        background: #f7f7fb;
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.9rem 1rem;
+        border-bottom: 2px solid #ebebf5;
+        white-space: nowrap;
+    }
+
+    #recentLogs tbody tr {
+        border-bottom: 1px solid #f3f3f8;
+        transition: background 0.15s;
+    }
+
+    #recentLogs tbody tr:last-child { border-bottom: none; }
+    #recentLogs tbody tr:hover { background: #fafaff; }
+    #recentLogs tbody td {
+        padding: 0.85rem 1rem;
+        color: #374151;
+        vertical-align: middle;
+    }
+
+    .empty-msg { text-align: center; padding: 2.5rem 1rem; color: #9ca3af; font-size: 0.9rem; }
+
+    /* ── Badges ──────────────────────────────────────────────────── */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0.28rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-success { background: #dcfce7; color: #16a34a; }
+    .badge-failed  { background: #fee2e2; color: #dc2626; }
+
+    /* ── Loading skeleton ────────────────────────────────────────── */
+    .skeleton {
+        background: linear-gradient(90deg, #f0f0f5 25%, #e8e8f0 50%, #f0f0f5 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.2s infinite;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    @keyframes shimmer {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+</style>
+
+<div class="dashboard-container">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <h3>Foydalanuvchilar</h3>
+            <div class="number" id="totalUsers"><span class="skeleton" style="width:40px;height:32px;"></span></div>
+            <div class="stat-sub" id="subUsers">yuklanmoqda...</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-desktop"></i></div>
+            <h3>Faol qurilmalar</h3>
+            <div class="number" id="totalDevices"><span class="skeleton" style="width:40px;height:32px;"></span></div>
+            <div class="stat-sub" id="subDevices">yuklanmoqda...</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-history"></i></div>
+            <h3>Bugungi loglar</h3>
+            <div class="number" id="todayLogs"><span class="skeleton" style="width:40px;height:32px;"></span></div>
+            <div class="stat-sub" id="subLogs">yuklanmoqda...</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
+            <h3>Faol rollar</h3>
+            <div class="number" id="totalRoles"><span class="skeleton" style="width:40px;height:32px;"></span></div>
+            <div class="stat-sub" id="subRoles">yuklanmoqda...</div>
+        </div>
     </div>
-    <script>
-        // Initialize session protection
 
-        
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            adminLogout();
-            window.location.href = '{% url "login" %}';
+    <!-- Recent logs -->
+    <div class="content-box">
+        <div class="section-header">
+            <h2><i class="fas fa-history"></i> So'nggi faollik</h2>
+            <a href="{% url 'logs' %}" class="btn-view-all">
+                <i class="fas fa-arrow-right"></i> Barchasini ko'rish
+            </a>
+        </div>
 
-        }); 
-        
-        // Load dashboard data
-        async function loadDashboardData() {
-            try {
-                const [users, devices, roles, logs] = await Promise.all([
-                    fetchWithAuth('/api/users'),
-                    fetchWithAuth('/api/devices'),
-                    fetchWithAuth('/api/roles'),
-                    fetchWithAuth('/api/access-logs?limit=5')
-                ]);
-                
-                if (users.ok) {
-                    const usersData = await users.json();
-                    console.log("Users data:", usersData);
-                    document.getElementById('totalUsers').textContent = usersData.length ?? 0;
-                }
-                
-                if (devices.ok) {
-                    const devicesData = await devices.json();
-                    document.getElementById('totalDevices').textContent = devicesData.length ?? 0;
-                }
-                
-                if (roles.ok) {
-                    const rolesData = await roles.json();
-                    document.getElementById('totalRoles').textContent = rolesData.length;
-                }
-                
-                if (logs.ok) {
-                    const logsData = await logs.json();
-                    document.getElementById('todayLogs').textContent = logsData.length;
-                    
-                    // Display recent logs
-                    const recentLogsTable = document.querySelector('#recentLogs tbody');
-                    recentLogsTable.innerHTML = '';
-                    
-                    logsData.slice(0, 5).forEach(log => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${new Date(log.timestamp).toLocaleString()}</td>
-                            <td>${log.user_fio || 'N/A'}</td>
-                            <td>${log.device_pc_id || 'N/A'}</td>
-                            <td>${log.action || 'Access'}</td>
-                            <td><span class="${log.success ? 'status-active' : 'status-inactive'}">
-                                ${log.success ? 'Success' : 'Failed'}
-                            </span></td>
-                        `;
-                        recentLogsTable.appendChild(row);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
+        <div class="table-container">
+            <table id="recentLogs">
+                <thead>
+                    <tr>
+                        <th>Vaqt</th>
+                        <th>Foydalanuvchi</th>
+                        <th>Qurilma</th>
+                        <th>Natija</th>
+                        <th>Sabab</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="empty-msg">
+                            <i class="fas fa-circle-notch fa-spin" style="font-size:1.4rem;color:#6c63ff;display:block;margin-bottom:0.5rem;"></i>
+                            Yuklanmoqda...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        adminLogout();
+        window.location.href = '{% url "login" %}';
+    });
+
+    async function loadDashboardData() {
+        try {
+            var today = new Date().toISOString().split('T')[0];
+
+            const [usersRes, devicesRes, rolesRes, logsRes] = await Promise.all([
+                fetchWithAuth('/api/users/'),
+                fetchWithAuth('/api/devices'),
+                fetchWithAuth('/api/roles'),
+                fetchWithAuth('/api/access-logs?date=' + today)
+            ]);
+
+            // ── Users ─────────────────────────────────────────────
+            if (usersRes.ok) {
+                var ud = await usersRes.json();
+                var users = Array.isArray(ud) ? ud : (ud.users || []);
+                var activeUsers = users.filter(function(u) { return u.status; }).length;
+                document.getElementById('totalUsers').textContent = users.length;
+                document.getElementById('subUsers').textContent = activeUsers + ' ta faol';
             }
+
+            // ── Devices ───────────────────────────────────────────
+            if (devicesRes.ok) {
+                var dd = await devicesRes.json();
+                var devices = Array.isArray(dd) ? dd : (dd.devices || []);
+                var activeDevices = devices.filter(function(d) { return d.is_active && !d.revoked; }).length;
+                document.getElementById('totalDevices').textContent = activeDevices;
+                document.getElementById('subDevices').textContent = devices.length + ' ta jami';
+            }
+
+            // ── Roles ─────────────────────────────────────────────
+            if (rolesRes.ok) {
+                var rd = await rolesRes.json();
+                var roles = Array.isArray(rd) ? rd : (rd.roles || []);
+                var activeRoles = roles.filter(function(r) { return r.is_active !== false; }).length;
+                document.getElementById('totalRoles').textContent = activeRoles;
+                document.getElementById('subRoles').textContent = roles.length + ' ta jami';
+            }
+
+            // ── Logs ──────────────────────────────────────────────
+            if (logsRes.ok) {
+                var ld = await logsRes.json();
+                var logs = Array.isArray(ld) ? ld : (ld.logs || []);
+
+                var successCount = logs.filter(function(l) { return l.success; }).length;
+                document.getElementById('todayLogs').textContent = logs.length;
+                document.getElementById('subLogs').textContent = successCount + ' ta muvaffaqiyatli';
+
+                var tbody = document.querySelector('#recentLogs tbody');
+                tbody.innerHTML = '';
+
+                if (!logs.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Bugun hech qanday faollik yo\'q.</td></tr>';
+                    return;
+                }
+
+                logs.slice(0, 8).forEach(function(log) {
+                    var row = document.createElement('tr');
+                    var ts = new Date(log.timestamp);
+                    var timeStr = ts.toLocaleDateString('en-GB', {day:'2-digit', month:'short'})
+                                + ' ' + ts.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+
+                    var badge = log.success
+                        ? '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Muvaffaqiyatli</span>'
+                        : '<span class="badge badge-failed"><i class="fas fa-times-circle"></i> Rad etildi</span>';
+
+                    row.innerHTML =
+                        '<td style="white-space:nowrap;color:#6b7280;font-size:0.83rem;">' + timeStr + '</td>' +
+                        '<td><strong>' + (log.user_fio || 'Noma\'lum') + '</strong></td>' +
+                        '<td style="color:#6b7280;">' + (log.device_pc_id || 'Noma\'lum') + '</td>' +
+                        '<td>' + badge + '</td>' +
+                        '<td style="color:#9ca3af;font-size:0.83rem;">' + (log.cause || '—') + '</td>';
+                    tbody.appendChild(row);
+                });
+            }
+
+        } catch(e) {
+            console.error('Dashboard load error:', e);
         }
-        
-        // Load data when page loads
-        document.addEventListener('DOMContentLoaded', loadDashboardData);
-    </script>
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboardData);
+</script>
+
 {% endblock %}

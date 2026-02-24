@@ -19,7 +19,8 @@ async function loadLogs(queryParams = '') {
         }
         
         const data = await response.json();
-        logsCache = data.logs;
+        // Ensure data.logs is an array, defaulting to an empty array if undefined or null
+        logsCache = data.logs || []; 
         
         displayLogs(logsCache);
     } catch (error) {

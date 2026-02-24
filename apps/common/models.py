@@ -220,6 +220,7 @@ class BiometricFingerprint(models.Model):
             return f"BiometricFingerprint: {self.user}"
 
 class AccessLogs(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="access_logs")
     timestamp=models.DateTimeField(auto_now_add=True)
     user=models.ForeignKey(Users,on_delete=models.CASCADE)
     device=models.ForeignKey(Devices,on_delete=models.CASCADE)

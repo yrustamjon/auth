@@ -3,134 +3,638 @@
 
 {% block content %}
 
+<style>
+    .content-box {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        padding: 2rem;
+        margin: 1.5rem;
+    }
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.8rem;
+    }
+    .page-header h2 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .page-header h2 i { color: #6c63ff; }
+    .btn-add {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #6c63ff;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        box-shadow: 0 4px 14px rgba(108,99,255,0.3);
+    }
+    .btn-add:hover { background: #574fd6; transform: translateY(-1px); }
+    .table-container {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #f0f0f5;
+    }
+    #devicesTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+    #devicesTable thead th {
+        background: #f7f7fb;
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.9rem 1rem;
+        border-bottom: 2px solid #ebebf5;
+        white-space: nowrap;
+    }
+    #devicesTable tbody tr { border-bottom: 1px solid #f3f3f8; transition: background 0.15s; }
+    #devicesTable tbody tr:last-child { border-bottom: none; }
+    #devicesTable tbody tr:hover { background: #fafaff; }
+    #devicesTable tbody td { padding: 0.85rem 1rem; color: #374151; vertical-align: middle; }
+    .col-id { color: #9ca3af; font-size: 0.8rem; font-weight: 600; }
+    .col-pcid strong { color: #1a1a2e; font-size: 0.92rem; }
+    .location-icon { color: #6c63ff; margin-right: 4px; font-size: 0.75rem; }
+    .text-muted { color: #9ca3af; font-style: italic; }
 
-            <div class="content-box">
-                <div class="header" style="margin-bottom: 2rem;">
-                    <h2>Devices List</h2>
-                    <button class="btn-primary" id="addDeviceBtn">
-                        <i class="fas fa-plus"></i> Add Device
-                    </button>
-                </div>
+    /* Toggle Buttons */
+    .toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0.32rem 0.8rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        border: none;
+        cursor: pointer;
+        transition: filter 0.15s, transform 0.1s, box-shadow 0.15s;
+        outline: none;
+    }
+    .toggle-btn:hover { filter: brightness(0.9); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+    .toggle-btn:active { transform: translateY(0); filter: brightness(0.82); }
+    .toggle-active   { background: #dcfce7; color: #16a34a; }
+    .toggle-inactive { background: #f3f4f6; color: #6b7280; }
+    .toggle-revoked  { background: #fee2e2; color: #dc2626; }
+    .toggle-ok       { background: #ede9fe; color: #7c3aed; }
 
-                <div class="table-container">
-                    <table id="devicesTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>PC ID</th>
-                                <th>Location</th>
-                                <th>Created At</th>
-                                <th>Last Access</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Devices will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    .actions { display: flex; gap: 0.5rem; align-items: center; }
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0.38rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-action:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-edit   { background: #ede9fe; color: #6c63ff; }
+    .btn-delete { background: #fee2e2; color: #dc2626; }
+
+    /* ── Search Bar ─────────────────────────────────────────────── */
+    .search-bar-row {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+    }
+
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .search-wrap i {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 0.85rem;
+        pointer-events: none;
+    }
+
+    .search-wrap input[type="text"] {
+        width: 100%;
+        padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.88rem;
+        color: #1a1a2e;
+        background: #fafafa;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+
+    .search-wrap input[type="text"]:focus {
+        border-color: #6c63ff;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    .search-bar-row select {
+        padding: 0.55rem 0.75rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.88rem;
+        background: #fafafa;
+        color: #374151;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s;
+        min-width: 130px;
+    }
+
+    .search-bar-row select:focus {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    .btn-clear {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #f3f4f6;
+        color: #6b7280;
+        border: none;
+        border-radius: 10px;
+        padding: 0.55rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .btn-clear:hover { background: #e5e7eb; }
+
+    #deviceResultCount { font-size: 0.8rem; color: #6b7280; white-space: nowrap; }
+
+    mark { background: #fef08a; border-radius: 2px; padding: 0; }
+
+    .empty-state, .loading-row td { text-align: center; padding: 3rem 1rem !important; color: #9ca3af; }
+    .empty-state i, .loading-row i { font-size: 2rem; margin-bottom: 0.6rem; display: block; color: #d1d5db; }
+    .empty-state p { margin: 0; font-size: 0.9rem; }
+    .error-state i { color: #fca5a5 !important; }
+    .loading-spinner { display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: #6c63ff; font-size: 0.9rem; padding: 2rem; }
+
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(10,10,30,0.45);
+        backdrop-filter: blur(3px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: #fff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 520px;
+        padding: 2rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+        animation: modalIn 0.25s ease;
+    }
+    @keyframes modalIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to   { transform: translateY(0);   opacity: 1; }
+    }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #f0f0f5; }
+    .modal-header h3 { font-size: 1.15rem; font-weight: 700; color: #1a1a2e; margin: 0; }
+    .close-modal { background: #f3f4f6; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem; color: #6b7280; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+    .close-modal:hover { background: #e5e7eb; color: #374151; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .form-group label { font-size: 0.82rem; font-weight: 600; color: #374151; }
+    .form-group input[type="text"], .form-group textarea {
+        border: 1.5px solid #e5e7eb;
+        border-radius: 9px;
+        padding: 0.6rem 0.85rem;
+        font-size: 0.88rem;
+        color: #1a1a2e;
+        background: #fafafa;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        outline: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .form-group input[type="text"]:focus, .form-group textarea:focus { border-color: #6c63ff; background: #fff; box-shadow: 0 0 0 3px rgba(108,99,255,0.12); }
+    .form-group textarea { resize: vertical; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+    .checkbox-row { display: flex; gap: 1.5rem; margin-bottom: 1rem; }
+    .checkbox-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
+    .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6c63ff; cursor: pointer; }
+    .form-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f0f0f5; }
+    .btn-primary { background: #6c63ff; color: #fff; border: none; border-radius: 9px; padding: 0.6rem 1.3rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+    .btn-primary:hover { background: #574fd6; transform: translateY(-1px); }
+    .btn-secondary { background: #f3f4f6; color: #374151; border: none; border-radius: 9px; padding: 0.6rem 1.3rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-secondary:hover { background: #e5e7eb; }
+
+    .toast-notification {
+        position: fixed;
+        bottom: 2rem; right: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.8rem 1.3rem;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #fff;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        z-index: 9999;
+        transform: translateY(20px);
+        opacity: 0;
+        transition: transform 0.35s ease, opacity 0.35s ease;
+    }
+    .toast-notification.toast-show { transform: translateY(0); opacity: 1; }
+    .toast-success { background: #16a34a; }
+    .toast-error   { background: #dc2626; }
+</style>
+
+<div class="content-box">
+    <div class="page-header">
+        <h2><i class="fas fa-desktop"></i> Devices List</h2>
+        <button class="btn-add" id="addDeviceBtn">
+            <i class="fas fa-plus"></i> Add Device
+        </button>
     </div>
-
-    <!-- Add/Edit Device Modal -->
-    <div class="modal" id="deviceModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="deviceModalTitle">Add New Device</h3>
-                <button class="close-modal" id="closeDeviceModal">&times;</button>
-            </div>
-            
-            <form id="deviceForm">
-                <input type="hidden" id="deviceId">
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="pc_id">PC ID *</label>
-                        <input type="text" id="pc_id" name="pc_id" required placeholder="e.g., WIN-PC-01">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="location">Location *</label>
-                        <input type="text" id="location" name="location" required placeholder="e.g., Workshop A">
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary" id="saveDeviceBtn">
-                        Save Device
-                    </button>
-                    <button type="button" class="btn-secondary" id="cancelDeviceBtn">
-                        Cancel
-                    </button>
-                </div>
-            </form>
+    <div class="search-bar-row">
+        <div class="search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" id="deviceSearch" placeholder="PC ID yoki location bo'yicha qidiring...">
         </div>
+        <select id="statusFilter">
+            <option value="">Barcha holat</option>
+            <option value="active">✅ Active</option>
+            <option value="inactive">🚫 Inactive</option>
+        </select>
+        <select id="revokedFilter">
+            <option value="">Barcha revoked</option>
+            <option value="ok">🛡 OK</option>
+            <option value="revoked">🚫 Revoked</option>
+        </select>
+        <button class="btn-clear" id="clearFiltersBtn">
+            <i class="fas fa-times"></i> Tozalash
+        </button>
+        <span id="deviceResultCount"></span>
     </div>
 
-    
-    <script>
-        // Initialize session protection
+    <div class="table-container">
+        <table id="devicesTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>PC ID</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Revoked</th>
+                    <th>Registered At</th>
+                    <th>Last Seen</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
 
-        
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            adminLogout();
-            window.location.href = '{% url "login" %}';
+<div class="modal" id="deviceModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="deviceModalTitle">Add New Device</h3>
+            <button class="close-modal" id="closeDeviceModal">&times;</button>
+        </div>
+        <form id="deviceForm">
+            <input type="hidden" id="deviceId">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pc_id">PC ID *</label>
+                    <input type="text" id="pc_id" name="pc_id" required placeholder="e.g., WIN-PC-01">
+                </div>
+                <div class="form-group">
+                    <label for="location">Location *</label>
+                    <input type="text" id="location" name="location" required placeholder="e.g., Workshop A">
+                </div>
+            </div>
+            <div class="checkbox-row">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="is_active" name="is_active" checked>
+                    <i class="fas fa-check-circle" style="color:#16a34a;"></i> Is Active
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="revoked" name="revoked">
+                    <i class="fas fa-ban" style="color:#dc2626;"></i> Revoked
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="device_public_key">Device Public Key <span style="color:#9ca3af; font-weight:400;">(optional)</span></label>
+                <textarea id="device_public_key" name="device_public_key" rows="4"
+                    placeholder="Paste the device's public key here..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancelDeviceBtn">Cancel</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Device
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ── State ──────────────────────────────────────────────────────
+
+
+    // ── Load ───────────────────────────────────────────────────────
+    async function loadDevices() {
+        const tbody = document.querySelector('#devicesTable tbody');
+        tbody.innerHTML = `
+            <tr class="loading-row">
+                <td colspan="8">
+                    <div class="loading-spinner">
+                        <i class="fas fa-circle-notch fa-spin"></i> Loading devices...
+                    </div>
+                </td>
+            </tr>`;
+        try {
+            const res = await fetchWithAuth('/api/devices');
+            if (!res.ok) throw new Error(`Failed to load devices: ${res.status}`);
+            const devices = await res.json();
+            devicesCache = devices;
+            filterDevices();
+        } catch (err) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="empty-state error-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading devices: ${err.message}</p>
+                    </td>
+                </tr>`;
+        }
+    }
+
+    function filterDevices() {
+        const q       = (document.getElementById('deviceSearch').value || '').toLowerCase().trim();
+        const statVal = document.getElementById('statusFilter').value;
+        const revVal  = document.getElementById('revokedFilter').value;
+
+        const filtered = devicesCache.filter(function(d) {
+            const matchQ = !q ||
+                (d.pc_id    || '').toLowerCase().includes(q) ||
+                (d.location || '').toLowerCase().includes(q);
+            const matchS = !statVal ||
+                (statVal === 'active'   &&  d.is_active) ||
+                (statVal === 'inactive' && !d.is_active);
+            const matchR = !revVal ||
+                (revVal === 'revoked' &&  d.revoked) ||
+                (revVal === 'ok'      && !d.revoked);
+            return matchQ && matchS && matchR;
         });
-        
-        // Load devices when page loads
-        document.addEventListener('DOMContentLoaded', loadDevices);
-        
-        // Device modal controls
-        const deviceModal = document.getElementById('deviceModal');
-        const addDeviceBtn = document.getElementById('addDeviceBtn');
-        const closeDeviceModal = document.getElementById('closeDeviceModal');
-        const cancelDeviceBtn = document.getElementById('cancelDeviceBtn');
-        
-        addDeviceBtn.addEventListener('click', () => {
-            document.getElementById('deviceModalTitle').textContent = 'Add New Device';
-            document.getElementById('deviceForm').reset();
-            document.getElementById('deviceId').value = '';
-            deviceModal.style.display = 'flex';
+
+        displayDevices(filtered, q);
+
+        const rc = document.getElementById('deviceResultCount');
+        if (filtered.length === devicesCache.length) {
+            rc.textContent = devicesCache.length + ' ta';
+            rc.style.color = '#6b7280';
+        } else {
+            rc.textContent = filtered.length + ' / ' + devicesCache.length + ' ta natija';
+            rc.style.color = filtered.length === 0 ? '#dc2626' : '#6b7280';
+        }
+    }
+
+    function highlight(text, q) {
+        if (!q || !text) return String(text || '');
+        var esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return String(text).replace(new RegExp(esc, 'gi'), function(m) { return '<mark>' + m + '</mark>'; });
+    }
+
+    // ── Display ────────────────────────────────────────────────────
+    function displayDevices(devices, q) {
+        q = q || '';
+        const tbody = document.querySelector('#devicesTable tbody');
+        tbody.innerHTML = '';
+
+        if (!devices || devices.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="empty-state">
+                        <i class="fas fa-desktop"></i>
+                        <p>No devices found.</p>
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        devices.forEach(function(device) {
+            const row = document.createElement('tr');
+
+            const activeBtn = device.is_active
+                ? `<button class="toggle-btn toggle-active" onclick="toggleDeviceField(${device.id}, 'is_active', false)" title="Click to deactivate"><i class="fas fa-check-circle"></i> Active</button>`
+                : `<button class="toggle-btn toggle-inactive" onclick="toggleDeviceField(${device.id}, 'is_active', true)" title="Click to activate"><i class="fas fa-times-circle"></i> Inactive</button>`;
+
+            const revokedBtn = device.revoked
+                ? `<button class="toggle-btn toggle-revoked" onclick="toggleDeviceField(${device.id}, 'revoked', false)" title="Click to restore"><i class="fas fa-ban"></i> Revoked</button>`
+                : `<button class="toggle-btn toggle-ok" onclick="toggleDeviceField(${device.id}, 'revoked', true)" title="Click to revoke"><i class="fas fa-shield-alt"></i> OK</button>`;
+
+            const registeredAt = device.registered_at
+                ? new Date(device.registered_at).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'})
+                : '<span class="text-muted">N/A</span>';
+
+            const lastSeen = device.last_seen
+                ? new Date(device.last_seen).toLocaleString('en-GB', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
+                : '<span class="text-muted">Never</span>';
+
+            row.innerHTML = `
+                <td class="col-id">${device.id}</td>
+                <td class="col-pcid"><strong>${highlight(device.pc_id, q)}</strong></td>
+                <td class="col-location"><i class="fas fa-map-marker-alt location-icon"></i>${highlight(device.location, q)}</td>
+                <td>${activeBtn}</td>
+                <td>${revokedBtn}</td>
+                <td>${registeredAt}</td>
+                <td>${lastSeen}</td>
+                <td class="col-actions actions">
+                    <button class="btn-action btn-edit" onclick="editDevice(${device.id})"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn-action btn-delete" onclick="deleteDevice(${device.id})"><i class="fas fa-trash"></i> Delete</button>
+                </td>`;
+            tbody.appendChild(row);
         });
-        
-        closeDeviceModal.addEventListener('click', () => {
-            deviceModal.style.display = 'none';
-        });
-        
-        cancelDeviceBtn.addEventListener('click', () => {
-            deviceModal.style.display = 'none';
-        });
-        
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === deviceModal) {
-                deviceModal.style.display = 'none';
+    }
+
+    // ── Toggle (PATCH) ─────────────────────────────────────────────
+    async function toggleDeviceField(deviceId, field, value) {
+        try {
+            const res = await fetchWithAuth(`/api/devices/${deviceId}/`, {
+                method: 'PATCH',
+                body: JSON.stringify({ [field]: value })
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `Failed: ${res.status}`);
             }
-        });
-        
-        // Handle device form submission
-        document.getElementById('deviceForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const deviceId = document.getElementById('deviceId').value;
-            const deviceData = {
-                pc_id: document.getElementById('pc_id').value,
-                location: document.getElementById('location').value
-            };
-            
-            try {
-                if (deviceId) {
-                    await updateDevice(deviceId, deviceData);
-                } else {
-                    await createDevice(deviceData);
-                }
-                
-                deviceModal.style.display = 'none';
-                loadDevices();
-            } catch (error) {
-                alert('Error saving device: ' + error.message);
+            const cached = devicesCache.find(function(d) { return d.id === deviceId; });
+            if (cached) cached[field] = value;
+            showToast((field === 'is_active' ? 'Status' : 'Revoked') + ' updated!', 'success');
+            filterDevices();
+        } catch (err) {
+            showToast('Error: ' + err.message, 'error');
+        }
+    }
+
+    // ── Create ─────────────────────────────────────────────────────
+    async function createDevice(data) {
+        const res = await fetchWithAuth('/api/devices', { method: 'POST', body: JSON.stringify(data) });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed: ${res.status}`);
+        }
+        showToast('Device created successfully!', 'success');
+        return await res.json();
+    }
+
+    // ── Update ─────────────────────────────────────────────────────
+    async function updateDevice(deviceId, data) {
+        const res = await fetchWithAuth(`/api/devices/${deviceId}/`, { method: 'PUT', body: JSON.stringify(data) });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed: ${res.status}`);
+        }
+        showToast('Device updated successfully!', 'success');
+        return await res.json();
+    }
+
+    // ── Delete ─────────────────────────────────────────────────────
+    async function deleteDevice(deviceId) {
+        if (!confirm('Are you sure you want to delete this device? This action cannot be undone.')) return;
+        try {
+            const res = await fetchWithAuth(`/api/devices/${deviceId}/`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(`Failed: ${res.status}`);
+            showToast('Device deleted successfully!', 'success');
+            loadDevices();
+        } catch (err) {
+            showToast('Error deleting device: ' + err.message, 'error');
+        }
+    }
+
+    // ── Edit ───────────────────────────────────────────────────────
+    async function editDevice(deviceId) {
+        try {
+            let device = devicesCache.find(function(d) { return d.id === deviceId; });
+            if (!device) {
+                const res = await fetchWithAuth(`/api/devices/${deviceId}/`);
+                if (!res.ok) throw new Error('Device not found');
+                device = await res.json();
             }
-        });
-    </script>
+            document.getElementById('deviceModalTitle').textContent = 'Edit Device';
+            document.getElementById('deviceId').value = device.id;
+            document.getElementById('pc_id').value = device.pc_id;
+            document.getElementById('location').value = device.location;
+            document.getElementById('is_active').checked = device.is_active;
+            document.getElementById('revoked').checked = device.revoked;
+            document.getElementById('device_public_key').value = device.device_public_key || '';
+            document.getElementById('deviceModal').style.display = 'flex';
+        } catch (err) {
+            showToast('Error loading device: ' + err.message, 'error');
+        }
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────
+    function showToast(message, type) {
+        type = type || 'success';
+        var existing = document.querySelector('.toast-notification');
+        if (existing) existing.remove();
+        var toast = document.createElement('div');
+        toast.className = 'toast-notification toast-' + type;
+        toast.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i><span>' + message + '</span>';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.classList.add('toast-show'); }, 10);
+        setTimeout(function() {
+            toast.classList.remove('toast-show');
+            setTimeout(function() { toast.remove(); }, 400);
+        }, 3000);
+    }
+
+    // ── Events ─────────────────────────────────────────────────────
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        adminLogout();
+        window.location.href = '{% url "login" %}';
+    });
+
+    document.addEventListener('DOMContentLoaded', loadDevices);
+
+    document.getElementById('deviceSearch').addEventListener('input', filterDevices);
+    document.getElementById('statusFilter').addEventListener('change', filterDevices);
+    document.getElementById('revokedFilter').addEventListener('change', filterDevices);
+    document.getElementById('clearFiltersBtn').addEventListener('click', function() {
+        document.getElementById('deviceSearch').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('revokedFilter').value = '';
+        filterDevices();
+    });
+
+    var deviceModal = document.getElementById('deviceModal');
+
+    document.getElementById('addDeviceBtn').addEventListener('click', function() {
+        document.getElementById('deviceModalTitle').textContent = 'Add New Device';
+        document.getElementById('deviceForm').reset();
+        document.getElementById('deviceId').value = '';
+        document.getElementById('is_active').checked = true;
+        document.getElementById('revoked').checked = false;
+        deviceModal.style.display = 'flex';
+    });
+
+    document.getElementById('closeDeviceModal').addEventListener('click', function() { deviceModal.style.display = 'none'; });
+    document.getElementById('cancelDeviceBtn').addEventListener('click', function() { deviceModal.style.display = 'none'; });
+    window.addEventListener('click', function(e) { if (e.target === deviceModal) deviceModal.style.display = 'none'; });
+
+    document.getElementById('deviceForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var deviceId = document.getElementById('deviceId').value;
+        var data = {
+            pc_id:             document.getElementById('pc_id').value.trim(),
+            location:          document.getElementById('location').value.trim(),
+            is_active:         document.getElementById('is_active').checked,
+            revoked:           document.getElementById('revoked').checked,
+            device_public_key: document.getElementById('device_public_key').value.trim() || null,
+        };
+        if (!data.pc_id || !data.location) { showToast('Please fill in all required fields.', 'error'); return; }
+        try {
+            if (deviceId) {
+                await updateDevice(parseInt(deviceId), data);
+            } else {
+                await createDevice(data);
+            }
+            deviceModal.style.display = 'none';
+            loadDevices();
+        } catch (err) {
+            showToast('Error saving device: ' + err.message, 'error');
+        }
+    });
+</script>
+
 {% endblock %}

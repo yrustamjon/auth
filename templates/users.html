@@ -3,117 +3,399 @@
 
 {% block content %}
 <style>
-    .badge { padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-    .badge-active  { background: #d1fae5; color: #065f46; }
-    .badge-inactive{ background: #fee2e2; color: #991b1b; }
-    .badge-yes     { background: #dbeafe; color: #1e40af; }
-    .badge-no      { background: #f3f4f6; color: #9ca3af; }
-    .inactive-row  { opacity: 0.5; }
-    .empty-msg     { text-align: center; padding: 2rem; color: #888; }
-    .actions       { display: flex; gap: 0.35rem; flex-wrap: wrap; }
-    .btn-sm        { padding: 0.3rem 0.6rem; font-size: 0.8rem; border: none; border-radius: 6px; cursor: pointer; }
-    .btn-warning   { background: #f59e0b; color: #fff; }
-    .btn-success   { background: #10b981; color: #fff; }
-    .btn-secondary { background: #6b7280; color: #fff; }
-    .btn-danger    { background: #ef4444; color: #fff; }
-    .btn-bio       { background: #6366f1; color: #fff; }
-
-    .toast {
-        position: fixed; bottom: 2rem; right: 2rem;
-        padding: 0.85rem 1.4rem; border-radius: 10px; font-size: 0.9rem;
-        opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 9999;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    }
-    .toast.show    { opacity: 1; transform: translateY(0); }
-    .toast-success { background: #d1fae5; color: #065f46; }
-    .toast-error   { background: #fee2e2; color: #991b1b; }
-
-    select.form-control {
-        width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db;
-        border-radius: 8px; font-size: 0.9rem; background: #fff; box-sizing: border-box;
+    /* ── Page Layout ───────────────────────────────────────────── */
+    .content-box {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        padding: 2rem;
+        margin: 1.5rem;
     }
 
-    /* ── Search bar ───────────────────────────────────────────────── */
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .page-header h2 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .page-header h2 i { color: #6c63ff; }
+
+    /* ── Add Button ────────────────────────────────────────────── */
+    .btn-add {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #6c63ff;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        box-shadow: 0 4px 14px rgba(108,99,255,0.3);
+        white-space: nowrap;
+    }
+    .btn-add:hover { background: #574fd6; transform: translateY(-1px); }
+
+    /* ── Search Bar ────────────────────────────────────────────── */
     .search-bar-row {
-        display: flex; gap: 0.6rem; align-items: center;
-        flex-wrap: wrap; margin-bottom: 1.25rem;
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
     }
-    .search-bar-row .search-wrap {
-        position: relative; flex: 1; min-width: 200px;
+
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
     }
-    .search-bar-row .search-wrap i {
-        position: absolute; left: 0.7rem; top: 50%;
-        transform: translateY(-50%); color: #9ca3af; font-size: 0.85rem; pointer-events: none;
+
+    .search-wrap i {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 0.85rem;
+        pointer-events: none;
     }
-    .search-bar-row input[type="text"] {
-        width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.1rem;
-        border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;
-        box-sizing: border-box; outline: none; transition: border-color 0.2s;
+
+    .search-wrap input[type="text"] {
+        width: 100%;
+        padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.88rem;
+        color: #1a1a2e;
+        background: #fafafa;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
     }
-    .search-bar-row input[type="text"]:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+
+    .search-wrap input[type="text"]:focus {
+        border-color: #6c63ff;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
     .search-bar-row select {
-        padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;
-        font-size: 0.875rem; background: #fff; cursor: pointer; outline: none;
-        transition: border-color 0.2s; min-width: 130px;
+        padding: 0.55rem 0.75rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.88rem;
+        background: #fafafa;
+        color: #374151;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s;
+        min-width: 130px;
     }
-    .search-bar-row select:focus { border-color: #6366f1; }
+
+    .search-bar-row select:focus {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    .btn-clear {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #f3f4f6;
+        color: #6b7280;
+        border: none;
+        border-radius: 10px;
+        padding: 0.55rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .btn-clear:hover { background: #e5e7eb; }
+
     #resultCount { font-size: 0.8rem; color: #6b7280; white-space: nowrap; }
 
-    /* Bio modal */
-    .bio-tabs    { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem; }
-    .bio-tab     { padding: 0.65rem 1.5rem; cursor: pointer; font-weight: 500; border-bottom: 3px solid transparent; margin-bottom: -2px; color: #6b7280; transition: 0.2s; }
-    .bio-tab.active { border-bottom-color: #6366f1; color: #6366f1; }
-    .bio-panel      { display: none; }
+    /* ── Table ─────────────────────────────────────────────────── */
+    .table-container {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #f0f0f5;
+    }
+
+    #usersTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+    #usersTable thead th {
+        background: #f7f7fb;
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.9rem 1rem;
+        border-bottom: 2px solid #ebebf5;
+        white-space: nowrap;
+    }
+
+    #usersTable tbody tr { border-bottom: 1px solid #f3f3f8; transition: background 0.15s; }
+    #usersTable tbody tr:last-child { border-bottom: none; }
+    #usersTable tbody tr:hover { background: #fafaff; }
+    #usersTable tbody td { padding: 0.85rem 1rem; color: #374151; vertical-align: middle; }
+
+    .inactive-row { opacity: 0.45; }
+    .empty-msg { text-align: center; padding: 3rem 1rem; color: #9ca3af; font-size: 0.9rem; }
+
+    /* ── Badges ────────────────────────────────────────────────── */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0.3rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .badge-active   { background: #dcfce7; color: #16a34a; }
+    .badge-inactive { background: #fee2e2; color: #dc2626; }
+    .badge-yes      { background: #dbeafe; color: #1d4ed8; }
+    .badge-no       { background: #f3f4f6; color: #9ca3af; }
+
+    /* ── Action Buttons ────────────────────────────────────────── */
+    .actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+
+    .btn-sm {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px; height: 32px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-sm:hover { opacity: 0.82; transform: translateY(-1px); }
+
+    .btn-warning   { background: #fef3c7; color: #d97706; }
+    .btn-success   { background: #dcfce7; color: #16a34a; }
+    .btn-secondary { background: #f3f4f6; color: #6b7280; }
+    .btn-danger    { background: #fee2e2; color: #dc2626; }
+    .btn-bio       { background: #ede9fe; color: #6c63ff; }
+
+    /* ── Modal ─────────────────────────────────────────────────── */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(10,10,30,0.45);
+        backdrop-filter: blur(3px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: #fff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 520px;
+        padding: 2rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+        animation: modalIn 0.25s ease;
+    }
+
+    @keyframes modalIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to   { transform: translateY(0);   opacity: 1; }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f0f0f5;
+    }
+
+    .modal-header h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0; }
+
+    .close-modal {
+        background: #f3f4f6; border: none;
+        width: 32px; height: 32px; border-radius: 50%;
+        font-size: 1.1rem; color: #6b7280;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s;
+    }
+    .close-modal:hover { background: #e5e7eb; color: #374151; }
+
+    /* ── Form ──────────────────────────────────────────────────── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .form-group label { font-size: 0.82rem; font-weight: 600; color: #374151; }
+
+    .form-group input[type="text"],
+    .form-group select.form-control {
+        border: 1.5px solid #e5e7eb;
+        border-radius: 9px;
+        padding: 0.6rem 0.85rem;
+        font-size: 0.88rem;
+        color: #1a1a2e;
+        background: #fafafa;
+        outline: none;
+        width: 100%;
+        box-sizing: border-box;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group select.form-control:focus {
+        border-color: #6c63ff;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    .checkbox-label {
+        display: flex; align-items: center; gap: 0.5rem;
+        font-size: 0.88rem; font-weight: 600; color: #374151;
+        cursor: pointer; user-select: none;
+    }
+    .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6c63ff; }
+
+    .form-actions {
+        display: flex; gap: 0.75rem; justify-content: flex-end;
+        margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f0f0f5;
+    }
+
+    .btn-primary {
+        background: #6c63ff; color: #fff; border: none; border-radius: 9px;
+        padding: 0.6rem 1.3rem; font-size: 0.88rem; font-weight: 600;
+        cursor: pointer; transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: #574fd6; transform: translateY(-1px); }
+
+    .btn-cancel {
+        background: #f3f4f6; color: #374151; border: none; border-radius: 9px;
+        padding: 0.6rem 1.3rem; font-size: 0.88rem; font-weight: 600;
+        cursor: pointer; transition: background 0.2s;
+    }
+    .btn-cancel:hover { background: #e5e7eb; }
+
+    /* ── Bio Modal ─────────────────────────────────────────────── */
+    .bio-tabs { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem; }
+    .bio-tab {
+        padding: 0.65rem 1.5rem; cursor: pointer; font-weight: 600; font-size: 0.88rem;
+        border-bottom: 3px solid transparent; margin-bottom: -2px;
+        color: #6b7280; transition: 0.2s;
+    }
+    .bio-tab.active { border-bottom-color: #6c63ff; color: #6c63ff; }
+
+    .bio-panel { display: none; }
     .bio-panel.active { display: block; }
 
-    .bio-status { display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 500; font-size: 0.9rem; }
+    .bio-status {
+        display: flex; align-items: center; gap: 0.7rem;
+        padding: 0.8rem 1rem; border-radius: 10px; margin-bottom: 1rem;
+        font-weight: 500; font-size: 0.88rem;
+    }
     .bio-status.ok { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
     .bio-status.no { background: #fef9c3; border: 1px solid #fde68a; color: #92400e; }
 
-    /* Upload zone */
     .upload-zone {
         border: 2px dashed #d1d5db; border-radius: 10px; padding: 1.5rem;
-        text-align: center; cursor: pointer; background: #fafafa; transition: 0.2s; margin-bottom: 0.75rem;
+        text-align: center; cursor: pointer; background: #fafafa;
+        transition: 0.2s; margin-bottom: 0.75rem;
     }
-    .upload-zone:hover   { border-color: #6366f1; }
-    .upload-zone.filled  { border-color: #10b981; background: #f0fdf4; }
-    .upload-zone i       { font-size: 1.8rem; color: #9ca3af; display: block; margin-bottom: 0.4rem; }
-    .upload-zone.filled i{ color: #10b981; }
-    .upload-zone small   { color: #9ca3af; font-size: 0.78rem; display: block; margin-top: 0.3rem; }
+    .upload-zone:hover { border-color: #6c63ff; }
+    .upload-zone.filled { border-color: #16a34a; background: #f0fdf4; }
+    .upload-zone i { font-size: 1.8rem; color: #9ca3af; display: block; margin-bottom: 0.4rem; }
+    .upload-zone.filled i { color: #16a34a; }
+    .upload-zone small { color: #9ca3af; font-size: 0.78rem; display: block; margin-top: 0.3rem; }
     .preview-img { max-width: 140px; max-height: 140px; border-radius: 8px; margin: 0.5rem auto; display: block; object-fit: cover; }
 
-    /* Webcam */
     #webcamVideo { width: 100%; border-radius: 10px; display: none; margin-bottom: 0.5rem; background: #000; }
     #webcamCanvas { display: none; }
-    .webcam-actions { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
-    .webcam-actions button { flex: 1; padding: 0.5rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
 
-    /* Mobil QR */
-    .qr-box { text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; }
+    .webcam-actions { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .webcam-actions button {
+        flex: 1; padding: 0.5rem; border: none; border-radius: 8px;
+        cursor: pointer; font-size: 0.85rem; font-weight: 500;
+    }
+
+    .qr-box {
+        text-align: center; padding: 1.5rem;
+        background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;
+    }
     .qr-box canvas, .qr-box img { margin: 0.75rem auto; display: block; }
     .qr-box p { font-size: 0.85rem; color: #64748b; margin: 0; }
-    .qr-status { margin-top: 1rem; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 500; text-align: center; }
-    .qr-status.waiting  { background: #f1f5f9; color: #64748b; }
-    .qr-status.received { background: #d1fae5; color: #065f46; }
 
-    .or-divider { display: flex; align-items: center; gap: 0.75rem; margin: 0.75rem 0; color: #9ca3af; font-size: 0.8rem; }
+    .qr-status {
+        margin-top: 1rem; padding: 0.65rem 1rem;
+        border-radius: 8px; font-size: 0.85rem; font-weight: 500; text-align: center;
+    }
+    .qr-status.waiting  { background: #f1f5f9; color: #64748b; }
+    .qr-status.received { background: #dcfce7; color: #16a34a; }
+
+    .or-divider {
+        display: flex; align-items: center; gap: 0.75rem;
+        margin: 0.75rem 0; color: #9ca3af; font-size: 0.8rem;
+    }
     .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
 
-    .del-bio-btn { width: 100%; padding: 0.45rem; background: #fee2e2; color: #991b1b; border: none; border-radius: 8px; cursor: pointer; margin-top: 0.75rem; font-size: 0.85rem; }
+    .del-bio-btn {
+        width: 100%; padding: 0.5rem;
+        background: #fee2e2; color: #dc2626;
+        border: none; border-radius: 8px; cursor: pointer;
+        margin-top: 0.75rem; font-size: 0.85rem; font-weight: 600;
+        transition: background 0.15s;
+    }
     .del-bio-btn:hover { background: #fecaca; }
 
-    /* Highlight */
+    /* ── Toast ──────────────────────────────────────────────────── */
+    .toast {
+        position: fixed; bottom: 2rem; right: 2rem;
+        padding: 0.8rem 1.3rem; border-radius: 12px;
+        font-size: 0.88rem; font-weight: 600;
+        opacity: 0; transform: translateY(20px);
+        transition: all 0.3s ease; z-index: 9999;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .toast.show    { opacity: 1; transform: translateY(0); }
+    .toast-success { background: #dcfce7; color: #16a34a; }
+    .toast-error   { background: #fee2e2; color: #dc2626; }
+
+    /* ── Highlight ──────────────────────────────────────────────── */
     mark { background: #fef08a; border-radius: 2px; padding: 0; }
 </style>
 
-<!-- Users table -->
 <div class="content-box">
-    <div class="header" style="margin-bottom: 1rem;">
-        <h2>Foydalanuvchilar</h2>
-        <button class="btn-primary" id="addUserBtn"><i class="fas fa-plus"></i> Yangi</button>
+    <div class="page-header">
+        <h2><i class="fas fa-users"></i> Foydalanuvchilar</h2>
+        <button class="btn-add" id="addUserBtn"><i class="fas fa-plus"></i> Yangi</button>
     </div>
 
-    <!-- ── SEARCH BAR ─────────────────────────────────────────────── -->
     <div class="search-bar-row">
         <div class="search-wrap">
             <i class="fas fa-search"></i>
@@ -129,8 +411,7 @@
             <option value="active">✅ Faol</option>
             <option value="inactive">🚫 Nofaol</option>
         </select>
-        <button class="btn-sm btn-secondary" onclick="clearSearch()" title="Filtrlarni tozalash"
-                style="white-space:nowrap;">
+        <button class="btn-clear" onclick="clearSearch()">
             <i class="fas fa-times"></i> Tozalash
         </button>
         <span id="resultCount"></span>
@@ -149,7 +430,7 @@
     </div>
 </div>
 
-<!-- User create/edit modal -->
+<!-- User Modal -->
 <div class="modal" id="userModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -180,24 +461,21 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group" id="passwordGroup">
-                <label>Parol *</label>
-                <input type="password" id="password" placeholder="Kamida 6 ta belgi">
-            </div>
-            <div class="form-group" style="margin-top:0.5rem;">
-                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                    <input type="checkbox" id="status" checked> Faol (Active)
+            <div class="form-group" style="margin-top:0.25rem;">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="status" checked>
+                    <i class="fas fa-check-circle" style="color:#16a34a;"></i> Faol (Active)
                 </label>
             </div>
             <div class="form-actions">
+                <button type="button" class="btn-cancel" id="cancelBtn">Bekor</button>
                 <button type="submit" class="btn-primary">Saqlash</button>
-                <button type="button" class="btn-secondary" id="cancelBtn">Bekor</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Biometric modal -->
+<!-- Biometric Modal -->
 <div class="modal" id="bioModal">
     <div class="modal-content" style="max-width:500px;">
         <div class="modal-header">
@@ -210,24 +488,21 @@
             <div class="bio-tab" data-tab="finger"><i class="fas fa-fingerprint"></i> Barmoq izi</div>
         </div>
 
-        <!-- ══ YUZ PANEL ══ -->
         <div class="bio-panel active" id="facePanel">
             <div class="bio-status" id="faceStatus">
                 <i class="fas fa-circle-notch fa-spin"></i>
                 <span id="faceStatusText">Yuklanmoqda...</span>
             </div>
-
             <video id="webcamVideo" autoplay playsinline></video>
             <canvas id="webcamCanvas"></canvas>
             <div class="webcam-actions" id="webcamActions" style="display:none;">
-                <button id="captureBtn" style="background:#6366f1;color:#fff;">
+                <button id="captureBtn" style="background:#6c63ff;color:#fff;">
                     <i class="fas fa-camera"></i> Suratga olish
                 </button>
                 <button id="stopWebcamBtn" style="background:#f3f4f6;color:#374151;">
                     <i class="fas fa-times"></i> Yopish
                 </button>
             </div>
-
             <div class="upload-zone" id="faceZone">
                 <i class="fas fa-image"></i>
                 <div>Rasm tanlash uchun bosing</div>
@@ -235,13 +510,10 @@
                 <img class="preview-img" id="facePreview" style="display:none;">
             </div>
             <input type="file" id="faceFile" accept="image/*" style="display:none;">
-
             <div class="or-divider">yoki</div>
-
-            <button class="btn-secondary" style="width:100%;padding:0.5rem;" id="startWebcamBtn">
+            <button class="btn-cancel" style="width:100%;padding:0.5rem;" id="startWebcamBtn">
                 <i class="fas fa-video"></i> Webcam orqali olish
             </button>
-
             <button class="btn-primary" style="width:100%;margin-top:0.75rem;" id="saveFaceBtn" disabled>
                 <i class="fas fa-save"></i> Yuzni Saqlash
             </button>
@@ -250,49 +522,39 @@
             </button>
         </div>
 
-        <!-- ══ BARMOQ IZI PANEL ══ -->
         <div class="bio-panel" id="fingerPanel">
             <div class="bio-status" id="fingerStatus">
                 <i class="fas fa-circle-notch fa-spin"></i>
                 <span id="fingerStatusText">Yuklanmoqda...</span>
             </div>
-
             <div class="qr-box" id="qrBox">
-                <p style="margin-bottom:0.5rem;font-weight:500;">
+                <p style="margin-bottom:0.5rem;font-weight:600;">
                     <i class="fas fa-mobile-alt"></i> Mobil telefon orqali skanerlang
                 </p>
                 <canvas id="qrCanvas"></canvas>
                 <p>Mobil ilovani oching va QR ni skanerlang.<br>Barmoq izi avtomatik yuklanadi.</p>
-
                 <div class="qr-status waiting" id="qrStatus">
                     <i class="fas fa-hourglass-half"></i> Kutilmoqda...
                 </div>
-
-                <button class="btn-secondary btn-sm" id="refreshQrBtn" style="margin-top:0.75rem;width:100%;">
+                <button class="btn-cancel btn-sm" id="refreshQrBtn" style="margin-top:0.75rem;width:100%;height:auto;padding:0.5rem;">
                     <i class="fas fa-sync"></i> QR ni yangilash
                 </button>
             </div>
-
             <button class="del-bio-btn" id="deleteFingerBtn" style="display:none;">
                 <i class="fas fa-trash"></i> Barmoq izi embeddingini o'chirish
             </button>
         </div>
-
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-var rolesCache = rolesCache || [];
-var usersCache = usersCache || [];
 var currentBioUserId = null;
 var webcamStream = null;
 var faceImageBlob = null;
 var fingerPollInterval = null;
 var currentSessionToken = null;
-
-// ── Load ──────────────────────────────────────────────────────────
 
 async function loadRoles() {
     try {
@@ -301,20 +563,15 @@ async function loadRoles() {
         const data = await res.json();
         rolesCache = Array.isArray(data) ? data : (data.roles ?? []);
 
-        // Populate form select
         const select = document.getElementById('roleSelect');
-        rolesCache.filter(r => r.is_active !== false).forEach(role => {
-            const opt = document.createElement('option');
-            opt.value = role.id; opt.textContent = role.name;
-            select.appendChild(opt);
-        });
-
-        // Populate filter dropdown
         const rf = document.getElementById('roleFilter');
         rolesCache.filter(r => r.is_active !== false).forEach(role => {
-            const opt = document.createElement('option');
-            opt.value = role.name; opt.textContent = role.name;
-            rf.appendChild(opt);
+            const o1 = document.createElement('option');
+            o1.value = role.id; o1.textContent = role.name;
+            select.appendChild(o1);
+            const o2 = document.createElement('option');
+            o2.value = role.name; o2.textContent = role.name;
+            rf.appendChild(o2);
         });
     } catch(e) { console.error('loadRoles:', e); }
 }
@@ -325,11 +582,9 @@ async function loadUsers() {
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
         usersCache = Array.isArray(data) ? data : (data.users ?? []);
-        filterUsers(); // render through filter to update count
+        filterUsers();
     } catch(e) { showToast('Foydalanuvchilarni yuklashda xato', 'error'); }
 }
-
-// ── Search & Filter ───────────────────────────────────────────────
 
 function filterUsers() {
     const q    = (document.getElementById('searchInput').value || '').toLowerCase().trim();
@@ -338,9 +593,9 @@ function filterUsers() {
 
     const filtered = usersCache.filter(u => {
         const matchQ = !q ||
-            (u.fio       || '').toLowerCase().includes(q) ||
-            (u.lavozim   || '').toLowerCase().includes(q) ||
-            (u.username  || '').toLowerCase().includes(q);
+            (u.fio      || '').toLowerCase().includes(q) ||
+            (u.lavozim  || '').toLowerCase().includes(q) ||
+            (u.username || '').toLowerCase().includes(q);
         const matchR = !role || (u.role?.name || '').toLowerCase() === role;
         const matchS = !stat ||
             (stat === 'active'   &&  u.status) ||
@@ -353,9 +608,10 @@ function filterUsers() {
     const rc = document.getElementById('resultCount');
     if (filtered.length === usersCache.length) {
         rc.textContent = `${usersCache.length} ta`;
+        rc.style.color = '#6b7280';
     } else {
         rc.textContent = `${filtered.length} / ${usersCache.length} ta natija`;
-        rc.style.color = filtered.length === 0 ? '#ef4444' : '#6b7280';
+        rc.style.color = filtered.length === 0 ? '#dc2626' : '#6b7280';
     }
 }
 
@@ -368,16 +624,12 @@ function clearSearch() {
 
 function highlight(text, q) {
     if (!q || !text) return String(text || '');
-    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return String(text).replace(
-        new RegExp(escaped, 'gi'),
-        m => `<mark>${m}</mark>`
-    );
+    const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(text).replace(new RegExp(esc, 'gi'), m => `<mark>${m}</mark>`);
 }
 
-// ── Display ───────────────────────────────────────────────────────
-
-function displayUsers(users, q = '') {
+function displayUsers(users, q) {
+    q = q || '';
     const tbody = document.querySelector('#usersTable tbody');
     tbody.innerHTML = '';
     if (!users.length) {
@@ -388,45 +640,36 @@ function displayUsers(users, q = '') {
         const row = document.createElement('tr');
         if (!user.status) row.classList.add('inactive-row');
 
-        // ID (no highlight)
         const idTd = document.createElement('td');
+        idTd.style.cssText = 'color:#9ca3af;font-size:0.8rem;font-weight:600;';
         idTd.textContent = user.id;
         row.appendChild(idTd);
 
-        // FIO, Lavozim, Username — with search highlight
         [user.fio, user.lavozim, user.username].forEach(val => {
             const td = document.createElement('td');
             td.innerHTML = q ? highlight(val, q) : (val || '—');
             row.appendChild(td);
         });
 
-        // Rol (plain)
         const roleTd = document.createElement('td');
         roleTd.textContent = user.role?.name ?? '—';
         row.appendChild(roleTd);
 
-        // Yuz badge
-        const faceTd = document.createElement('td');
-        const fb = document.createElement('span');
-        fb.className = user.has_face ? 'badge badge-yes' : 'badge badge-no';
-        fb.textContent = user.has_face ? '✓ Bor' : '—';
-        faceTd.appendChild(fb); row.appendChild(faceTd);
+        [[user.has_face, 'badge-yes', '✓ Bor'], [user.has_fingerprint, 'badge-yes', '✓ Bor']].forEach(([val, cls, label]) => {
+            const td = document.createElement('td');
+            const b = document.createElement('span');
+            b.className = val ? cls : 'badge badge-no';
+            if (val) b.classList.add('badge');
+            b.textContent = val ? label : '—';
+            td.appendChild(b); row.appendChild(td);
+        });
 
-        // Barmoq badge
-        const fingerTd = document.createElement('td');
-        const fnb = document.createElement('span');
-        fnb.className = user.has_fingerprint ? 'badge badge-yes' : 'badge badge-no';
-        fnb.textContent = user.has_fingerprint ? '✓ Bor' : '—';
-        fingerTd.appendChild(fnb); row.appendChild(fingerTd);
-
-        // Status badge
         const stTd = document.createElement('td');
         const stb = document.createElement('span');
-        stb.className = user.status ? 'badge badge-active' : 'badge badge-inactive';
+        stb.className = `badge ${user.status ? 'badge-active' : 'badge-inactive'}`;
         stb.textContent = user.status ? 'Active' : 'Inactive';
         stTd.appendChild(stb); row.appendChild(stTd);
 
-        // Actions
         const actTd = document.createElement('td');
         actTd.className = 'actions';
 
@@ -460,9 +703,7 @@ function displayUsers(users, q = '') {
     });
 }
 
-// ── User Modal ────────────────────────────────────────────────────
-
-function openUserModal(user = null) {
+function openUserModal(user) {
     const isEdit = !!user;
     document.getElementById('modalTitle').textContent = isEdit ? 'Foydalanuvchini Tahrirlash' : 'Yangi Foydalanuvchi';
     document.getElementById('userId').value   = isEdit ? user.id : '';
@@ -483,8 +724,6 @@ function openUserModal(user = null) {
     document.getElementById('userModal').style.display = 'flex';
 }
 
-// ── Bio Modal ─────────────────────────────────────────────────────
-
 async function openBioModal(user) {
     currentBioUserId = user.id;
     document.getElementById('bioModalTitle').textContent = `Biometrik — ${user.fio}`;
@@ -503,13 +742,13 @@ async function loadBioStatus(userId) {
         const faceOk = data.has_face;
         document.getElementById('faceStatus').className = `bio-status ${faceOk ? 'ok' : 'no'}`;
         document.getElementById('faceStatusText').textContent = faceOk
-            ? 'Yuz embeddigi mavjud' : 'Yuz embeddigi yo\'q — rasm yuklang yoki webcam dan oling';
+            ? 'Yuz embeddigi mavjud' : "Yuz embeddigi yo'q — rasm yuklang yoki webcam dan oling";
         document.getElementById('deleteFaceBtn').style.display = faceOk ? 'block' : 'none';
 
         const fingerOk = data.has_fingerprint;
         document.getElementById('fingerStatus').className = `bio-status ${fingerOk ? 'ok' : 'no'}`;
         document.getElementById('fingerStatusText').textContent = fingerOk
-            ? 'Barmoq izi embeddigi mavjud' : 'Barmoq izi embeddigi yo\'q';
+            ? 'Barmoq izi embeddigi mavjud' : "Barmoq izi embeddigi yo'q";
         document.getElementById('deleteFingerBtn').style.display = fingerOk ? 'block' : 'none';
     } catch(e) { console.error('loadBioStatus:', e); }
 }
@@ -522,8 +761,6 @@ function switchBioTab(tab) {
     if (tab === 'finger') startFingerSession();
     else stopFingerPoll();
 }
-
-// ── Yuz ──────────────────────────────────────────────────────────
 
 function resetFacePanel() {
     stopWebcam();
@@ -538,8 +775,7 @@ function resetFacePanel() {
 function setFaceImage(blob, previewUrl) {
     faceImageBlob = blob;
     const preview = document.getElementById('facePreview');
-    preview.src = previewUrl;
-    preview.style.display = 'block';
+    preview.src = previewUrl; preview.style.display = 'block';
     document.getElementById('faceZone').classList.add('filled');
     document.getElementById('saveFaceBtn').disabled = false;
 }
@@ -548,14 +784,11 @@ async function startWebcam() {
     try {
         webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
         const video = document.getElementById('webcamVideo');
-        video.srcObject = webcamStream;
-        video.style.display = 'block';
+        video.srcObject = webcamStream; video.style.display = 'block';
         document.getElementById('webcamActions').style.display = 'flex';
         document.getElementById('faceZone').style.display = 'none';
         document.getElementById('startWebcamBtn').style.display = 'none';
-    } catch(e) {
-        showToast('Kameraga ruxsat berilmagan: ' + e.message, 'error');
-    }
+    } catch(e) { showToast('Kameraga ruxsat berilmagan: ' + e.message, 'error'); }
 }
 
 function stopWebcam() {
@@ -567,7 +800,7 @@ function stopWebcam() {
 }
 
 function captureFromWebcam() {
-    const video  = document.getElementById('webcamVideo');
+    const video = document.getElementById('webcamVideo');
     const canvas = document.getElementById('webcamCanvas');
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
@@ -598,8 +831,6 @@ async function saveFace() {
         btn.innerHTML = '<i class="fas fa-save"></i> Yuzni Saqlash';
     }
 }
-
-// ── Barmoq izi ───────────────────────────────────────────────────
 
 async function startFingerSession() {
     stopFingerPoll();
@@ -647,8 +878,6 @@ function stopFingerPoll() {
     if (fingerPollInterval) { clearInterval(fingerPollInterval); fingerPollInterval = null; }
 }
 
-// ── Bio delete ────────────────────────────────────────────────────
-
 async function deleteBiometric(type) {
     if (!confirm(`${type === 'face' ? 'Yuz' : 'Barmoq izi'} embeddingini o'chirishni tasdiqlaysizmi?`)) return;
     const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
@@ -661,8 +890,6 @@ async function deleteBiometric(type) {
     await loadBioStatus(currentBioUserId);
     await loadUsers();
 }
-
-// ── User CRUD ─────────────────────────────────────────────────────
 
 async function createUser(userData) {
     const res = await fetchWithAuth('/api/users/', { method: 'POST', body: JSON.stringify(userData) });
@@ -694,9 +921,8 @@ async function deleteUser(userId) {
     await loadUsers();
 }
 
-// ── Toast ─────────────────────────────────────────────────────────
-
-function showToast(message, type = 'success') {
+function showToast(message, type) {
+    type = type || 'success';
     const ex = document.getElementById('toast');
     if (ex) ex.remove();
     const t = document.createElement('div');
@@ -707,7 +933,6 @@ function showToast(message, type = 'success') {
 }
 
 // ── Events ────────────────────────────────────────────────────────
-
 document.getElementById('logoutBtn').addEventListener('click', () => {
     adminLogout();
     window.location.href = '{% url "login" %}';
@@ -718,16 +943,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadUsers();
 });
 
-// User modal
 const userModal = document.getElementById('userModal');
-document.getElementById('addUserBtn').addEventListener('click', () => openUserModal());
+document.getElementById('addUserBtn').addEventListener('click', () => openUserModal(null));
 document.getElementById('closeModal').addEventListener('click', () => userModal.style.display = 'none');
 document.getElementById('cancelBtn').addEventListener('click', () => userModal.style.display = 'none');
 document.getElementById('userForm').addEventListener('submit', async e => {
     e.preventDefault();
     const userId = document.getElementById('userId').value;
     const roleId = document.getElementById('roleSelect').value;
-    const password = document.getElementById('password').value;
     const userData = {
         fio:      document.getElementById('fio').value.trim(),
         lavozim:  document.getElementById('lavozim').value.trim(),
@@ -735,24 +958,20 @@ document.getElementById('userForm').addEventListener('submit', async e => {
         role_id:  roleId ? parseInt(roleId) : null,
         status:   document.getElementById('status').checked,
     };
-    if (!userId && password) userData.password = password;
     try {
         userId ? await updateUser(parseInt(userId), userData) : await createUser(userData);
         userModal.style.display = 'none';
     } catch(e) { showToast('Xato: ' + e.message, 'error'); }
 });
 
-// Bio modal
 const bioModal = document.getElementById('bioModal');
 document.getElementById('closeBioModal').addEventListener('click', () => {
-    stopWebcam(); stopFingerPoll();
-    bioModal.style.display = 'none';
+    stopWebcam(); stopFingerPoll(); bioModal.style.display = 'none';
 });
 document.querySelectorAll('.bio-tab').forEach(tab => {
     tab.addEventListener('click', () => switchBioTab(tab.dataset.tab));
 });
 
-// Yuz
 document.getElementById('faceZone').addEventListener('click', () => document.getElementById('faceFile').click());
 document.getElementById('faceFile').addEventListener('change', () => {
     const file = document.getElementById('faceFile').files[0];
@@ -766,8 +985,6 @@ document.getElementById('captureBtn').addEventListener('click', captureFromWebca
 document.getElementById('stopWebcamBtn').addEventListener('click', stopWebcam);
 document.getElementById('saveFaceBtn').addEventListener('click', saveFace);
 document.getElementById('deleteFaceBtn').addEventListener('click', () => deleteBiometric('face'));
-
-// Barmoq
 document.getElementById('refreshQrBtn').addEventListener('click', () => startFingerSession());
 document.getElementById('deleteFingerBtn').addEventListener('click', () => deleteBiometric('finger'));
 

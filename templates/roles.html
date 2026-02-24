@@ -4,44 +4,313 @@
 {% block content %}
 
 <style>
+    /* ── Page Layout ───────────────────────────────────────────── */
+    .content-box {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        padding: 2rem;
+        margin: 1.5rem;
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.8rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .page-header h2 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .page-header h2 i { color: #6c63ff; }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    /* ── Search ────────────────────────────────────────────────── */
+    .search-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-wrapper i {
+        position: absolute;
+        left: 0.75rem;
+        color: #9ca3af;
+        font-size: 0.85rem;
+        pointer-events: none;
+    }
+
+    #rolesSearch {
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+        font-size: 0.88rem;
+        color: #1a1a2e;
+        background: #fafafa;
+        outline: none;
+        width: 220px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    #rolesSearch:focus {
+        border-color: #6c63ff;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    /* ── Add Button ────────────────────────────────────────────── */
+    .btn-add {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #6c63ff;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        box-shadow: 0 4px 14px rgba(108,99,255,0.3);
+        white-space: nowrap;
+    }
+
+    .btn-add:hover {
+        background: #574fd6;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(108,99,255,0.4);
+    }
+
+    /* ── Table ─────────────────────────────────────────────────── */
+    .table-container {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #f0f0f5;
+    }
+
+    #rolesTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+    #rolesTable thead th {
+        background: #f7f7fb;
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.9rem 1rem;
+        border-bottom: 2px solid #ebebf5;
+        white-space: nowrap;
+    }
+
+    #rolesTable tbody tr {
+        border-bottom: 1px solid #f3f3f8;
+        transition: background 0.15s;
+    }
+
+    #rolesTable tbody tr:last-child { border-bottom: none; }
+    #rolesTable tbody tr:hover { background: #fafaff; }
+
+    #rolesTable tbody td {
+        padding: 0.85rem 1rem;
+        color: #374151;
+        vertical-align: middle;
+    }
+
+    .col-id { color: #9ca3af; font-size: 0.8rem; font-weight: 600; }
+
+    .inactive-row { opacity: 0.5; }
+    .empty-msg { text-align: center; padding: 3rem 1rem; color: #9ca3af; font-size: 0.9rem; }
+
+    /* ── Badges ────────────────────────────────────────────────── */
     .badge {
-        padding: 0.25rem 0.6rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0.3rem 0.7rem;
         border-radius: 999px;
         font-size: 0.75rem;
         font-weight: 600;
+        white-space: nowrap;
     }
-    .badge-active   { background: #d1fae5; color: #065f46; }
-    .badge-inactive { background: #fee2e2; color: #991b1b; }
-    .inactive-row   { opacity: 0.5; }
-    .empty-msg      { text-align: center; padding: 2rem; color: #888; }
 
-    .actions { display: flex; gap: 0.4rem; }
-    .btn-sm   { padding: 0.3rem 0.55rem; font-size: 0.8rem; border: none; border-radius: 6px; cursor: pointer; }
-    .btn-warning  { background: #f59e0b; color: #fff; }
-    .btn-success  { background: #10b981; color: #fff; }
-    .btn-secondary{ background: #6b7280; color: #fff; }
-    .btn-danger   { background: #ef4444; color: #fff; }
+    .badge-active   { background: #dcfce7; color: #16a34a; }
+    .badge-inactive { background: #fee2e2; color: #dc2626; }
 
-    /* Toast */
+    /* ── Action Buttons ────────────────────────────────────────── */
+    .actions { display: flex; gap: 0.5rem; align-items: center; }
+
+    .btn-sm {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px; height: 32px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-sm:hover { opacity: 0.82; transform: translateY(-1px); }
+
+    .btn-warning   { background: #fef3c7; color: #d97706; }
+    .btn-success   { background: #dcfce7; color: #16a34a; }
+    .btn-secondary { background: #f3f4f6; color: #6b7280; }
+    .btn-danger    { background: #fee2e2; color: #dc2626; }
+
+    /* ── Modal ─────────────────────────────────────────────────── */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(10,10,30,0.45);
+        backdrop-filter: blur(3px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: #fff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 420px;
+        padding: 2rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+        animation: modalIn 0.25s ease;
+    }
+
+    @keyframes modalIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to   { transform: translateY(0);   opacity: 1; }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f0f0f5;
+    }
+
+    .modal-header h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0; }
+
+    .close-modal {
+        background: #f3f4f6;
+        border: none;
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        font-size: 1.1rem;
+        color: #6b7280;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s;
+    }
+
+    .close-modal:hover { background: #e5e7eb; color: #374151; }
+
+    /* ── Form ──────────────────────────────────────────────────── */
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.2rem; }
+
+    .form-group label { font-size: 0.82rem; font-weight: 600; color: #374151; }
+
+    .form-group input[type="text"] {
+        border: 1.5px solid #e5e7eb;
+        border-radius: 9px;
+        padding: 0.6rem 0.85rem;
+        font-size: 0.88rem;
+        color: #1a1a2e;
+        background: #fafafa;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        outline: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-group input[type="text"]:focus {
+        border-color: #6c63ff;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f0f0f5;
+    }
+
+    .btn-primary {
+        background: #6c63ff; color: #fff; border: none; border-radius: 9px;
+        padding: 0.6rem 1.3rem; font-size: 0.88rem; font-weight: 600;
+        cursor: pointer; transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: #574fd6; transform: translateY(-1px); }
+
+    .btn-cancel {
+        background: #f3f4f6; color: #374151; border: none; border-radius: 9px;
+        padding: 0.6rem 1.3rem; font-size: 0.88rem; font-weight: 600;
+        cursor: pointer; transition: background 0.2s;
+    }
+    .btn-cancel:hover { background: #e5e7eb; }
+
+    /* ── Toast ──────────────────────────────────────────────────── */
     .toast {
-        position: fixed; bottom: 2rem; right: 2rem;
-        padding: 0.85rem 1.4rem; border-radius: 10px;
-        font-size: 0.9rem; font-weight: 500;
-        opacity: 0; transform: translateY(10px);
-        transition: all 0.3s ease; z-index: 9999;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        position: fixed;
+        bottom: 2rem; right: 2rem;
+        padding: 0.8rem 1.3rem;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        z-index: 9999;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     }
     .toast.show      { opacity: 1; transform: translateY(0); }
-    .toast-success   { background: #d1fae5; color: #065f46; }
-    .toast-error     { background: #fee2e2; color: #991b1b; }
+    .toast-success   { background: #dcfce7; color: #16a34a; }
+    .toast-error     { background: #fee2e2; color: #dc2626; }
 </style>
 
 <div class="content-box">
-    <div class="header" style="margin-bottom: 2rem;">
-        <h2>Rollar</h2>
-        <button class="btn-primary" id="addRoleBtn">
-            <i class="fas fa-plus"></i> Yangi Rol
-        </button>
+    <div class="page-header">
+        <h2><i class="fas fa-shield-alt"></i> Rollar</h2>
+        <div class="header-actions">
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="rolesSearch" placeholder="Rol nomi bo'yicha qidirish...">
+            </div>
+            <button class="btn-add" id="addRoleBtn">
+                <i class="fas fa-plus"></i> Yangi Rol
+            </button>
+        </div>
     </div>
 
     <div class="table-container">
@@ -73,8 +342,8 @@
                 <input type="text" id="roleName" name="name" required placeholder="Masalan: Moderator">
             </div>
             <div class="form-actions">
+                <button type="button" class="btn-cancel" id="cancelRoleBtn">Bekor</button>
                 <button type="submit" class="btn-primary">Saqlash</button>
-                <button type="button" class="btn-secondary" id="cancelRoleBtn">Bekor</button>
             </div>
         </form>
     </div>
@@ -94,8 +363,8 @@
                 <input type="text" id="editRoleName" name="name" required>
             </div>
             <div class="form-actions">
+                <button type="button" class="btn-cancel" id="cancelEditBtn">Bekor</button>
                 <button type="submit" class="btn-primary">Yangilash</button>
-                <button type="button" class="btn-secondary" id="cancelEditBtn">Bekor</button>
             </div>
         </form>
     </div>
@@ -109,7 +378,14 @@
 
     document.addEventListener('DOMContentLoaded', () => loadRoles());
 
-    // ── Create modal ──
+    // ── Search ────────────────────────────────────────────────────
+    document.getElementById('rolesSearch').addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        const filtered = rolesCache.filter(r => r.name.toLowerCase().includes(query));
+        displayRoles(filtered);
+    });
+
+    // ── Create modal ──────────────────────────────────────────────
     const roleModal = document.getElementById('roleModal');
 
     document.getElementById('addRoleBtn').addEventListener('click', () => {
@@ -129,7 +405,7 @@
         }
     });
 
-    // ── Edit modal ──
+    // ── Edit modal ────────────────────────────────────────────────
     const editRoleModal = document.getElementById('editRoleModal');
 
     document.getElementById('closeEditModal').addEventListener('click', () => editRoleModal.style.display = 'none');
@@ -147,10 +423,11 @@
         }
     });
 
-    // ── Close on outside click ──
+    // ── Close on outside click ────────────────────────────────────
     window.addEventListener('click', (e) => {
         if (e.target === roleModal) roleModal.style.display = 'none';
         if (e.target === editRoleModal) editRoleModal.style.display = 'none';
     });
 </script>
+
 {% endblock %}

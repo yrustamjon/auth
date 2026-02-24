@@ -112,7 +112,7 @@ async function createRole(roleData) {
 
 async function updateRole(roleId, roleData) {
     try {
-        const response = await fetchWithAuth(`/api/roles/${roleId}`, {
+        const response = await fetchWithAuth(`/api/roles/${roleId}/`, {
             method: 'PATCH',
             body: JSON.stringify(roleData)
         });
@@ -132,7 +132,7 @@ async function toggleRoleStatus(role) {
     if (!confirm(`Rolni ${role.is_active ? "o'chirishni" : 'aktivlashtirishni'} tasdiqlaysizmi?`)) return;
 
     try {
-        const response = await fetchWithAuth(`/api/roles/${role.id}`, {
+        const response = await fetchWithAuth(`/api/roles/${role.id}/`, {
             method: 'PATCH',
             body: JSON.stringify({ is_active: !role.is_active })
         });
@@ -151,7 +151,7 @@ async function deleteRole(roleId) {
     if (!confirm("Bu rolni o'chirishni tasdiqlaysizmi?")) return;
 
     try {
-        const response = await fetchWithAuth(`/api/roles/${roleId}`, {
+        const response = await fetchWithAuth(`/api/roles/${roleId}/`, {
             method: 'DELETE'
         });
         if (!response.ok) throw new Error(`${response.status}`);

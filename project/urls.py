@@ -22,4 +22,6 @@ urlpatterns = [
     path('',include('apps.common.urls')),
     path('',include('apps.org.urls')),
     path('',include('apps.role.urls')),
+    path('',include('apps.device.urls')),
+    path('',include('apps.log.urls')),
 ]

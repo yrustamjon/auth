@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'apps.common',
     'apps.org',
     'apps.role',
+    'apps.device',
+    'apps.log',
 ]
 LOGGING = {
     "version": 1,

@@ -1,92 +1,636 @@
-{%extends "index.html" %}
-{% block page_title %}Access Logs {% endblock %}
+{% extends "index.html" %}
+{% block title %}Access Logs{% endblock %}
 
 {% block content %}
-            <div class="content-box">
-                <div class="header" style="margin-bottom: 2rem;">
-                    <h2>Access History</h2>
-                    <div class="form-actions">
-                        <button class="btn-secondary" id="filterToday">
-                            <i class="fas fa-calendar-day"></i> Today
-                        </button>
-                        <button class="btn-secondary" id="filterWeek">
-                            <i class="fas fa-calendar-week"></i> This Week
-                        </button>
-                        <button class="btn-secondary" id="filterAll">
-                            <i class="fas fa-calendar-alt"></i> All Time
-                        </button>
-                    </div>
-                </div>
+<style>
+    /* ── Page Layout ───────────────────────────────────────────── */
+    .content-box {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        padding: 2rem;
+        margin: 1.5rem;
+    }
 
-                <div style="margin-bottom: 1rem;">
-                    <input type="text" id="searchLogs" placeholder="Search logs..." style="width: 100%; padding: 0.5rem;">
-                </div>
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
 
-                <div class="table-container">
-                    <table id="logsTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Timestamp</th>
-                                <th>User</th>
-                                <th>Device</th>
-                                <th>Action</th>
-                                <th>Success</th>
-                                <th>Details</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Logs will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div style="margin-top: 1rem; text-align: center; color: #666;">
-                    <p><i class="fas fa-info-circle"></i> Access logs are read-only for security audit purposes</p>
-                </div>
-            </div>
-        
+    .page-header h2 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
+    .page-header h2 i { color: #6c63ff; }
 
-    
-    <script>
-        // Initialize session protection
-        // checkSession();
-        
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            adminLogout();
-            window.location.href = '{% url "login" %}';
+    /* ── Period Buttons ────────────────────────────────────────── */
+    .period-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    .btn-period {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 9px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+
+    .btn-period:hover { background: #ede9fe; color: #6c63ff; border-color: #6c63ff; }
+    .btn-period.active { background: #6c63ff; color: #fff; border-color: #6c63ff; }
+
+    /* ── Search Bar ────────────────────────────────────────────── */
+    .search-bar-row {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+    }
+
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .search-wrap i {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 0.85rem;
+        pointer-events: none;
+    }
+
+    .search-wrap input[type="text"] {
+        width: 100%;
+        padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.88rem;
+        color: #1a1a2e;
+        background: #fafafa;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+
+    .search-wrap input[type="text"]:focus {
+        border-color: #6c63ff;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    .search-bar-row select {
+        padding: 0.55rem 0.75rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.88rem;
+        background: #fafafa;
+        color: #374151;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s;
+        min-width: 130px;
+    }
+
+    .search-bar-row select:focus {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    .btn-clear {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #f3f4f6;
+        color: #6b7280;
+        border: none;
+        border-radius: 10px;
+        padding: 0.55rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .btn-clear:hover { background: #e5e7eb; }
+
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #dcfce7;
+        color: #16a34a;
+        border: none;
+        border-radius: 10px;
+        padding: 0.55rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .btn-export:hover { background: #bbf7d0; }
+
+    #logResultCount { font-size: 0.8rem; color: #6b7280; white-space: nowrap; }
+
+    /* ── Table ─────────────────────────────────────────────────── */
+    .table-container {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #f0f0f5;
+    }
+
+    #logsTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+    #logsTable thead th {
+        background: #f7f7fb;
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.9rem 1rem;
+        border-bottom: 2px solid #ebebf5;
+        white-space: nowrap;
+    }
+
+    #logsTable tbody tr {
+        border-bottom: 1px solid #f3f3f8;
+        transition: background 0.15s;
+        cursor: pointer;
+    }
+
+    #logsTable tbody tr:last-child { border-bottom: none; }
+    #logsTable tbody tr:hover { background: #fafaff; }
+    #logsTable tbody td { padding: 0.85rem 1rem; color: #374151; vertical-align: middle; }
+
+    .col-id { color: #9ca3af; font-size: 0.8rem; font-weight: 600; }
+    .empty-msg { text-align: center; padding: 3rem 1rem; color: #9ca3af; font-size: 0.9rem; }
+
+    /* ── Badges ────────────────────────────────────────────────── */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0.3rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-success { background: #dcfce7; color: #16a34a; }
+    .badge-failed  { background: #fee2e2; color: #dc2626; }
+
+    /* ── Detail Modal ──────────────────────────────────────────── */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(10,10,30,0.45);
+        backdrop-filter: blur(3px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: #fff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 520px;
+        padding: 2rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+        animation: modalIn 0.25s ease;
+    }
+
+    @keyframes modalIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f0f0f5;
+    }
+
+    .modal-header h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0; }
+
+    .close-modal {
+        background: #f3f4f6; border: none;
+        width: 32px; height: 32px; border-radius: 50%;
+        font-size: 1.1rem; color: #6b7280;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s;
+    }
+    .close-modal:hover { background: #e5e7eb; color: #374151; }
+
+    /* Detail rows */
+    .detail-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .detail-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        background: #fafafa;
+        border-radius: 10px;
+        border: 1px solid #f0f0f5;
+    }
+
+    .detail-row .detail-icon {
+        width: 32px; height: 32px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    .detail-row .detail-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.2rem;
+    }
+
+    .detail-row .detail-value {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #1a1a2e;
+    }
+
+    .icon-time    { background: #ede9fe; color: #6c63ff; }
+    .icon-user    { background: #dbeafe; color: #1d4ed8; }
+    .icon-device  { background: #fef3c7; color: #d97706; }
+    .icon-result  { background: #dcfce7; color: #16a34a; }
+    .icon-result.failed { background: #fee2e2; color: #dc2626; }
+    .icon-cause   { background: #f3f4f6; color: #6b7280; }
+
+    /* ── Toast ──────────────────────────────────────────────────── */
+    .toast {
+        position: fixed; bottom: 2rem; right: 2rem;
+        padding: 0.8rem 1.3rem; border-radius: 12px;
+        font-size: 0.88rem; font-weight: 600;
+        opacity: 0; transform: translateY(20px);
+        transition: all 0.3s ease; z-index: 9999;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .toast.show    { opacity: 1; transform: translateY(0); }
+    .toast-success { background: #dcfce7; color: #16a34a; }
+    .toast-error   { background: #fee2e2; color: #dc2626; }
+
+    mark { background: #fef08a; border-radius: 2px; padding: 0; }
+</style>
+
+<div class="content-box">
+    <div class="page-header">
+        <h2><i class="fas fa-history"></i> Access Logs</h2>
+        <div class="period-btns">
+            <button class="btn-period active" id="filterToday">
+                <i class="fas fa-calendar-day"></i> Bugun
+            </button>
+            <button class="btn-period" id="filterWeek">
+                <i class="fas fa-calendar-week"></i> Hafta
+            </button>
+            <button class="btn-period" id="filterAll">
+                <i class="fas fa-calendar-alt"></i> Hammasi
+            </button>
+        </div>
+    </div>
+
+    <div class="search-bar-row">
+        <div class="search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" id="logSearch" placeholder="Foydalanuvchi yoki qurilma bo'yicha qidiring...">
+        </div>
+        <select id="successFilter">
+            <option value="">Barcha natija</option>
+            <option value="success">✅ Muvaffaqiyatli</option>
+            <option value="failed">❌ Muvaffaqiyatsiz</option>
+        </select>
+        <button class="btn-clear" id="clearLogsFilter">
+            <i class="fas fa-times"></i> Tozalash
+        </button>
+        <button class="btn-export" id="exportBtn">
+            <i class="fas fa-download"></i> CSV
+        </button>
+        <span id="logResultCount"></span>
+    </div>
+
+    <div class="table-container">
+        <table id="logsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Vaqt</th>
+                    <th>Foydalanuvchi</th>
+                    <th>Qurilma</th>
+                    <th>Natija</th>
+                    <th>Sabab</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div style="margin-top:1rem; text-align:center; color:#9ca3af; font-size:0.82rem;">
+        <i class="fas fa-lock"></i> Loglar faqat o'qish uchun — xavfsizlik auditi maqsadida
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal" id="logDetailModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-alt" style="color:#6c63ff;margin-right:0.4rem;"></i> Log tafsiloti</h3>
+            <button class="close-modal" id="closeLogModal">&times;</button>
+        </div>
+        <div class="detail-grid" id="logDetailGrid"></div>
+    </div>
+</div>
+
+<script>
+
+    var currentPeriodParams = '';
+    var filteredCache = [];
+
+    // ── Load ──────────────────────────────────────────────────────
+    async function loadLogs(queryParams) {
+        queryParams = queryParams || '';
+        currentPeriodParams = queryParams;
+
+        const tbody = document.querySelector('#logsTable tbody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center;padding:2rem;color:#9ca3af;">
+                    <i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;color:#6c63ff;display:block;margin-bottom:0.5rem;"></i>
+                    Loglar yuklanmoqda...
+                </td>
+            </tr>`;
+
+        try {
+            const url = queryParams ? '/api/access-logs?' + queryParams : '/api/access-logs';
+            const res = await fetchWithAuth(url);
+            if (!res.ok) throw new Error(res.status);
+            const data = await res.json();
+            logsCache = data.logs || [];
+            filterLogs();
+        } catch(e) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-msg" style="color:#dc2626;">
+                        <i class="fas fa-exclamation-triangle"></i> Loglarni yuklashda xato: ${e.message}
+                    </td>
+                </tr>`;
+        }
+    }
+
+    // ── Filter ────────────────────────────────────────────────────
+    function filterLogs() {
+        const q    = (document.getElementById('logSearch').value || '').toLowerCase().trim();
+        const stat = document.getElementById('successFilter').value;
+
+        const filtered = logsCache.filter(function(log) {
+            const matchQ = !q ||
+                (log.user_fio        || '').toLowerCase().includes(q) ||
+                (log.device_pc_id    || '').toLowerCase().includes(q);
+            const matchS = !stat ||
+                (stat === 'success' &&  log.success) ||
+                (stat === 'failed'  && !log.success);
+            return matchQ && matchS;
         });
-        
-        // Load logs when page loads
-        document.addEventListener('DOMContentLoaded', loadLogs);
-        
-        // Filter buttons
-        document.getElementById('filterToday').addEventListener('click', () => {
-            const today = new Date().toISOString().split('T')[0];
-            loadLogs(`date=${today}`);
+
+        filteredCache = filtered;
+        displayLogs(filtered, q);
+
+        var rc = document.getElementById('logResultCount');
+        if (filtered.length === logsCache.length) {
+            rc.textContent = logsCache.length + ' ta';
+            rc.style.color = '#6b7280';
+        } else {
+            rc.textContent = filtered.length + ' / ' + logsCache.length + ' ta';
+            rc.style.color = filtered.length === 0 ? '#dc2626' : '#6b7280';
+        }
+    }
+
+    function highlight(text, q) {
+        if (!q || !text) return String(text || '—');
+        var esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return String(text).replace(new RegExp(esc, 'gi'), function(m) { return '<mark>' + m + '</mark>'; });
+    }
+
+    // ── Display ───────────────────────────────────────────────────
+    function displayLogs(logs, q) {
+        q = q || '';
+        var tbody = document.querySelector('#logsTable tbody');
+        tbody.innerHTML = '';
+
+        if (!logs.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">Loglar topilmadi.</td></tr>';
+            return;
+        }
+
+        logs.forEach(function(log) {
+            var row = document.createElement('tr');
+            row.title = 'Tafsilot uchun bosing';
+
+            var ts = new Date(log.timestamp);
+            var timeStr = ts.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'})
+                        + ' ' + ts.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+
+            var badge = log.success
+                ? '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Muvaffaqiyatli</span>'
+                : '<span class="badge badge-failed"><i class="fas fa-times-circle"></i> Rad etildi</span>';
+
+            row.innerHTML =
+                '<td class="col-id">' + log.id + '</td>' +
+                '<td style="white-space:nowrap;">' + timeStr + '</td>' +
+                '<td>' + highlight(log.user_fio || 'Noma\'lum', q) + '</td>' +
+                '<td>' + highlight(log.device_pc_id || 'Noma\'lum', q) + '</td>' +
+                '<td>' + badge + '</td>' +
+                '<td style="color:#6b7280;font-size:0.85rem;">' + (log.cause || '—') + '</td>';
+
+            row.addEventListener('click', function() { openLogDetail(log); });
+            tbody.appendChild(row);
         });
-        
-        document.getElementById('filterWeek').addEventListener('click', () => {
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            loadLogs(`start_date=${weekAgo.toISOString().split('T')[0]}`);
+    }
+
+    // ── Detail Modal ──────────────────────────────────────────────
+    function openLogDetail(log) {
+        var ts = new Date(log.timestamp);
+        var timeStr = ts.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric', weekday:'long'})
+                    + ' — ' + ts.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+
+        var resultIcon = log.success
+            ? '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Muvaffaqiyatli</span>'
+            : '<span class="badge badge-failed"><i class="fas fa-times-circle"></i> Rad etildi</span>';
+
+        document.getElementById('logDetailGrid').innerHTML =
+            detailRow('icon-time', 'fa-clock', 'Vaqt', timeStr) +
+            detailRow('icon-user', 'fa-user', 'Foydalanuvchi', log.user_fio || 'Noma\'lum') +
+            detailRow('icon-device', 'fa-desktop', 'Qurilma', log.device_pc_id || 'Noma\'lum') +
+            detailRow('icon-result' + (log.success ? '' : ' failed'), 'fa-shield-alt', 'Natija', resultIcon, true) +
+            detailRow('icon-cause', 'fa-info-circle', 'Sabab', log.cause || '—');
+
+        document.getElementById('logDetailModal').style.display = 'flex';
+    }
+
+    function detailRow(iconClass, iconName, label, value, raw) {
+        return '<div class="detail-row">' +
+            '<div class="detail-icon ' + iconClass + '"><i class="fas ' + iconName + '"></i></div>' +
+            '<div>' +
+                '<div class="detail-label">' + label + '</div>' +
+                '<div class="detail-value">' + (raw ? value : escHtml(String(value))) + '</div>' +
+            '</div>' +
+        '</div>';
+    }
+
+    function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── Export CSV (aktiv filtr bo'yicha) ─────────────────────────
+    function exportLogsToCSV() {
+        var q    = (document.getElementById('logSearch').value || '').toLowerCase().trim();
+        var stat = document.getElementById('successFilter').value;
+
+        var exportData = logsCache.filter(function(log) {
+            var matchQ = !q ||
+                (log.user_fio     || '').toLowerCase().includes(q) ||
+                (log.device_pc_id || '').toLowerCase().includes(q);
+            var matchS = !stat ||
+                (stat === 'success' &&  log.success) ||
+                (stat === 'failed'  && !log.success);
+            return matchQ && matchS;
         });
-        
-        document.getElementById('filterAll').addEventListener('click', () => {
-            loadLogs();
-        });
-        
-        // Search functionality
-        document.getElementById('searchLogs').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('#logsTable tbody tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
-    </script>
+
+        if (!exportData.length) { showToast('Eksport qilish uchun log yo\'q', 'error'); return; }
+
+        var suffix = '';
+        if (stat === 'success') suffix = '-muvaffaqiyatli';
+        if (stat === 'failed')  suffix = '-rad_etildi';
+        if (q) suffix += '-' + q.replace(/\s+/g, '_');
+
+        var headers = ['ID', 'Vaqt', 'Foydalanuvchi', 'Qurilma', 'Natija', 'Sabab'];
+        var rows = [headers.join(',')].concat(exportData.map(function(log) {
+            return [
+                log.id,
+                '"' + new Date(log.timestamp).toISOString() + '"',
+                '"' + (log.user_fio || '') + '"',
+                '"' + (log.device_pc_id || '') + '"',
+                log.success ? 'Muvaffaqiyatli' : 'Rad etildi',
+                '"' + (log.cause || '').replace(/"/g, '""') + '"'
+            ].join(',');
+        }));
+
+        var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'access-logs-' + new Date().toISOString().split('T')[0] + suffix + '.csv';
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+        showToast(exportData.length + ' ta log eksport qilindi!', 'success');
+    }
+
+    // ── Toast ─────────────────────────────────────────────────────
+    function showToast(message, type) {
+        type = type || 'success';
+        var ex = document.getElementById('toast');
+        if (ex) ex.remove();
+        var t = document.createElement('div');
+        t.id = 'toast'; t.className = 'toast toast-' + type; t.textContent = message;
+        document.body.appendChild(t);
+        setTimeout(function() { t.classList.add('show'); }, 10);
+        setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 300); }, 3000);
+    }
+
+    // ── Events ────────────────────────────────────────────────────
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        adminLogout();
+        window.location.href = '{% url "login" %}';
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Default: bugun
+        var today = new Date().toISOString().split('T')[0];
+        loadLogs('date=' + today);
+    });
+
+    // Period buttons
+    function setActivePeriod(btn) {
+        document.querySelectorAll('.btn-period').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+    }
+
+    document.getElementById('filterToday').addEventListener('click', function() {
+        setActivePeriod(this);
+        var today = new Date().toISOString().split('T')[0];
+        loadLogs('date=' + today);
+    });
+
+    document.getElementById('filterWeek').addEventListener('click', function() {
+        setActivePeriod(this);
+        var weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        loadLogs('start_date=' + weekAgo.toISOString().split('T')[0]);
+    });
+
+    document.getElementById('filterAll').addEventListener('click', function() {
+        setActivePeriod(this);
+        loadLogs('');
+    });
+
+    // Search & filter
+    document.getElementById('logSearch').addEventListener('input', filterLogs);
+    document.getElementById('successFilter').addEventListener('change', filterLogs);
+
+    document.getElementById('clearLogsFilter').addEventListener('click', function() {
+        document.getElementById('logSearch').value = '';
+        document.getElementById('successFilter').value = '';
+        filterLogs();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', exportLogsToCSV);
+
+    // Modal
+    var logModal = document.getElementById('logDetailModal');
+    document.getElementById('closeLogModal').addEventListener('click', function() { logModal.style.display = 'none'; });
+    window.addEventListener('click', function(e) { if (e.target === logModal) logModal.style.display = 'none'; });
+</script>
+
 {% endblock %}
