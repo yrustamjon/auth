@@ -90,6 +90,7 @@ def users_page(request, data):
     data["page_title"]="User Management"
     data["page_icon"]="fas fa-users"
     return render(request, "users.html",data)
+
 @login_required
 @role_required("admin")
 @sender_about_user
@@ -251,7 +252,10 @@ class Admin_Users(APIView):
                 },
                 "creted_at": user.creted_at,
                 "is_locked": user.is_locked(),
-                "status": user.status
+                "status": user.status,
+
+                "has_face": hasattr(user, "face"),
+                "has_fingerprint": hasattr(user, "fingerprint")
             }
             for user in users
         ]

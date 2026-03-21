@@ -13,4 +13,4 @@ def encrypt_data(data):
 
 def decrypt_data(encrypted_data):
     decrypted_data = cipher_suite.decrypt(encrypted_data)
-    return decrypted_data.decode()
+    return decrypted_data

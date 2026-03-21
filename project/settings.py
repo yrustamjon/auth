@@ -29,16 +29,17 @@ CRYPTO_SECRET_KEY ="SS8O-PP0W5NdgoA4fagzCl29QlOLgrqA1NncmrD0wtc="  # 32 ta belgi
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["admin.com", "localhost", "127.0.0.1"]
 
 
 
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-    "http://192.168.0.166:8000",
+    "http://admin.com",
+    "http://127.0.0.1:80",
+    "http://localhost:80",
+    "http://192.168.0.166:80",
 ]
 # Application definition
 
@@ -51,6 +52,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+
+    'apps.biometrik',
     'apps.common',
     'apps.org',
     'apps.role',

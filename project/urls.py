@@ -24,4 +24,5 @@ urlpatterns = [
     path('',include('apps.role.urls')),
     path('',include('apps.device.urls')),
     path('',include('apps.log.urls')),
+    path('',include('apps.biometrik.urls')),
 ]

@@ -3,7 +3,6 @@
 
 {% block content %}
 <style>
-    /* ── Page Layout ───────────────────────────────────────────── */
     .content-box {
         background: #ffffff;
         border-radius: 16px;
@@ -33,7 +32,6 @@
 
     .page-header h2 i { color: #6c63ff; }
 
-    /* ── Add Button ────────────────────────────────────────────── */
     .btn-add {
         display: inline-flex;
         align-items: center;
@@ -52,7 +50,6 @@
     }
     .btn-add:hover { background: #574fd6; transform: translateY(-1px); }
 
-    /* ── Search Bar ────────────────────────────────────────────── */
     .search-bar-row {
         display: flex;
         gap: 0.6rem;
@@ -133,7 +130,6 @@
 
     #resultCount { font-size: 0.8rem; color: #6b7280; white-space: nowrap; }
 
-    /* ── Table ─────────────────────────────────────────────────── */
     .table-container {
         overflow-x: auto;
         border-radius: 12px;
@@ -167,7 +163,6 @@
     .inactive-row { opacity: 0.45; }
     .empty-msg { text-align: center; padding: 3rem 1rem; color: #9ca3af; font-size: 0.9rem; }
 
-    /* ── Badges ────────────────────────────────────────────────── */
     .badge {
         display: inline-flex;
         align-items: center;
@@ -183,7 +178,6 @@
     .badge-yes      { background: #dbeafe; color: #1d4ed8; }
     .badge-no       { background: #f3f4f6; color: #9ca3af; }
 
-    /* ── Action Buttons ────────────────────────────────────────── */
     .actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
 
     .btn-sm {
@@ -205,7 +199,6 @@
     .btn-danger    { background: #fee2e2; color: #dc2626; }
     .btn-bio       { background: #ede9fe; color: #6c63ff; }
 
-    /* ── Modal ─────────────────────────────────────────────────── */
     .modal {
         display: none;
         position: fixed;
@@ -252,7 +245,6 @@
     }
     .close-modal:hover { background: #e5e7eb; color: #374151; }
 
-    /* ── Form ──────────────────────────────────────────────────── */
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
     .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
     .form-group label { font-size: 0.82rem; font-weight: 600; color: #374151; }
@@ -304,7 +296,6 @@
     }
     .btn-cancel:hover { background: #e5e7eb; }
 
-    /* ── Bio Modal ─────────────────────────────────────────────── */
     .bio-tabs { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem; }
     .bio-tab {
         padding: 0.65rem 1.5rem; cursor: pointer; font-weight: 600; font-size: 0.88rem;
@@ -374,7 +365,6 @@
     }
     .del-bio-btn:hover { background: #fecaca; }
 
-    /* ── Toast ──────────────────────────────────────────────────── */
     .toast {
         position: fixed; bottom: 2rem; right: 2rem;
         padding: 0.8rem 1.3rem; border-radius: 12px;
@@ -387,7 +377,6 @@
     .toast-success { background: #dcfce7; color: #16a34a; }
     .toast-error   { background: #fee2e2; color: #dc2626; }
 
-    /* ── Highlight ──────────────────────────────────────────────── */
     mark { background: #fef08a; border-radius: 2px; padding: 0; }
 </style>
 
@@ -511,9 +500,12 @@
                 <img class="preview-img" id="facePreview" style="display:none;">
             </div>
             <input type="file" id="faceFile" accept="image/*" style="display:none;">
-            <div class="or-divider">yoki</div>
+            <div class="or-divider" id="orDivider">yoki</div>
             <button class="btn-cancel" style="width:100%;padding:0.5rem;" id="startWebcamBtn">
                 <i class="fas fa-video"></i> Webcam orqali olish
+            </button>
+            <button class="btn-primary" style="width:100%;margin-top:0.75rem;" id="updateFaceBtn" style="display:none;">
+                <i class="fas fa-sync-alt"></i> Yuzni Yangilash
             </button>
             <button class="btn-primary" style="width:100%;margin-top:0.75rem;" id="saveFaceBtn" disabled>
                 <i class="fas fa-save"></i> Yuzni Saqlash
@@ -741,17 +733,47 @@ async function loadBioStatus(userId) {
         const data = await res.json();
 
         const faceOk = data.has_face;
+
         document.getElementById('faceStatus').className = `bio-status ${faceOk ? 'ok' : 'no'}`;
         document.getElementById('faceStatusText').textContent = faceOk
-            ? 'Yuz embeddigi mavjud' : "Yuz embeddigi yo'q — rasm yuklang yoki webcam dan oling";
+            ? 'Yuz embeddigi mavjud'
+            : "Yuz embeddigi yo'q — rasm yuklang yoki webcam dan oling";
+
+        document.getElementById('updateFaceBtn').style.display = faceOk ? 'block' : 'none';
         document.getElementById('deleteFaceBtn').style.display = faceOk ? 'block' : 'none';
 
+        if (faceOk) {
+            stopWebcam();
+            document.getElementById('faceZone').style.display    = 'none';
+            document.getElementById('orDivider').style.display   = 'none';
+            document.getElementById('startWebcamBtn').style.display = 'none';
+            document.getElementById('saveFaceBtn').style.display = 'none';
+        } else {
+            document.getElementById('faceZone').style.display    = 'block';
+            document.getElementById('orDivider').style.display   = 'flex';
+            document.getElementById('startWebcamBtn').style.display = 'block';
+            document.getElementById('saveFaceBtn').style.display = 'block';
+        }
+
         const fingerOk = data.has_fingerprint;
+
         document.getElementById('fingerStatus').className = `bio-status ${fingerOk ? 'ok' : 'no'}`;
         document.getElementById('fingerStatusText').textContent = fingerOk
-            ? 'Barmoq izi embeddigi mavjud' : "Barmoq izi embeddigi yo'q";
+            ? 'Barmoq izi embeddigi mavjud'
+            : "Barmoq izi embeddigi yo'q";
+
         document.getElementById('deleteFingerBtn').style.display = fingerOk ? 'block' : 'none';
+
     } catch(e) { console.error('loadBioStatus:', e); }
+}
+
+function updateFace() {
+    document.getElementById('faceStatusText').textContent = 'Yangi yuz rasmini yuklang';
+    document.getElementById('updateFaceBtn').style.display   = 'none';
+    document.getElementById('faceZone').style.display        = 'block';
+    document.getElementById('orDivider').style.display       = 'flex';
+    document.getElementById('startWebcamBtn').style.display  = 'block';
+    document.getElementById('saveFaceBtn').style.display     = 'block';
 }
 
 function switchBioTab(tab) {
@@ -818,7 +840,12 @@ async function saveFace() {
         formData.append('image', faceImageBlob, 'face.jpg');
         const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
         const res = await fetch(`/api/users/${currentBioUserId}/face/`, {
-            method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
         });
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || err.message || res.status); }
         showToast('Yuz embeddigi saqlandi!', 'success');
@@ -885,7 +912,11 @@ async function deleteBiometric(type) {
     const url = type === 'face'
         ? `/api/users/${currentBioUserId}/face/`
         : `/api/users/${currentBioUserId}/fingerprint/`;
-    const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }});
+    const res = await fetch(url, { method: 'DELETE', 
+                    headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-CSRFToken': getCookie('csrftoken')
+            },});
     if (!res.ok) { showToast("O'chirishda xato", 'error'); return; }
     showToast("Embedding o'chirildi!", 'success');
     await loadBioStatus(currentBioUserId);
@@ -984,6 +1015,7 @@ document.getElementById('faceFile').addEventListener('change', () => {
 document.getElementById('startWebcamBtn').addEventListener('click', startWebcam);
 document.getElementById('captureBtn').addEventListener('click', captureFromWebcam);
 document.getElementById('stopWebcamBtn').addEventListener('click', stopWebcam);
+document.getElementById('updateFaceBtn').addEventListener('click', updateFace);
 document.getElementById('saveFaceBtn').addEventListener('click', saveFace);
 document.getElementById('deleteFaceBtn').addEventListener('click', () => deleteBiometric('face'));
 document.getElementById('refreshQrBtn').addEventListener('click', () => startFingerSession());
