@@ -3,381 +3,97 @@
 
 {% block content %}
 <style>
-    .content-box {
-        background: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
-        padding: 2rem;
-        margin: 1.5rem;
-    }
-
-    .page-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .page-header h2 {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #1a1a2e;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .page-header h2 i { color: #6c63ff; }
-
-    .btn-add {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        background: #6c63ff;
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        padding: 0.6rem 1.2rem;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-        box-shadow: 0 4px 14px rgba(108,99,255,0.3);
-        white-space: nowrap;
-    }
-    .btn-add:hover { background: #574fd6; transform: translateY(-1px); }
-
-    .search-bar-row {
-        display: flex;
-        gap: 0.6rem;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-bottom: 1.25rem;
-    }
-
-    .search-wrap {
-        position: relative;
-        flex: 1;
-        min-width: 200px;
-    }
-
-    .search-wrap i {
-        position: absolute;
-        left: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #9ca3af;
-        font-size: 0.85rem;
-        pointer-events: none;
-    }
-
-    .search-wrap input[type="text"] {
-        width: 100%;
-        padding: 0.55rem 0.85rem 0.55rem 2.2rem;
-        border: 1.5px solid #e5e7eb;
-        border-radius: 10px;
-        font-size: 0.88rem;
-        color: #1a1a2e;
-        background: #fafafa;
-        outline: none;
-        transition: border-color 0.2s, box-shadow 0.2s;
-        box-sizing: border-box;
-    }
-
-    .search-wrap input[type="text"]:focus {
-        border-color: #6c63ff;
-        background: #fff;
-        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
-    }
-
-    .search-bar-row select {
-        padding: 0.55rem 0.75rem;
-        border: 1.5px solid #e5e7eb;
-        border-radius: 10px;
-        font-size: 0.88rem;
-        background: #fafafa;
-        color: #374151;
-        cursor: pointer;
-        outline: none;
-        transition: border-color 0.2s;
-        min-width: 130px;
-    }
-
-    .search-bar-row select:focus {
-        border-color: #6c63ff;
-        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
-    }
-
-    .btn-clear {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        background: #f3f4f6;
-        color: #6b7280;
-        border: none;
-        border-radius: 10px;
-        padding: 0.55rem 0.9rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background 0.2s;
-    }
-    .btn-clear:hover { background: #e5e7eb; }
-
-    #resultCount { font-size: 0.8rem; color: #6b7280; white-space: nowrap; }
-
-    .table-container {
-        overflow-x: auto;
-        border-radius: 12px;
-        border: 1px solid #f0f0f5;
-        max-height: calc(88vh - 240px);
-    }
-
-    #usersTable {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.88rem;
-    }
-
-    #usersTable thead th {
-        background: #f7f7fb;
-        color: #6b7280;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        padding: 0.9rem 1rem;
-        border-bottom: 2px solid #ebebf5;
-        white-space: nowrap;
-    }
-
-    #usersTable tbody tr { border-bottom: 1px solid #f3f3f8; transition: background 0.15s; }
-    #usersTable tbody tr:last-child { border-bottom: none; }
-    #usersTable tbody tr:hover { background: #fafaff; }
-    #usersTable tbody td { padding: 0.85rem 1rem; color: #374151; vertical-align: middle; }
-
-    .inactive-row { opacity: 0.45; }
-    .empty-msg { text-align: center; padding: 3rem 1rem; color: #9ca3af; font-size: 0.9rem; }
-
-    .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 0.3rem 0.7rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-    .badge-active   { background: #dcfce7; color: #16a34a; }
-    .badge-inactive { background: #fee2e2; color: #dc2626; }
-    .badge-yes      { background: #dbeafe; color: #1d4ed8; }
-    .badge-no       { background: #f3f4f6; color: #9ca3af; }
-
-    .actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
-
-    .btn-sm {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px; height: 32px;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: opacity 0.15s, transform 0.1s;
-    }
-    .btn-sm:hover { opacity: 0.82; transform: translateY(-1px); }
-
-    .btn-warning   { background: #fef3c7; color: #d97706; }
-    .btn-success   { background: #dcfce7; color: #16a34a; }
-    .btn-secondary { background: #f3f4f6; color: #6b7280; }
-    .btn-danger    { background: #fee2e2; color: #dc2626; }
-    .btn-bio       { background: #ede9fe; color: #6c63ff; }
-
-    .modal {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(10,10,30,0.45);
-        backdrop-filter: blur(3px);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal-content {
-        background: #fff;
-        border-radius: 16px;
-        width: 100%;
-        max-width: 520px;
-        padding: 2rem;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.18);
-        animation: modalIn 0.25s ease;
-    }
-
-    @keyframes modalIn {
-        from { transform: translateY(20px); opacity: 0; }
-        to   { transform: translateY(0);   opacity: 1; }
-    }
-
-    .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid #f0f0f5;
-    }
-
-    .modal-header h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0; }
-
-    .close-modal {
-        background: #f3f4f6; border: none;
-        width: 32px; height: 32px; border-radius: 50%;
-        font-size: 1.1rem; color: #6b7280;
-        cursor: pointer; display: flex; align-items: center; justify-content: center;
-        transition: background 0.15s;
-    }
-    .close-modal:hover { background: #e5e7eb; color: #374151; }
-
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
-    .form-group label { font-size: 0.82rem; font-weight: 600; color: #374151; }
-
-    .form-group input[type="text"],
-    .form-group select.form-control {
-        border: 1.5px solid #e5e7eb;
-        border-radius: 9px;
-        padding: 0.6rem 0.85rem;
-        font-size: 0.88rem;
-        color: #1a1a2e;
-        background: #fafafa;
-        outline: none;
-        width: 100%;
-        box-sizing: border-box;
-        transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .form-group input[type="text"]:focus,
-    .form-group select.form-control:focus {
-        border-color: #6c63ff;
-        background: #fff;
-        box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
-    }
-
-    .checkbox-label {
-        display: flex; align-items: center; gap: 0.5rem;
-        font-size: 0.88rem; font-weight: 600; color: #374151;
-        cursor: pointer; user-select: none;
-    }
-    .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6c63ff; }
-
-    .form-actions {
-        display: flex; gap: 0.75rem; justify-content: flex-end;
-        margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f0f0f5;
-    }
-
-    .btn-primary {
-        background: #6c63ff; color: #fff; border: none; border-radius: 9px;
-        padding: 0.6rem 1.3rem; font-size: 0.88rem; font-weight: 600;
-        cursor: pointer; transition: background 0.2s, transform 0.1s;
-    }
-    .btn-primary:hover { background: #574fd6; transform: translateY(-1px); }
-
-    .btn-cancel {
-        background: #f3f4f6; color: #374151; border: none; border-radius: 9px;
-        padding: 0.6rem 1.3rem; font-size: 0.88rem; font-weight: 600;
-        cursor: pointer; transition: background 0.2s;
-    }
-    .btn-cancel:hover { background: #e5e7eb; }
-
-    .bio-tabs { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem; }
-    .bio-tab {
-        padding: 0.65rem 1.5rem; cursor: pointer; font-weight: 600; font-size: 0.88rem;
-        border-bottom: 3px solid transparent; margin-bottom: -2px;
-        color: #6b7280; transition: 0.2s;
-    }
-    .bio-tab.active { border-bottom-color: #6c63ff; color: #6c63ff; }
-
-    .bio-panel { display: none; }
-    .bio-panel.active { display: block; }
-
-    .bio-status {
-        display: flex; align-items: center; gap: 0.7rem;
-        padding: 0.8rem 1rem; border-radius: 10px; margin-bottom: 1rem;
-        font-weight: 500; font-size: 0.88rem;
-    }
-    .bio-status.ok { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
-    .bio-status.no { background: #fef9c3; border: 1px solid #fde68a; color: #92400e; }
-
-    .upload-zone {
-        border: 2px dashed #d1d5db; border-radius: 10px; padding: 1.5rem;
-        text-align: center; cursor: pointer; background: #fafafa;
-        transition: 0.2s; margin-bottom: 0.75rem;
-    }
-    .upload-zone:hover { border-color: #6c63ff; }
-    .upload-zone.filled { border-color: #16a34a; background: #f0fdf4; }
-    .upload-zone i { font-size: 1.8rem; color: #9ca3af; display: block; margin-bottom: 0.4rem; }
-    .upload-zone.filled i { color: #16a34a; }
-    .upload-zone small { color: #9ca3af; font-size: 0.78rem; display: block; margin-top: 0.3rem; }
-    .preview-img { max-width: 140px; max-height: 140px; border-radius: 8px; margin: 0.5rem auto; display: block; object-fit: cover; }
-
-    #webcamVideo { width: 100%; border-radius: 10px; display: none; margin-bottom: 0.5rem; background: #000; }
-    #webcamCanvas { display: none; }
-
-    .webcam-actions { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
-    .webcam-actions button {
-        flex: 1; padding: 0.5rem; border: none; border-radius: 8px;
-        cursor: pointer; font-size: 0.85rem; font-weight: 500;
-    }
-
-    .qr-box {
-        text-align: center; padding: 1.5rem;
-        background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;
-    }
-    .qr-box canvas, .qr-box img { margin: 0.75rem auto; display: block; }
-    .qr-box p { font-size: 0.85rem; color: #64748b; margin: 0; }
-
-    .qr-status {
-        margin-top: 1rem; padding: 0.65rem 1rem;
-        border-radius: 8px; font-size: 0.85rem; font-weight: 500; text-align: center;
-    }
-    .qr-status.waiting  { background: #f1f5f9; color: #64748b; }
-    .qr-status.received { background: #dcfce7; color: #16a34a; }
-
-    .or-divider {
-        display: flex; align-items: center; gap: 0.75rem;
-        margin: 0.75rem 0; color: #9ca3af; font-size: 0.8rem;
-    }
-    .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
-
-    .del-bio-btn {
-        width: 100%; padding: 0.5rem;
-        background: #fee2e2; color: #dc2626;
-        border: none; border-radius: 8px; cursor: pointer;
-        margin-top: 0.75rem; font-size: 0.85rem; font-weight: 600;
-        transition: background 0.15s;
-    }
-    .del-bio-btn:hover { background: #fecaca; }
-
-    .toast {
-        position: fixed; bottom: 2rem; right: 2rem;
-        padding: 0.8rem 1.3rem; border-radius: 12px;
-        font-size: 0.88rem; font-weight: 600;
-        opacity: 0; transform: translateY(20px);
-        transition: all 0.3s ease; z-index: 9999;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    }
-    .toast.show    { opacity: 1; transform: translateY(0); }
-    .toast-success { background: #dcfce7; color: #16a34a; }
-    .toast-error   { background: #fee2e2; color: #dc2626; }
-
-    mark { background: #fef08a; border-radius: 2px; padding: 0; }
+    .content-box { background:#fff; border-radius:16px; box-shadow:0 2px 16px rgba(0,0,0,0.07); padding:2rem; margin:1.5rem; }
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem; }
+    .page-header h2 { font-size:1.4rem; font-weight:700; color:#1a1a2e; margin:0; display:flex; align-items:center; gap:0.5rem; }
+    .page-header h2 i { color:#6c63ff; }
+    .btn-add { display:inline-flex; align-items:center; gap:0.4rem; background:#6c63ff; color:#fff; border:none; border-radius:10px; padding:0.6rem 1.2rem; font-size:0.9rem; font-weight:600; cursor:pointer; transition:background 0.2s,transform 0.1s,box-shadow 0.2s; box-shadow:0 4px 14px rgba(108,99,255,0.3); white-space:nowrap; }
+    .btn-add:hover { background:#574fd6; transform:translateY(-1px); }
+    .search-bar-row { display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap; margin-bottom:1.25rem; }
+    .search-wrap { position:relative; flex:1; min-width:200px; }
+    .search-wrap i { position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:0.85rem; pointer-events:none; }
+    .search-wrap input[type="text"] { width:100%; padding:0.55rem 0.85rem 0.55rem 2.2rem; border:1.5px solid #e5e7eb; border-radius:10px; font-size:0.88rem; color:#1a1a2e; background:#fafafa; outline:none; transition:border-color 0.2s,box-shadow 0.2s; box-sizing:border-box; }
+    .search-wrap input[type="text"]:focus { border-color:#6c63ff; background:#fff; box-shadow:0 0 0 3px rgba(108,99,255,0.12); }
+    .search-bar-row select { padding:0.55rem 0.75rem; border:1.5px solid #e5e7eb; border-radius:10px; font-size:0.88rem; background:#fafafa; color:#374151; cursor:pointer; outline:none; transition:border-color 0.2s; min-width:130px; }
+    .search-bar-row select:focus { border-color:#6c63ff; box-shadow:0 0 0 3px rgba(108,99,255,0.12); }
+    .btn-clear { display:inline-flex; align-items:center; gap:0.35rem; background:#f3f4f6; color:#6b7280; border:none; border-radius:10px; padding:0.55rem 0.9rem; font-size:0.85rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:background 0.2s; }
+    .btn-clear:hover { background:#e5e7eb; }
+    #resultCount { font-size:0.8rem; color:#6b7280; white-space:nowrap; }
+    .table-container { overflow-x:auto; border-radius:12px; border:1px solid #f0f0f5; max-height:calc(88vh - 240px); }
+    #usersTable { width:100%; border-collapse:collapse; font-size:0.88rem; }
+    #usersTable thead th { background:#f7f7fb; color:#6b7280; font-size:0.75rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; padding:0.9rem 1rem; border-bottom:2px solid #ebebf5; white-space:nowrap; }
+    #usersTable tbody tr { border-bottom:1px solid #f3f3f8; transition:background 0.15s; }
+    #usersTable tbody tr:last-child { border-bottom:none; }
+    #usersTable tbody tr:hover { background:#fafaff; }
+    #usersTable tbody td { padding:0.85rem 1rem; color:#374151; vertical-align:middle; }
+    .inactive-row { opacity:0.45; }
+    .empty-msg { text-align:center; padding:3rem 1rem; color:#9ca3af; font-size:0.9rem; }
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:0.3rem 0.7rem; border-radius:999px; font-size:0.75rem; font-weight:600; white-space:nowrap; }
+    .badge-active { background:#dcfce7; color:#16a34a; }
+    .badge-inactive { background:#fee2e2; color:#dc2626; }
+    .badge-yes { background:#dbeafe; color:#1d4ed8; }
+    .badge-no { background:#f3f4f6; color:#9ca3af; }
+    .actions { display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap; }
+    .btn-sm { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border:none; border-radius:8px; font-size:0.8rem; cursor:pointer; transition:opacity 0.15s,transform 0.1s; }
+    .btn-sm:hover { opacity:0.82; transform:translateY(-1px); }
+    .btn-warning { background:#fef3c7; color:#d97706; }
+    .btn-success { background:#dcfce7; color:#16a34a; }
+    .btn-secondary { background:#f3f4f6; color:#6b7280; }
+    .btn-danger { background:#fee2e2; color:#dc2626; }
+    .btn-bio { background:#ede9fe; color:#6c63ff; }
+    .modal { display:none; position:fixed; inset:0; background:rgba(10,10,30,0.45); backdrop-filter:blur(3px); z-index:1000; align-items:center; justify-content:center; }
+    .modal-content { background:#fff; border-radius:16px; width:100%; max-width:520px; padding:2rem; box-shadow:0 20px 60px rgba(0,0,0,0.18); animation:modalIn 0.25s ease; }
+    @keyframes modalIn { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid #f0f0f5; }
+    .modal-header h3 { font-size:1.1rem; font-weight:700; color:#1a1a2e; margin:0; }
+    .close-modal { background:#f3f4f6; border:none; width:32px; height:32px; border-radius:50%; font-size:1.1rem; color:#6b7280; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
+    .close-modal:hover { background:#e5e7eb; color:#374151; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+    .form-group { display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1rem; }
+    .form-group label { font-size:0.82rem; font-weight:600; color:#374151; }
+    .form-group input[type="text"], .form-group select.form-control { border:1.5px solid #e5e7eb; border-radius:9px; padding:0.6rem 0.85rem; font-size:0.88rem; color:#1a1a2e; background:#fafafa; outline:none; width:100%; box-sizing:border-box; transition:border-color 0.2s,box-shadow 0.2s; }
+    .form-group input[type="text"]:focus, .form-group select.form-control:focus { border-color:#6c63ff; background:#fff; box-shadow:0 0 0 3px rgba(108,99,255,0.12); }
+    .checkbox-label { display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; font-weight:600; color:#374151; cursor:pointer; user-select:none; }
+    .checkbox-label input[type="checkbox"] { width:16px; height:16px; accent-color:#6c63ff; }
+    .form-actions { display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem; padding-top:1rem; border-top:1px solid #f0f0f5; }
+    .btn-primary { background:#6c63ff; color:#fff; border:none; border-radius:9px; padding:0.6rem 1.3rem; font-size:0.88rem; font-weight:600; cursor:pointer; transition:background 0.2s,transform 0.1s; }
+    .btn-primary:hover { background:#574fd6; transform:translateY(-1px); }
+    .btn-cancel { background:#f3f4f6; color:#374151; border:none; border-radius:9px; padding:0.6rem 1.3rem; font-size:0.88rem; font-weight:600; cursor:pointer; transition:background 0.2s; }
+    .btn-cancel:hover { background:#e5e7eb; }
+    .bio-tabs { display:flex; border-bottom:2px solid #e5e7eb; margin-bottom:1.5rem; }
+    .bio-tab { padding:0.65rem 1.5rem; cursor:pointer; font-weight:600; font-size:0.88rem; border-bottom:3px solid transparent; margin-bottom:-2px; color:#6b7280; transition:0.2s; }
+    .bio-tab.active { border-bottom-color:#6c63ff; color:#6c63ff; }
+    .bio-panel { display:none; }
+    .bio-panel.active { display:block; }
+    .bio-status { display:flex; align-items:center; gap:0.7rem; padding:0.8rem 1rem; border-radius:10px; margin-bottom:1rem; font-weight:500; font-size:0.88rem; }
+    .bio-status.ok { background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; }
+    .bio-status.no { background:#fef9c3; border:1px solid #fde68a; color:#92400e; }
+    .upload-zone { border:2px dashed #d1d5db; border-radius:10px; padding:1.5rem; text-align:center; cursor:pointer; background:#fafafa; transition:0.2s; margin-bottom:0.75rem; }
+    .upload-zone:hover { border-color:#6c63ff; }
+    .upload-zone.filled { border-color:#16a34a; background:#f0fdf4; }
+    .upload-zone i { font-size:1.8rem; color:#9ca3af; display:block; margin-bottom:0.4rem; }
+    .upload-zone.filled i { color:#16a34a; }
+    .upload-zone small { color:#9ca3af; font-size:0.78rem; display:block; margin-top:0.3rem; }
+    .preview-img { max-width:140px; max-height:140px; border-radius:8px; margin:0.5rem auto; display:block; object-fit:cover; }
+    #webcamVideo { width:100%; border-radius:10px; display:none; margin-bottom:0.5rem; background:#000; }
+    #webcamCanvas { display:none; }
+    .webcam-actions { display:flex; gap:0.5rem; margin-bottom:0.75rem; }
+    .webcam-actions button { flex:1; padding:0.5rem; border:none; border-radius:8px; cursor:pointer; font-size:0.85rem; font-weight:500; }
+    .qr-box { text-align:center; padding:1.5rem; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0; }
+    .qr-box canvas, .qr-box img { margin:0.75rem auto; display:block; }
+    .qr-box p { font-size:0.85rem; color:#64748b; margin:0; }
+    .qr-status { margin-top:1rem; padding:0.65rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:500; text-align:center; }
+    .qr-status.waiting { background:#f1f5f9; color:#64748b; }
+    .qr-status.received { background:#dcfce7; color:#16a34a; }
+    .or-divider { display:flex; align-items:center; gap:0.75rem; margin:0.75rem 0; color:#9ca3af; font-size:0.8rem; }
+    .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:#e5e7eb; }
+    .del-bio-btn { width:100%; padding:0.5rem; background:#fee2e2; color:#dc2626; border:none; border-radius:8px; cursor:pointer; margin-top:0.75rem; font-size:0.85rem; font-weight:600; transition:background 0.15s; }
+    .del-bio-btn:hover { background:#fecaca; }
+    .toast { position:fixed; bottom:2rem; right:2rem; padding:0.8rem 1.3rem; border-radius:12px; font-size:0.88rem; font-weight:600; opacity:0; transform:translateY(20px); transition:all 0.3s ease; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.15); }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast-success { background:#dcfce7; color:#16a34a; }
+    .toast-error { background:#fee2e2; color:#dc2626; }
+    mark { background:#fef08a; border-radius:2px; padding:0; }
 </style>
 
 <div class="content-box">
@@ -385,28 +101,20 @@
         <h2><i class="fas fa-users"></i> Foydalanuvchilar</h2>
         <button class="btn-add" id="addUserBtn"><i class="fas fa-plus"></i> Yangi</button>
     </div>
-
     <div class="search-bar-row">
         <div class="search-wrap">
             <i class="fas fa-search"></i>
-            <input type="text" id="searchInput"
-                   placeholder="FIO, lavozim yoki username bo'yicha qidiring..."
-                   oninput="filterUsers()">
+            <input type="text" id="searchInput" placeholder="FIO, lavozim yoki username bo'yicha qidiring..." oninput="filterUsers()">
         </div>
-        <select id="roleFilter" onchange="filterUsers()">
-            <option value="">Barcha rollar</option>
-        </select>
+        <select id="roleFilter" onchange="filterUsers()"><option value="">Barcha rollar</option></select>
         <select id="statusFilter" onchange="filterUsers()">
             <option value="">Barcha holat</option>
             <option value="active">✅ Faol</option>
             <option value="inactive">🚫 Nofaol</option>
         </select>
-        <button class="btn-clear" onclick="clearSearch()">
-            <i class="fas fa-times"></i> Tozalash
-        </button>
+        <button class="btn-clear" onclick="clearSearch()"><i class="fas fa-times"></i> Tozalash</button>
         <span id="resultCount"></span>
     </div>
-
     <div class="table-container">
         <table id="usersTable">
             <thead>
@@ -472,12 +180,12 @@
             <h3 id="bioModalTitle">Biometrik</h3>
             <button class="close-modal" id="closeBioModal">&times;</button>
         </div>
-
         <div class="bio-tabs">
             <div class="bio-tab active" data-tab="face"><i class="fas fa-user-circle"></i> Yuz</div>
             <div class="bio-tab" data-tab="finger"><i class="fas fa-fingerprint"></i> Barmoq izi</div>
         </div>
 
+        <!-- Face Panel -->
         <div class="bio-panel active" id="facePanel">
             <div class="bio-status" id="faceStatus">
                 <i class="fas fa-circle-notch fa-spin"></i>
@@ -504,7 +212,7 @@
             <button class="btn-cancel" style="width:100%;padding:0.5rem;" id="startWebcamBtn">
                 <i class="fas fa-video"></i> Webcam orqali olish
             </button>
-            <button class="btn-primary" style="width:100%;margin-top:0.75rem;" id="updateFaceBtn" style="display:none;">
+            <button class="btn-primary" style="width:100%;margin-top:0.75rem;display:none;" id="updateFaceBtn">
                 <i class="fas fa-sync-alt"></i> Yuzni Yangilash
             </button>
             <button class="btn-primary" style="width:100%;margin-top:0.75rem;" id="saveFaceBtn" disabled>
@@ -515,24 +223,37 @@
             </button>
         </div>
 
+        <!-- Finger Panel -->
         <div class="bio-panel" id="fingerPanel">
             <div class="bio-status" id="fingerStatus">
                 <i class="fas fa-circle-notch fa-spin"></i>
                 <span id="fingerStatusText">Yuklanmoqda...</span>
             </div>
-            <div class="qr-box" id="qrBox">
-                <p style="margin-bottom:0.5rem;font-weight:600;">
-                    <i class="fas fa-mobile-alt"></i> Mobil telefon orqali skanerlang
-                </p>
-                <canvas id="qrCanvas"></canvas>
-                <p>Mobil ilovani oching va QR ni skanerlang.<br>Barmoq izi avtomatik yuklanadi.</p>
-                <div class="qr-status waiting" id="qrStatus">
-                    <i class="fas fa-hourglass-half"></i> Kutilmoqda...
+            <div id="qrSection">
+                <div class="qr-box" id="qrBox">
+                    <p style="margin-bottom:0.5rem;font-weight:600;">
+                        <i class="fas fa-mobile-alt"></i> Mobil telefon orqali skanerlang
+                    </p>
+                    <canvas id="qrCanvas"></canvas>
+                    <p>Mobil ilovani oching va QR ni skanerlang.<br>Barmoq izi avtomatik yuklanadi.</p>
+                    <div class="qr-status waiting" id="qrStatus">
+                        <i class="fas fa-hourglass-half"></i> Kutilmoqda...
+                    </div>
+                    <button class="btn-cancel btn-sm" id="refreshQrBtn"
+                            style="margin-top:0.75rem;width:100%;height:auto;padding:0.5rem;">
+                        <i class="fas fa-sync"></i> QR ni yangilash
+                    </button>
                 </div>
-                <button class="btn-cancel btn-sm" id="refreshQrBtn" style="margin-top:0.75rem;width:100%;height:auto;padding:0.5rem;">
-                    <i class="fas fa-sync"></i> QR ni yangilash
+                <div class="or-divider">yoki</div>
+                <button class="btn-cancel" id="usbScannerBtn"
+                        style="width:100%;padding:0.55rem;font-size:0.88rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+                    <i class="fas fa-fingerprint"></i> USB Scanner orqali olish
                 </button>
             </div>
+            <button class="btn-primary" id="updateFingerBtn"
+                    style="width:100%;margin-top:0.75rem;display:none;">
+                <i class="fas fa-sync-alt"></i> Barmoq izini Yangilash
+            </button>
             <button class="del-bio-btn" id="deleteFingerBtn" style="display:none;">
                 <i class="fas fa-trash"></i> Barmoq izi embeddingini o'chirish
             </button>
@@ -541,7 +262,6 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
 <script>
 var currentBioUserId = null;
 var webcamStream = null;
@@ -555,7 +275,6 @@ async function loadRoles() {
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
         rolesCache = Array.isArray(data) ? data : (data.roles ?? []);
-
         const select = document.getElementById('roleSelect');
         const rf = document.getElementById('roleFilter');
         rolesCache.filter(r => r.is_active !== false).forEach(role => {
@@ -583,7 +302,6 @@ function filterUsers() {
     const q    = (document.getElementById('searchInput').value || '').toLowerCase().trim();
     const role = (document.getElementById('roleFilter').value || '').toLowerCase();
     const stat = document.getElementById('statusFilter').value;
-
     const filtered = usersCache.filter(u => {
         const matchQ = !q ||
             (u.fio      || '').toLowerCase().includes(q) ||
@@ -595,13 +313,10 @@ function filterUsers() {
             (stat === 'inactive' && !u.status);
         return matchQ && matchR && matchS;
     });
-
     displayUsers(filtered, q);
-
     const rc = document.getElementById('resultCount');
     if (filtered.length === usersCache.length) {
-        rc.textContent = `${usersCache.length} ta`;
-        rc.style.color = '#6b7280';
+        rc.textContent = `${usersCache.length} ta`; rc.style.color = '#6b7280';
     } else {
         rc.textContent = `${filtered.length} / ${usersCache.length} ta natija`;
         rc.style.color = filtered.length === 0 ? '#dc2626' : '#6b7280';
@@ -651,8 +366,7 @@ function displayUsers(users, q) {
         [[user.has_face, 'badge-yes', '✓ Bor'], [user.has_fingerprint, 'badge-yes', '✓ Bor']].forEach(([val, cls, label]) => {
             const td = document.createElement('td');
             const b = document.createElement('span');
-            b.className = val ? cls : 'badge badge-no';
-            if (val) b.classList.add('badge');
+            b.className = val ? `badge ${cls}` : 'badge badge-no';
             b.textContent = val ? label : '—';
             td.appendChild(b); row.appendChild(td);
         });
@@ -704,7 +418,6 @@ function openUserModal(user) {
     document.getElementById('lavozim').value  = isEdit ? user.lavozim : '';
     document.getElementById('username').value = isEdit ? user.username : '';
     document.getElementById('status').checked = isEdit ? user.status : true;
-
     const select = document.getElementById('roleSelect');
     select.innerHTML = '<option value="">— Rol tanlang —</option>';
     const cur = isEdit ? (user.role?.id ?? user.role_id) : null;
@@ -732,48 +445,54 @@ async function loadBioStatus(userId) {
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
 
+        // Face
         const faceOk = data.has_face;
-
         document.getElementById('faceStatus').className = `bio-status ${faceOk ? 'ok' : 'no'}`;
         document.getElementById('faceStatusText').textContent = faceOk
             ? 'Yuz embeddigi mavjud'
             : "Yuz embeddigi yo'q — rasm yuklang yoki webcam dan oling";
-
-        document.getElementById('updateFaceBtn').style.display = faceOk ? 'block' : 'none';
-        document.getElementById('deleteFaceBtn').style.display = faceOk ? 'block' : 'none';
-
+        document.getElementById('updateFaceBtn').style.display  = faceOk ? 'block' : 'none';
+        document.getElementById('deleteFaceBtn').style.display  = faceOk ? 'block' : 'none';
         if (faceOk) {
             stopWebcam();
-            document.getElementById('faceZone').style.display    = 'none';
-            document.getElementById('orDivider').style.display   = 'none';
+            document.getElementById('faceZone').style.display       = 'none';
+            document.getElementById('orDivider').style.display      = 'none';
             document.getElementById('startWebcamBtn').style.display = 'none';
-            document.getElementById('saveFaceBtn').style.display = 'none';
+            document.getElementById('saveFaceBtn').style.display    = 'none';
         } else {
-            document.getElementById('faceZone').style.display    = 'block';
-            document.getElementById('orDivider').style.display   = 'flex';
+            document.getElementById('faceZone').style.display       = 'block';
+            document.getElementById('orDivider').style.display      = 'flex';
             document.getElementById('startWebcamBtn').style.display = 'block';
-            document.getElementById('saveFaceBtn').style.display = 'block';
+            document.getElementById('saveFaceBtn').style.display    = 'block';
         }
 
+        // Finger
         const fingerOk = data.has_fingerprint;
-
         document.getElementById('fingerStatus').className = `bio-status ${fingerOk ? 'ok' : 'no'}`;
         document.getElementById('fingerStatusText').textContent = fingerOk
             ? 'Barmoq izi embeddigi mavjud'
             : "Barmoq izi embeddigi yo'q";
-
-        document.getElementById('deleteFingerBtn').style.display = fingerOk ? 'block' : 'none';
+        document.getElementById('deleteFingerBtn').style.display  = fingerOk ? 'block' : 'none';
+        document.getElementById('updateFingerBtn').style.display  = fingerOk ? 'block' : 'none';
+        document.getElementById('qrSection').style.display        = fingerOk ? 'none'  : 'block';
 
     } catch(e) { console.error('loadBioStatus:', e); }
 }
 
 function updateFace() {
-    document.getElementById('faceStatusText').textContent = 'Yangi yuz rasmini yuklang';
-    document.getElementById('updateFaceBtn').style.display   = 'none';
-    document.getElementById('faceZone').style.display        = 'block';
-    document.getElementById('orDivider').style.display       = 'flex';
-    document.getElementById('startWebcamBtn').style.display  = 'block';
-    document.getElementById('saveFaceBtn').style.display     = 'block';
+    document.getElementById('faceStatusText').textContent       = 'Yangi yuz rasmini yuklang';
+    document.getElementById('updateFaceBtn').style.display      = 'none';
+    document.getElementById('faceZone').style.display           = 'block';
+    document.getElementById('orDivider').style.display          = 'flex';
+    document.getElementById('startWebcamBtn').style.display     = 'block';
+    document.getElementById('saveFaceBtn').style.display        = 'block';
+}
+
+function updateFinger() {
+    document.getElementById('fingerStatusText').textContent     = 'Yangi barmoq izini skanerlang';
+    document.getElementById('updateFingerBtn').style.display    = 'none';
+    document.getElementById('qrSection').style.display          = 'block';
+    startFingerSession();
 }
 
 function switchBioTab(tab) {
@@ -781,8 +500,16 @@ function switchBioTab(tab) {
     document.querySelectorAll('.bio-panel').forEach(p => p.classList.remove('active'));
     document.querySelector(`.bio-tab[data-tab="${tab}"]`).classList.add('active');
     document.getElementById(tab === 'face' ? 'facePanel' : 'fingerPanel').classList.add('active');
-    if (tab === 'finger') startFingerSession();
-    else stopFingerPoll();
+
+    if (tab === 'finger') {
+        stopFingerPoll();
+        loadBioStatus(currentBioUserId).then(() => {
+            const qrVisible = document.getElementById('qrSection').style.display !== 'none';
+            if (qrVisible) startFingerSession();
+        });
+    } else {
+        stopFingerPoll();
+    }
 }
 
 function resetFacePanel() {
@@ -841,10 +568,7 @@ async function saveFace() {
         const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
         const res = await fetch(`/api/users/${currentBioUserId}/face/`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'X-CSRFToken': getCookie('csrftoken')
-            },
+            headers: { 'Authorization': `Bearer ${token}`, 'X-CSRFToken': getCookie('csrftoken') },
             body: formData
         });
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || err.message || res.status); }
@@ -906,17 +630,44 @@ function stopFingerPoll() {
     if (fingerPollInterval) { clearInterval(fingerPollInterval); fingerPollInterval = null; }
 }
 
+async function scanUsbFinger() {
+    const btn = document.getElementById('usbScannerBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Skanerlanmoqda...';
+    try {
+        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        const res = await fetch(`/api/users/${currentBioUserId}/fingerprint/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ embedding: 'scanner_demo_embedding', source: 'scanner' })
+        });
+        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || err.message || res.status); }
+        showToast('Barmoq izi USB scanner orqali saqlandi!', 'success');
+        stopFingerPoll();
+        await loadBioStatus(currentBioUserId);
+        await loadUsers();
+    } catch(e) {
+        showToast('Xato: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-fingerprint"></i> USB Scanner orqali olish';
+    }
+}
+
 async function deleteBiometric(type) {
     if (!confirm(`${type === 'face' ? 'Yuz' : 'Barmoq izi'} embeddingini o'chirishni tasdiqlaysizmi?`)) return;
     const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
     const url = type === 'face'
         ? `/api/users/${currentBioUserId}/face/`
         : `/api/users/${currentBioUserId}/fingerprint/`;
-    const res = await fetch(url, { method: 'DELETE', 
-                    headers: {
-                'Authorization': `Bearer ${token}`,
-                'X-CSRFToken': getCookie('csrftoken')
-            },});
+    const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}`, 'X-CSRFToken': getCookie('csrftoken') }
+    });
     if (!res.ok) { showToast("O'chirishda xato", 'error'); return; }
     showToast("Embedding o'chirildi!", 'success');
     await loadBioStatus(currentBioUserId);
@@ -1018,7 +769,9 @@ document.getElementById('stopWebcamBtn').addEventListener('click', stopWebcam);
 document.getElementById('updateFaceBtn').addEventListener('click', updateFace);
 document.getElementById('saveFaceBtn').addEventListener('click', saveFace);
 document.getElementById('deleteFaceBtn').addEventListener('click', () => deleteBiometric('face'));
-document.getElementById('refreshQrBtn').addEventListener('click', () => startFingerSession());
+document.getElementById('refreshQrBtn').addEventListener('click', startFingerSession);
+document.getElementById('usbScannerBtn').addEventListener('click', scanUsbFinger);
+document.getElementById('updateFingerBtn').addEventListener('click', updateFinger);
 document.getElementById('deleteFingerBtn').addEventListener('click', () => deleteBiometric('finger'));
 
 window.addEventListener('click', e => {

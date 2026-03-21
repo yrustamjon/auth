@@ -12,12 +12,12 @@ class GetBiometricStatus(APIView):
 
     def get(self,request,id):
         user=Users.objects.get(id=id)
-        has_face = hasattr(user, "face"),
-        has_fingerprint = hasattr(user, "fingerprint")
-        print(user,has_fingerprint,has_face[0])
+        has_face = BiometricFace.objects.filter(user=user).exists()
+        has_fingerprint = BiometricFingerprint.objects.filter(user=user).exists()
+        print(user,has_fingerprint,has_face)
     
         return  Response({
-            "has_face": has_face[0],
+            "has_face": has_face,
             "has_fingerprint": has_fingerprint
             })
 
@@ -78,8 +78,58 @@ class BiometricFingerprint_(APIView):
         
 
 
-class Fingerprint(APIView):
+import uuid
+from django.core.cache import cache
+
+class FingerprintSessionCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def 
+    def post(self, request, id):
+        try:
+            user = Users.objects.get(id=id)
+        except Users.DoesNotExist:
+            return Response({"detail": "User not found"}, status=404)
 
+        session_token = str(uuid.uuid4())
+        # Cache da 5 daqiqa saqlash
+        cache.set(f"finger_session_{session_token}", {
+            "user_id": user.id,
+            "status": "pending"
+        }, timeout=300)
+
+        return Response({"session_token": session_token})
+
+
+class FingerprintSessionStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, token):
+        data = cache.get(f"finger_session_{token}")
+        if not data:
+            return Response({"status": "expired"})
+        return Response({"status": data["status"]})
+
+
+class FingerprintSaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, token):
+        data = cache.get(f"finger_session_{token}")
+        if not data:
+            return Response({"detail": "Session expired"}, status=400)
+
+        embedding = request.data.get("embedding")
+        if not embedding:
+            return Response({"detail": "embedding required"}, status=400)
+
+        user = Users.objects.get(id=data["user_id"])
+        # ModelIngizga qarab o'zgartiring
+        BiometricFingerprint.objects.update_or_create(
+            user=user,
+            defaults={"embedding": embedding}
+        )
+
+        data["status"] = "completed"
+        cache.set(f"finger_session_{token}", data, timeout=300)
+
+        return Response({"status": "ok"})

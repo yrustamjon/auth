@@ -199,10 +199,16 @@ class BiometricFace(models.Model):
 
 
 class BiometricFingerprint(models.Model):
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         Users,
         on_delete=models.CASCADE,
         related_name="fingerprint"
+    )
+
+
+    source = models.CharField(
+        max_length=30,
+        default="scanner"
     )
     embedding = models.BinaryField()
     created_at = models.DateTimeField(auto_now_add=True, null=True)
@@ -218,6 +224,9 @@ class BiometricFingerprint(models.Model):
 
     def __str__(self):
             return f"BiometricFingerprint: {self.user}"
+
+
+
 
 class AccessLogs(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="access_logs")
@@ -235,3 +244,4 @@ class AccessLogs(models.Model):
 
     def __str__(self):
         return f"AccessLog: {self.user} - {self.device} - {'Success' if self.success else 'Failure'}"
+

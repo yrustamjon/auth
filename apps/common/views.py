@@ -254,11 +254,12 @@ class Admin_Users(APIView):
                 "is_locked": user.is_locked(),
                 "status": user.status,
 
-                "has_face": hasattr(user, "face"),
-                "has_fingerprint": hasattr(user, "fingerprint")
+                "has_face": BiometricFace.objects.filter(user=user).exists(),
+                "has_fingerprint": BiometricFingerprint.objects.filter(user=user).exists()
             }
             for user in users
         ]
+        print([i['has_fingerprint'] for i in users_data])
         return Response({"users": users_data})
     
     def post(self, request):
