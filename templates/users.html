@@ -79,12 +79,6 @@
     #webcamCanvas { display:none; }
     .webcam-actions { display:flex; gap:0.5rem; margin-bottom:0.75rem; }
     .webcam-actions button { flex:1; padding:0.5rem; border:none; border-radius:8px; cursor:pointer; font-size:0.85rem; font-weight:500; }
-    .qr-box { text-align:center; padding:1.5rem; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0; }
-    .qr-box canvas, .qr-box img { margin:0.75rem auto; display:block; }
-    .qr-box p { font-size:0.85rem; color:#64748b; margin:0; }
-    .qr-status { margin-top:1rem; padding:0.65rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:500; text-align:center; }
-    .qr-status.waiting { background:#f1f5f9; color:#64748b; }
-    .qr-status.received { background:#dcfce7; color:#16a34a; }
     .or-divider { display:flex; align-items:center; gap:0.75rem; margin:0.75rem 0; color:#9ca3af; font-size:0.8rem; }
     .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:#e5e7eb; }
     .del-bio-btn { width:100%; padding:0.5rem; background:#fee2e2; color:#dc2626; border:none; border-radius:8px; cursor:pointer; margin-top:0.75rem; font-size:0.85rem; font-weight:600; transition:background 0.15s; }
@@ -94,6 +88,83 @@
     .toast-success { background:#dcfce7; color:#16a34a; }
     .toast-error { background:#fee2e2; color:#dc2626; }
     mark { background:#fef08a; border-radius:2px; padding:0; }
+
+    /* ── Fingerprint Source Cards ─────────────────────────────── */
+    .fp-cards-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:1rem; }
+    .fp-card { border:1.5px solid #e5e7eb; border-radius:12px; padding:.85rem 1rem; background:#fafafa; cursor:pointer; transition:border-color .2s,box-shadow .2s,background .2s; display:flex; flex-direction:column; gap:.4rem; }
+    .fp-card:hover { border-color:#6c63ff; background:#f5f3ff; box-shadow:0 4px 14px rgba(108,99,255,.1); }
+    .fp-card.fp-card--active { border-color:#6c63ff; background:#f5f3ff; box-shadow:0 0 0 3px rgba(108,99,255,.12); }
+    .fp-card-header { display:flex; align-items:center; gap:.4rem; }
+    .fp-card-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.8rem; flex-shrink:0; }
+    .fp-card-icon.manual   { background:#ede9fe; color:#6c63ff; }
+    .fp-card-icon.phone    { background:#dbeafe; color:#1d4ed8; }
+    .fp-card-icon.scanner  { background:#dcfce7; color:#16a34a; }
+    .fp-card-icon.external { background:#fef3c7; color:#d97706; }
+    .fp-card-name { font-size:.82rem; font-weight:700; color:#1a1a2e; flex:1; }
+    .fp-badge { display:inline-flex; align-items:center; gap:3px; padding:.2rem .55rem; border-radius:999px; font-size:.7rem; font-weight:700; white-space:nowrap; }
+    .fp-badge.yes { background:#dcfce7; color:#16a34a; }
+    .fp-badge.no  { background:#f3f4f6; color:#9ca3af; }
+    .fp-card-meta { font-size:.72rem; color:#9ca3af; min-height:.9rem; display:flex; gap:.6rem; flex-wrap:wrap; }
+    .fp-card-meta span { display:inline-flex; align-items:center; gap:.25rem; }
+    .fp-card-btn { align-self:flex-start; padding:.3rem .75rem; border:none; border-radius:7px; font-size:.75rem; font-weight:600; cursor:pointer; transition:opacity .15s,transform .1s; margin-top:.15rem; }
+    .fp-card-btn:hover { opacity:.82; transform:translateY(-1px); }
+    .fp-card-btn.open { background:#6c63ff; color:#fff; }
+
+    /* ── Source Manager Panel ─────────────────────────────────── */
+    .fp-manager { display:none; border:1.5px solid #e5e7eb; border-radius:12px; background:#fff; margin-bottom:.5rem; overflow:hidden; animation:fpIn .2s ease; }
+    .fp-manager.visible { display:block; }
+    @keyframes fpIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .fp-manager-head { display:flex; align-items:center; gap:.6rem; padding:.9rem 1.1rem; border-bottom:1px solid #f0f0f5; background:#fafafa; }
+    .fp-manager-title { font-size:.9rem; font-weight:700; color:#1a1a2e; flex:1; }
+    .fp-manager-close { background:#f3f4f6; border:none; width:26px; height:26px; border-radius:50%; font-size:.9rem; color:#6b7280; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .fp-manager-close:hover { background:#e5e7eb; color:#374151; }
+    .fp-manager-body { padding:1rem 1.1rem; }
+    .fp-add-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:.85rem; }
+    .fp-add-row span { font-size:.8rem; color:#6b7280; }
+    .fp-btn-add-new { display:inline-flex; align-items:center; gap:.35rem; background:#6c63ff; color:#fff; border:none; border-radius:8px; padding:.4rem .9rem; font-size:.78rem; font-weight:600; cursor:pointer; transition:background .2s; }
+    .fp-btn-add-new:hover { background:#574fd6; }
+    .fp-list { display:flex; flex-direction:column; gap:.5rem; margin-bottom:.75rem; }
+    .fp-list-empty { text-align:center; padding:1.25rem; color:#9ca3af; font-size:.83rem; background:#fafafa; border-radius:9px; border:1.5px dashed #e5e7eb; }
+    .fp-item { display:flex; align-items:center; gap:.75rem; padding:.65rem .85rem; border:1.5px solid #f0f0f5; border-radius:10px; background:#fafafa; transition:border-color .15s,background .15s; }
+    .fp-item:hover { border-color:#e0dcff; background:#f9f8ff; }
+    .fp-item-icon { width:32px; height:32px; border-radius:8px; background:#ede9fe; color:#6c63ff; display:flex; align-items:center; justify-content:center; font-size:.85rem; flex-shrink:0; }
+    .fp-item-info { flex:1; min-width:0; }
+    .fp-item-name { font-size:.83rem; font-weight:600; color:#1a1a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fp-item-tpl  { font-size:.73rem; color:#9ca3af; font-family:'Courier New',monospace; margin-top:.1rem; }
+    .fp-item-date { font-size:.72rem; color:#b0b0be; margin-top:.1rem; }
+    .fp-item-actions { display:flex; gap:.35rem; flex-shrink:0; }
+    .fp-item-btn { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border:none; border-radius:7px; font-size:.75rem; cursor:pointer; transition:opacity .15s,transform .1s; }
+    .fp-item-btn:hover { opacity:.82; transform:translateY(-1px); }
+    .fp-item-btn.edit { background:#fef3c7; color:#d97706; }
+    .fp-item-btn.del  { background:#fee2e2; color:#dc2626; }
+    .fp-inline-edit { border:1.5px solid #e5e7eb; border-radius:10px; padding:.85rem; background:#fff; margin-top:.35rem; animation:fpIn .15s ease; }
+    .fp-field-row { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; margin-bottom:.6rem; }
+    .fp-field { display:flex; flex-direction:column; gap:.25rem; }
+    .fp-field label { font-size:.75rem; font-weight:600; color:#374151; }
+    .fp-field input[type=text] { border:1.5px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; font-size:.82rem; color:#1a1a2e; background:#fafafa; outline:none; width:100%; box-sizing:border-box; transition:border-color .2s,box-shadow .2s; font-family:inherit; }
+    .fp-field input:focus { border-color:#6c63ff; background:#fff; box-shadow:0 0 0 3px rgba(108,99,255,.1); }
+    .fp-field input.mono { font-family:'Courier New',monospace; }
+    .fp-form-actions { display:flex; gap:.5rem; justify-content:flex-end; margin-top:.6rem; }
+    .fp-form-save { background:#6c63ff; color:#fff; border:none; border-radius:8px; padding:.45rem 1rem; font-size:.8rem; font-weight:600; cursor:pointer; transition:background .2s; }
+    .fp-form-save:hover { background:#574fd6; }
+    .fp-form-cancel { background:#f3f4f6; color:#374151; border:none; border-radius:8px; padding:.45rem .9rem; font-size:.8rem; font-weight:600; cursor:pointer; transition:background .2s; }
+    .fp-form-cancel:hover { background:#e5e7eb; }
+    .fp-add-form { border:1.5px solid #e5e7eb; border-radius:10px; padding:.9rem; background:#fff; margin-bottom:.75rem; animation:fpIn .18s ease; }
+    .fp-add-form-title { font-size:.82rem; font-weight:700; color:#1a1a2e; margin-bottom:.75rem; display:flex; align-items:center; gap:.4rem; }
+    .fp-qr-area { text-align:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:1.25rem; }
+    .fp-qr-placeholder { width:120px; height:120px; background:#e5e7eb; border-radius:8px; margin:.5rem auto; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#9ca3af; }
+    .fp-qr-label { font-size:.8rem; color:#64748b; margin:.5rem 0 0; }
+    .fp-qr-status { margin-top:.65rem; padding:.5rem .85rem; border-radius:8px; font-size:.8rem; font-weight:500; background:#f1f5f9; color:#64748b; display:flex; align-items:center; justify-content:center; gap:.4rem; }
+    .fp-qr-refresh { margin-top:.6rem; width:100%; padding:.45rem; background:#f3f4f6; color:#374151; border:none; border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer; transition:background .2s; display:flex; align-items:center; justify-content:center; gap:.35rem; }
+    .fp-qr-refresh:hover { background:#e5e7eb; }
+    .fp-scanner-area { text-align:center; padding:1.25rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; }
+    .fp-scanner-spinner { font-size:1.8rem; color:#16a34a; margin-bottom:.5rem; }
+    .fp-scanner-label { font-size:.82rem; color:#166534; font-weight:500; margin-bottom:.75rem; }
+    .fp-scanner-btn { background:#16a34a; color:#fff; border:none; border-radius:8px; padding:.5rem 1.2rem; font-size:.82rem; font-weight:600; cursor:pointer; transition:background .2s; display:inline-flex; align-items:center; gap:.4rem; }
+    .fp-scanner-btn:hover { background:#15803d; }
+    .fp-external-area { text-align:center; padding:1.5rem; background:#fffbeb; border:1px solid #fde68a; border-radius:10px; }
+    .fp-external-icon { font-size:1.8rem; color:#d97706; margin-bottom:.5rem; }
+    .fp-external-label { font-size:.82rem; color:#92400e; font-weight:500; }
 </style>
 
 <div class="content-box">
@@ -175,7 +246,7 @@
 
 <!-- Biometric Modal -->
 <div class="modal" id="bioModal">
-    <div class="modal-content" style="max-width:500px;">
+    <div class="modal-content" style="max-width:520px;max-height:90vh;overflow-y:auto;">
         <div class="modal-header">
             <h3 id="bioModalTitle">Biometrik</h3>
             <button class="close-modal" id="closeBioModal">&times;</button>
@@ -185,7 +256,7 @@
             <div class="bio-tab" data-tab="finger"><i class="fas fa-fingerprint"></i> Barmoq izi</div>
         </div>
 
-        <!-- Face Panel -->
+        <!-- Face Panel — UNCHANGED -->
         <div class="bio-panel active" id="facePanel">
             <div class="bio-status" id="faceStatus">
                 <i class="fas fa-circle-notch fa-spin"></i>
@@ -223,52 +294,39 @@
             </button>
         </div>
 
-        <!-- Finger Panel -->
+        <!-- Finger Panel — REFACTORED -->
         <div class="bio-panel" id="fingerPanel">
             <div class="bio-status" id="fingerStatus">
                 <i class="fas fa-circle-notch fa-spin"></i>
                 <span id="fingerStatusText">Yuklanmoqda...</span>
             </div>
-            <div id="qrSection">
-                <div class="qr-box" id="qrBox">
-                    <p style="margin-bottom:0.5rem;font-weight:600;">
-                        <i class="fas fa-mobile-alt"></i> Mobil telefon orqali skanerlang
-                    </p>
-                    <canvas id="qrCanvas"></canvas>
-                    <p>Mobil ilovani oching va QR ni skanerlang.<br>Barmoq izi avtomatik yuklanadi.</p>
-                    <div class="qr-status waiting" id="qrStatus">
-                        <i class="fas fa-hourglass-half"></i> Kutilmoqda...
-                    </div>
-                    <button class="btn-cancel btn-sm" id="refreshQrBtn"
-                            style="margin-top:0.75rem;width:100%;height:auto;padding:0.5rem;">
-                        <i class="fas fa-sync"></i> QR ni yangilash
-                    </button>
-                </div>
-                <div class="or-divider">yoki</div>
-                <button class="btn-cancel" id="usbScannerBtn"
-                        style="width:100%;padding:0.55rem;font-size:0.88rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
-                    <i class="fas fa-fingerprint"></i> USB Scanner orqali olish
-                </button>
-            </div>
-            <button class="btn-primary" id="updateFingerBtn"
-                    style="width:100%;margin-top:0.75rem;display:none;">
-                <i class="fas fa-sync-alt"></i> Barmoq izini Yangilash
-            </button>
-            <button class="del-bio-btn" id="deleteFingerBtn" style="display:none;">
-                <i class="fas fa-trash"></i> Barmoq izi embeddingini o'chirish
-            </button>
+            <div class="fp-cards-grid" id="fpCardsGrid"></div>
+            <div class="fp-manager" id="fpManager"></div>
         </div>
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-var currentBioUserId = null;
-var webcamStream = null;
-var faceImageBlob = null;
+var currentBioUserId  = null;
+var webcamStream      = null;
+var faceImageBlob     = null;
 var fingerPollInterval = null;
 var currentSessionToken = null;
 
+/* ── Fingerprint panel state ─────────────────────────────────── */
+var fpSourcesCache = [];
+var fpActiveSource = null;
+
+var FP_SOURCES = [
+    { key: 'manual',   label: 'Manual',   icon: 'fas fa-keyboard',    cls: 'manual'   },
+    { key: 'phone',    label: 'Phone',    icon: 'fas fa-mobile-alt',  cls: 'phone'    },
+    { key: 'scanner',  label: 'Scanner',  icon: 'fas fa-fingerprint', cls: 'scanner'  },
+    { key: 'external', label: 'External', icon: 'fas fa-plug',        cls: 'external' },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   EXISTING FUNCTIONS — UNCHANGED
+══════════════════════════════════════════════════════════════ */
 async function loadRoles() {
     try {
         const res = await fetchWithAuth('/api/roles');
@@ -347,22 +405,18 @@ function displayUsers(users, q) {
     users.forEach(user => {
         const row = document.createElement('tr');
         if (!user.status) row.classList.add('inactive-row');
-
         const idTd = document.createElement('td');
         idTd.style.cssText = 'color:#9ca3af;font-size:0.8rem;font-weight:600;';
         idTd.textContent = user.id;
         row.appendChild(idTd);
-
         [user.fio, user.lavozim, user.username].forEach(val => {
             const td = document.createElement('td');
             td.innerHTML = q ? highlight(val, q) : (val || '—');
             row.appendChild(td);
         });
-
         const roleTd = document.createElement('td');
         roleTd.textContent = user.role?.name ?? '—';
         row.appendChild(roleTd);
-
         [[user.has_face, 'badge-yes', '✓ Bor'], [user.has_fingerprint, 'badge-yes', '✓ Bor']].forEach(([val, cls, label]) => {
             const td = document.createElement('td');
             const b = document.createElement('span');
@@ -370,40 +424,27 @@ function displayUsers(users, q) {
             b.textContent = val ? label : '—';
             td.appendChild(b); row.appendChild(td);
         });
-
         const stTd = document.createElement('td');
         const stb = document.createElement('span');
         stb.className = `badge ${user.status ? 'badge-active' : 'badge-inactive'}`;
         stb.textContent = user.status ? 'Active' : 'Inactive';
         stTd.appendChild(stb); row.appendChild(stTd);
-
         const actTd = document.createElement('td');
         actTd.className = 'actions';
-
         const editBtn = document.createElement('button');
-        editBtn.className = 'btn-warning btn-sm';
-        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
-        editBtn.title = 'Tahrirlash';
+        editBtn.className = 'btn-warning btn-sm'; editBtn.innerHTML = '<i class="fas fa-edit"></i>'; editBtn.title = 'Tahrirlash';
         editBtn.addEventListener('click', () => openUserModal(user));
-
         const bioBtn = document.createElement('button');
-        bioBtn.className = 'btn-bio btn-sm';
-        bioBtn.innerHTML = '<i class="fas fa-fingerprint"></i>';
-        bioBtn.title = 'Biometrik';
+        bioBtn.className = 'btn-bio btn-sm'; bioBtn.innerHTML = '<i class="fas fa-fingerprint"></i>'; bioBtn.title = 'Biometrik';
         bioBtn.addEventListener('click', () => openBioModal(user));
-
         const toggleBtn = document.createElement('button');
         toggleBtn.className = user.status ? 'btn-secondary btn-sm' : 'btn-success btn-sm';
         toggleBtn.innerHTML = user.status ? '<i class="fas fa-ban"></i>' : '<i class="fas fa-check"></i>';
         toggleBtn.title = user.status ? 'Bloklash' : 'Aktivlashtirish';
         toggleBtn.addEventListener('click', () => toggleUserStatus(user));
-
         const delBtn = document.createElement('button');
-        delBtn.className = 'btn-danger btn-sm';
-        delBtn.innerHTML = '<i class="fas fa-trash"></i>';
-        delBtn.title = "O'chirish";
+        delBtn.className = 'btn-danger btn-sm'; delBtn.innerHTML = '<i class="fas fa-trash"></i>'; delBtn.title = "O'chirish";
         delBtn.addEventListener('click', () => deleteUser(user.id));
-
         actTd.append(editBtn, bioBtn, toggleBtn, delBtn);
         row.appendChild(actTd);
         tbody.appendChild(row);
@@ -437,6 +478,7 @@ async function openBioModal(user) {
     resetFacePanel();
     document.getElementById('bioModal').style.display = 'flex';
     await loadBioStatus(user.id);
+    await loadFingerSources(user.id);
 }
 
 async function loadBioStatus(userId) {
@@ -444,15 +486,13 @@ async function loadBioStatus(userId) {
         const res = await fetchWithAuth(`/api/users/${userId}/biometric-status/`);
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
-
-        // Face
         const faceOk = data.has_face;
         document.getElementById('faceStatus').className = `bio-status ${faceOk ? 'ok' : 'no'}`;
         document.getElementById('faceStatusText').textContent = faceOk
             ? 'Yuz embeddigi mavjud'
             : "Yuz embeddigi yo'q — rasm yuklang yoki webcam dan oling";
-        document.getElementById('updateFaceBtn').style.display  = faceOk ? 'block' : 'none';
-        document.getElementById('deleteFaceBtn').style.display  = faceOk ? 'block' : 'none';
+        document.getElementById('updateFaceBtn').style.display = faceOk ? 'block' : 'none';
+        document.getElementById('deleteFaceBtn').style.display = faceOk ? 'block' : 'none';
         if (faceOk) {
             stopWebcam();
             document.getElementById('faceZone').style.display       = 'none';
@@ -465,34 +505,16 @@ async function loadBioStatus(userId) {
             document.getElementById('startWebcamBtn').style.display = 'block';
             document.getElementById('saveFaceBtn').style.display    = 'block';
         }
-
-        // Finger
-        const fingerOk = data.has_fingerprint;
-        document.getElementById('fingerStatus').className = `bio-status ${fingerOk ? 'ok' : 'no'}`;
-        document.getElementById('fingerStatusText').textContent = fingerOk
-            ? 'Barmoq izi embeddigi mavjud'
-            : "Barmoq izi embeddigi yo'q";
-        document.getElementById('deleteFingerBtn').style.display  = fingerOk ? 'block' : 'none';
-        document.getElementById('updateFingerBtn').style.display  = fingerOk ? 'block' : 'none';
-        document.getElementById('qrSection').style.display        = fingerOk ? 'none'  : 'block';
-
     } catch(e) { console.error('loadBioStatus:', e); }
 }
 
 function updateFace() {
-    document.getElementById('faceStatusText').textContent       = 'Yangi yuz rasmini yuklang';
-    document.getElementById('updateFaceBtn').style.display      = 'none';
-    document.getElementById('faceZone').style.display           = 'block';
-    document.getElementById('orDivider').style.display          = 'flex';
-    document.getElementById('startWebcamBtn').style.display     = 'block';
-    document.getElementById('saveFaceBtn').style.display        = 'block';
-}
-
-function updateFinger() {
-    document.getElementById('fingerStatusText').textContent     = 'Yangi barmoq izini skanerlang';
-    document.getElementById('updateFingerBtn').style.display    = 'none';
-    document.getElementById('qrSection').style.display          = 'block';
-    startFingerSession();
+    document.getElementById('faceStatusText').textContent   = 'Yangi yuz rasmini yuklang';
+    document.getElementById('updateFaceBtn').style.display  = 'none';
+    document.getElementById('faceZone').style.display       = 'block';
+    document.getElementById('orDivider').style.display      = 'flex';
+    document.getElementById('startWebcamBtn').style.display = 'block';
+    document.getElementById('saveFaceBtn').style.display    = 'block';
 }
 
 function switchBioTab(tab) {
@@ -500,13 +522,9 @@ function switchBioTab(tab) {
     document.querySelectorAll('.bio-panel').forEach(p => p.classList.remove('active'));
     document.querySelector(`.bio-tab[data-tab="${tab}"]`).classList.add('active');
     document.getElementById(tab === 'face' ? 'facePanel' : 'fingerPanel').classList.add('active');
-
     if (tab === 'finger') {
         stopFingerPoll();
-        loadBioStatus(currentBioUserId).then(() => {
-            const qrVisible = document.getElementById('qrSection').style.display !== 'none';
-            if (qrVisible) startFingerSession();
-        });
+        loadFingerSources(currentBioUserId);
     } else {
         stopFingerPoll();
     }
@@ -543,9 +561,9 @@ async function startWebcam() {
 
 function stopWebcam() {
     if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); webcamStream = null; }
-    document.getElementById('webcamVideo').style.display = 'none';
-    document.getElementById('webcamActions').style.display = 'none';
-    document.getElementById('faceZone').style.display = 'block';
+    document.getElementById('webcamVideo').style.display    = 'none';
+    document.getElementById('webcamActions').style.display  = 'none';
+    document.getElementById('faceZone').style.display       = 'block';
     document.getElementById('startWebcamBtn').style.display = 'block';
 }
 
@@ -584,78 +602,8 @@ async function saveFace() {
     }
 }
 
-async function startFingerSession() {
-    stopFingerPoll();
-    document.getElementById('qrStatus').className = 'qr-status waiting';
-    document.getElementById('qrStatus').innerHTML = '<i class="fas fa-hourglass-half"></i> Sessiya yaratilmoqda...';
-    try {
-        const res = await fetchWithAuth(`/api/users/${currentBioUserId}/fingerprint-session/`, { method: 'POST' });
-        if (!res.ok) throw new Error(res.status);
-        const data = await res.json();
-        currentSessionToken = data.session_token;
-        generateQR(`${window.location.origin}/mobile/fingerprint/?token=${currentSessionToken}`);
-        document.getElementById('qrStatus').innerHTML = '<i class="fas fa-hourglass-half"></i> Mobil qurilma kutilmoqda...';
-        fingerPollInterval = setInterval(() => pollFingerStatus(currentSessionToken), 2000);
-    } catch(e) {
-        document.getElementById('qrStatus').innerHTML = '⚠️ Sessiya yaratishda xato: ' + e.message;
-    }
-}
-
-function generateQR(url) {
-    const canvas = document.getElementById('qrCanvas');
-    canvas.innerHTML = '';
-    new QRCode(canvas, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-}
-
-async function pollFingerStatus(token) {
-    try {
-        const res = await fetchWithAuth(`/api/fingerprint-session/${token}/status/`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.status === 'completed') {
-            stopFingerPoll();
-            document.getElementById('qrStatus').className = 'qr-status received';
-            document.getElementById('qrStatus').innerHTML = '✓ Barmoq izi muvaffaqiyatli olindi!';
-            showToast('Barmoq izi embeddigi saqlandi!', 'success');
-            await loadBioStatus(currentBioUserId);
-            await loadUsers();
-        } else if (data.status === 'expired') {
-            stopFingerPoll();
-            document.getElementById('qrStatus').innerHTML = '⌛ Sessiya muddati tugadi. Yangilang.';
-        }
-    } catch(e) { /* silent */ }
-}
-
 function stopFingerPoll() {
     if (fingerPollInterval) { clearInterval(fingerPollInterval); fingerPollInterval = null; }
-}
-
-async function scanUsbFinger() {
-    const btn = document.getElementById('usbScannerBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Skanerlanmoqda...';
-    try {
-        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-        const res = await fetch(`/api/users/${currentBioUserId}/fingerprint/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({ embedding: 'scanner_demo_embedding', source: 'scanner' })
-        });
-        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || err.message || res.status); }
-        showToast('Barmoq izi USB scanner orqali saqlandi!', 'success');
-        stopFingerPoll();
-        await loadBioStatus(currentBioUserId);
-        await loadUsers();
-    } catch(e) {
-        showToast('Xato: ' + e.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-fingerprint"></i> USB Scanner orqali olish';
-    }
 }
 
 async function deleteBiometric(type) {
@@ -715,7 +663,444 @@ function showToast(message, type) {
     setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
 }
 
-// ── Events ────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════
+   FINGERPRINT PANEL — MULTI-TEMPLATE SOURCE MANAGER
+══════════════════════════════════════════════════════════════ */
+
+/* Load all fingerprint records for user */
+async function loadFingerSources(userId) {
+    document.getElementById('fingerStatus').className = 'bio-status no';
+    document.getElementById('fingerStatusText').textContent = 'Yuklanmoqda...';
+    try {
+        const res = await fetchWithAuth(`/api/users/${userId}/fingerprint/`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        fpSourcesCache = Array.isArray(data) ? data
+            : (data.results ?? (data.source ? [data] : []));
+        const total = fpSourcesCache.length;
+        document.getElementById('fingerStatus').className = total ? 'bio-status ok' : 'bio-status no';
+        document.getElementById('fingerStatusText').textContent = total
+            ? `Jami ${total} ta barmoq izi template mavjud`
+            : "Barmoq izi yo'q — manba tanlang va qo'shing";
+        renderFingerprintCards();
+        if (fpActiveSource) openFingerprintSource(fpActiveSource, false);
+        else closeFpManager();
+    } catch(e) {
+        document.getElementById('fingerStatus').className = 'bio-status no';
+        document.getElementById('fingerStatusText').textContent = 'Yuklashda xato: ' + e.message;
+        fpSourcesCache = [];
+        renderFingerprintCards();
+    }
+}
+
+/* Render 4 source summary cards */
+function renderFingerprintCards() {
+    const grid = document.getElementById('fpCardsGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    FP_SOURCES.forEach(src => {
+        const records = fpSourcesCache.filter(r => r.source === src.key);
+        const count   = records.length;
+        const latest  = count ? records.reduce((a, b) => (a.created_at > b.created_at ? a : b)) : null;
+        const dateStr = latest && latest.created_at ? latest.created_at.slice(0, 10) : '';
+
+        const card = document.createElement('div');
+        card.className = 'fp-card' + (fpActiveSource === src.key ? ' fp-card--active' : '');
+        card.innerHTML = `
+            <div class="fp-card-header">
+                <div class="fp-card-icon ${src.cls}"><i class="${src.icon}"></i></div>
+                <span class="fp-card-name">${src.label}</span>
+                <span class="fp-badge ${count ? 'yes' : 'no'}">${count ? '&#10003; Mavjud' : '&#8212; Mavjud emas'}</span>
+            </div>
+            <div class="fp-card-meta">
+                ${count ? `<span><i class="fas fa-layer-group"></i> ${count} ta template</span>` : ''}
+                ${dateStr ? `<span><i class="fas fa-calendar-alt"></i> Added: ${dateStr}</span>` : ''}
+            </div>
+            <button class="fp-card-btn open"><i class="fas fa-folder-open"></i> Ochish</button>`;
+        card.addEventListener('click', () => openFingerprintSource(src.key, true));
+        grid.appendChild(card);
+    });
+}
+
+/* Open source manager panel */
+function openFingerprintSource(sourceKey, scrollTo) {
+    fpActiveSource = sourceKey;
+    renderFingerprintCards();
+
+    const src     = FP_SOURCES.find(s => s.key === sourceKey);
+    const records = fpSourcesCache.filter(r => r.source === sourceKey);
+    const manager = document.getElementById('fpManager');
+
+    manager.innerHTML = `
+        <div class="fp-manager-head">
+            <div class="fp-card-icon ${src.cls}" style="width:26px;height:26px;font-size:.75rem;flex-shrink:0;">
+                <i class="${src.icon}"></i>
+            </div>
+            <span class="fp-manager-title">${src.label} &mdash; Barmoq izlari</span>
+            <button class="fp-manager-close" id="fpManagerClose">&times;</button>
+        </div>
+        <div class="fp-manager-body">
+            <div id="fpAddFormArea" data-open-for=""></div>
+            <div class="fp-add-row">
+                <span>${records.length ? records.length + ' ta template' : "Hali template yo'q"}</span>
+                <button class="fp-btn-add-new" id="fpAddNewBtn">
+                    <i class="fas fa-plus"></i> Template qo'shish
+                </button>
+            </div>
+            <div class="fp-list" id="fpList"></div>
+        </div>`;
+
+    manager.classList.add('visible');
+    document.getElementById('fpManagerClose').addEventListener('click', closeFpManager);
+    document.getElementById('fpAddNewBtn').addEventListener('click', () => openAddFingerprintForm(sourceKey));
+
+    renderFingerprintList(sourceKey, records);
+
+    if (scrollTo !== false) {
+        setTimeout(() => manager.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    }
+}
+
+function closeFpManager() {
+    fpActiveSource = null;
+    const m = document.getElementById('fpManager');
+    if (m) m.classList.remove('visible');
+    renderFingerprintCards();
+}
+
+/* Render list of templates for a source */
+function renderFingerprintList(sourceKey, records) {
+    const list = document.getElementById('fpList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!records.length) {
+        list.innerHTML = `<div class="fp-list-empty">
+            <i class="fas fa-fingerprint" style="font-size:1.4rem;display:block;margin-bottom:.4rem;color:#d1d5db;"></i>
+            Bu manba uchun hali template qo'shilmagan
+        </div>`;
+        return;
+    }
+
+    records.forEach(rec => {
+        const masked  = rec.fingerprint_template ? '\u25CF'.repeat(Math.min(rec.fingerprint_template.length, 20)) : '\u2014';
+        const dateStr = rec.created_at ? new Date(rec.created_at).toLocaleDateString('uz-UZ') : '\u2014';
+        const name    = rec.template_name || ('Template #' + rec.id);
+
+        const wrapper = document.createElement('div');
+        wrapper.dataset.recId = rec.id;
+
+        const item = document.createElement('div');
+        item.className = 'fp-item';
+        item.innerHTML = `
+            <div class="fp-item-icon"><i class="fas fa-fingerprint"></i></div>
+            <div class="fp-item-info">
+                <div class="fp-item-name">${name}</div>
+                <div class="fp-item-tpl">${masked}</div>
+                <div class="fp-item-date">${dateStr}</div>
+            </div>
+            <div class="fp-item-actions">
+                <button class="fp-item-btn edit" title="Tahrirlash"><i class="fas fa-pen"></i></button>
+                <button class="fp-item-btn del"  title="O'chirish"><i class="fas fa-trash"></i></button>
+            </div>`;
+
+        item.querySelector('.fp-item-btn.edit').addEventListener('click', () => openInlineEdit(sourceKey, rec, wrapper));
+        item.querySelector('.fp-item-btn.del').addEventListener('click',  () => deleteFingerprintSource(sourceKey, rec.id));
+
+        wrapper.appendChild(item);
+        list.appendChild(wrapper);
+    });
+}
+
+/* Inline edit form */
+function openInlineEdit(sourceKey, rec, wrapper) {
+    const existing = document.getElementById('fpInlineEditForm');
+    if (existing) existing.remove();
+
+    const form = document.createElement('div');
+    form.className = 'fp-inline-edit';
+    form.id = 'fpInlineEditForm';
+    form.innerHTML = `
+        <div class="fp-field-row">
+            <div class="fp-field">
+                <label>Template nomi</label>
+                <input type="text" id="fpEditName" value="${rec.template_name || ''}" placeholder="Masalan: O'ng bosh barmoq">
+            </div>
+            <div class="fp-field">
+                <label>Fingerprint template</label>
+                <input type="text" id="fpEditTpl" class="mono" value="${rec.fingerprint_template || ''}" placeholder="Template qiymatini kiriting...">
+            </div>
+        </div>
+        <div class="fp-form-actions">
+            <button class="fp-form-cancel" id="fpEditCancelBtn">Bekor</button>
+            <button class="fp-form-save" id="fpEditSaveBtn"><i class="fas fa-save"></i> Saqlash</button>
+        </div>`;
+
+    wrapper.appendChild(form);
+    document.getElementById('fpEditCancelBtn').addEventListener('click', () => form.remove());
+    document.getElementById('fpEditSaveBtn').addEventListener('click',   () => updateFingerprintSource(sourceKey, rec.id, form));
+}
+
+/* Source-specific add forms */
+function openAddFingerprintForm(sourceKey) {
+    const area = document.getElementById('fpAddFormArea');
+    if (!area) return;
+    if (area.dataset.openFor === sourceKey && area.innerHTML.trim() !== '') {
+        area.innerHTML = ''; area.dataset.openFor = ''; return;
+    }
+    area.dataset.openFor = sourceKey;
+
+    if (sourceKey === 'manual') {
+        area.innerHTML = `
+            <div class="fp-add-form">
+                <div class="fp-add-form-title"><i class="fas fa-plus-circle" style="color:#6c63ff;"></i> Yangi Manual Template</div>
+                <div class="fp-field-row">
+                    <div class="fp-field">
+                        <label>Template nomi *</label>
+                        <input type="text" id="fpNewName" placeholder="Masalan: O'ng bosh barmoq">
+                    </div>
+                    <div class="fp-field">
+                        <label>Fingerprint template *</label>
+                        <input type="text" id="fpNewTpl" class="mono" placeholder="Template qiymatini kiriting...">
+                    </div>
+                </div>
+                <div class="fp-form-actions">
+                    <button class="fp-form-cancel" id="fpAddCancelBtn">Bekor</button>
+                    <button class="fp-form-save" id="fpAddSaveBtn"><i class="fas fa-save"></i> Saqlash</button>
+                </div>
+            </div>`;
+        document.getElementById('fpAddCancelBtn').addEventListener('click', () => { area.innerHTML = ''; area.dataset.openFor = ''; });
+        document.getElementById('fpAddSaveBtn').addEventListener('click',   () => saveFingerprintSource(sourceKey));
+
+    } else if (sourceKey === 'phone') {
+        area.innerHTML = `
+            <div class="fp-add-form">
+                <div class="fp-add-form-title">
+                    <i class="fas fa-mobile-alt" style="color:#1d4ed8;"></i> Phone orqali qo'shish
+                </div>
+                <div class="fp-qr-area">
+                    <div id="fpQrCode" class="fp-qr-placeholder">
+                        <i class="fas fa-circle-notch fa-spin" style="font-size:1.8rem;color:#9ca3af;"></i>
+                    </div>
+                    <div class="fp-qr-label">Mobil ilovangizni oching va QR kodni skanerlang</div>
+                    <div class="fp-qr-status" id="fpQrStatus">
+                        <i class="fas fa-hourglass-half"></i> Sessiya yaratilmoqda...
+                    </div>
+                    <button class="fp-qr-refresh" id="fpQrRefreshBtn">
+                        <i class="fas fa-sync-alt"></i> QR ni yangilash
+                    </button>
+                </div>
+                <div class="fp-form-actions" style="margin-top:.6rem;">
+                    <button class="fp-form-cancel" id="fpAddCancelBtn">Yopish</button>
+                </div>
+            </div>`;
+
+        ensureQRCodeLib().then(() => startPhoneSession());
+
+        document.getElementById('fpQrRefreshBtn').addEventListener('click', () => {
+            stopFingerPoll();
+            const qrBox = document.getElementById('fpQrCode');
+            if (qrBox) { qrBox.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="font-size:1.8rem;color:#9ca3af;"></i>'; }
+            const statusEl = document.getElementById('fpQrStatus');
+            if (statusEl) statusEl.innerHTML = '<i class="fas fa-hourglass-half"></i> Sessiya yangilanmoqda...';
+            startPhoneSession();
+        });
+
+        document.getElementById('fpAddCancelBtn').addEventListener('click', () => {
+            stopFingerPoll();
+            area.innerHTML = '';
+            area.dataset.openFor = '';
+        });
+
+    } else if (sourceKey === 'scanner') {
+        area.innerHTML = `
+            <div class="fp-add-form">
+                <div class="fp-add-form-title"><i class="fas fa-fingerprint" style="color:#16a34a;"></i> USB Scanner orqali qo'shish</div>
+                <div class="fp-scanner-area">
+                    <div class="fp-scanner-spinner"><i class="fas fa-circle-notch fa-spin"></i></div>
+                    <div class="fp-scanner-label">Connecting to scanner...</div>
+                    <button class="fp-scanner-btn" id="fpScannerConnectBtn"><i class="fas fa-plug"></i> Scannerni ulash</button>
+                </div>
+                <div class="fp-form-actions" style="margin-top:.6rem;">
+                    <button class="fp-form-cancel" id="fpAddCancelBtn">Yopish</button>
+                </div>
+            </div>`;
+        document.getElementById('fpAddCancelBtn').addEventListener('click', () => { area.innerHTML = ''; area.dataset.openFor = ''; });
+        document.getElementById('fpScannerConnectBtn').addEventListener('click', async function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Skanerlanmoqda...';
+            const self = this;
+            try {
+                await saveFingerprintSource(sourceKey, { template_name: 'Scanner Template', fingerprint_template: 'scanner_demo_' + Date.now() });
+            } finally {
+                self.disabled = false;
+                self.innerHTML = '<i class="fas fa-plug"></i> Scannerni ulash';
+            }
+        });
+
+    } else if (sourceKey === 'external') {
+        area.innerHTML = `
+            <div class="fp-add-form">
+                <div class="fp-add-form-title"><i class="fas fa-plug" style="color:#d97706;"></i> External Integration</div>
+                <div class="fp-external-area">
+                    <div class="fp-external-icon"><i class="fas fa-satellite-dish"></i></div>
+                    <div class="fp-external-label">Future external integration available.<br>Bu manba kelajakda avtomatik tarzda ulanadi.</div>
+                </div>
+                <div class="fp-form-actions" style="margin-top:.6rem;">
+                    <button class="fp-form-cancel" id="fpAddCancelBtn">Yopish</button>
+                </div>
+            </div>`;
+        document.getElementById('fpAddCancelBtn').addEventListener('click', () => { area.innerHTML = ''; area.dataset.openFor = ''; });
+    }
+}
+
+/* Save new fingerprint template */
+async function saveFingerprintSource(sourceKey, overrideData) {
+    let payload;
+    if (overrideData) {
+        payload = { source: sourceKey, ...overrideData };
+    } else {
+        const nameEl = document.getElementById('fpNewName');
+        const tplEl  = document.getElementById('fpNewTpl');
+        const name   = nameEl ? nameEl.value.trim() : '';
+        const tpl    = tplEl  ? tplEl.value.trim()  : '';
+        if (!name || !tpl) { showToast("Ism va template bo'sh bo'lmasin", 'error'); return; }
+        payload = { source: sourceKey, template_name: name, fingerprint_template: tpl };
+    }
+    try {
+        const res = await fetchWithAuth(`/api/users/${currentBioUserId}/fingerprint/`, {
+            method: 'POST', body: JSON.stringify(payload)
+        });
+        if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail||e.message||res.status); }
+        showToast('Template saqlandi!', 'success');
+        const area = document.getElementById('fpAddFormArea');
+        if (area) { area.innerHTML = ''; area.dataset.openFor = ''; }
+        await loadFingerSources(currentBioUserId);
+        await loadUsers();
+    } catch(e) { showToast('Xato: ' + e.message, 'error'); }
+}
+
+/* Update existing fingerprint template */
+async function updateFingerprintSource(sourceKey, recordId, formEl) {
+    const nameEl = formEl ? formEl.querySelector('#fpEditName') : null;
+    const tplEl  = formEl ? formEl.querySelector('#fpEditTpl')  : null;
+    const name   = nameEl ? nameEl.value.trim() : '';
+    const tpl    = tplEl  ? tplEl.value.trim()  : '';
+    if (!tpl) { showToast("Template bo'sh bo'lmasin", 'error'); return; }
+    try {
+        const res = await fetchWithAuth(`/api/users/${currentBioUserId}/fingerprint/${recordId}/`, {
+            method: 'PATCH', body: JSON.stringify({ source: sourceKey, template_name: name, fingerprint_template: tpl })
+        });
+        if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail||e.message||res.status); }
+        showToast('Template yangilandi!', 'success');
+        await loadFingerSources(currentBioUserId);
+        await loadUsers();
+    } catch(e) { showToast('Xato: ' + e.message, 'error'); }
+}
+
+/* Delete fingerprint template */
+async function deleteFingerprintSource(sourceKey, recordId) {
+    const src = FP_SOURCES.find(s => s.key === sourceKey);
+    if (!confirm(`"${src.label}" templateini o'chirishni tasdiqlaysizmi?`)) return;
+    try {
+        const res = await fetchWithAuth(`/api/users/${currentBioUserId}/fingerprint/${recordId}/`, { method: 'DELETE' });
+        if (!res.ok && res.status !== 204) throw new Error(res.status);
+        showToast("Template o'chirildi!", 'success');
+        await loadFingerSources(currentBioUserId);
+        await loadUsers();
+    } catch(e) { showToast("O'chirishda xato: " + e.message, 'error'); }
+}
+
+/* ── Phone session helpers ───────────────────────────────────────── */
+
+function ensureQRCodeLib() {
+    return new Promise((resolve, reject) => {
+        if (typeof QRCode !== 'undefined') { resolve(); return; }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        script.onload  = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+async function startPhoneSession() {
+    const statusEl = document.getElementById('fpQrStatus');
+    const qrBox = document.getElementById('fpQrCode');
+
+    if (statusEl) {
+        statusEl.innerHTML = '<i class="fas fa-hourglass-half"></i> Sessiya yaratilmoqda...';
+    }
+
+    try {
+        const res = await fetchWithAuth('/api/fingerprint/phone/start/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: currentBioUserId
+            })
+        });
+
+        if (!res.ok) throw new Error(res.status);
+
+        const data = await res.json();
+
+        currentSessionToken = data.session_id;
+
+        if (qrBox) {
+            qrBox.innerHTML = '';
+
+            new QRCode(qrBox, {
+                text: `https://sibilantly-penanceless-young.ngrok-free.dev/mobile/fingerprint/${data.session_id}/`,
+                width: 160,
+                height: 160,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        if (statusEl) {
+            statusEl.innerHTML = '<i class="fas fa-hourglass-half"></i> Mobil qurilma kutilmoqda...';
+        }
+
+        stopFingerPoll();
+        fingerPollInterval = setInterval(() => {
+            pollPhoneFingerStatus(data.session_id);
+        }, 3000);
+
+    } catch (e) {
+        if (statusEl) {
+            statusEl.innerHTML =
+                '<i class="fas fa-exclamation-triangle"></i> Sessiya yaratishda xato: ' + e.message;
+        }
+    }
+}
+async function pollPhoneFingerStatus(sessionId) {
+    try {
+        const res = await fetchWithAuth(`/api/fingerprint/phone/status/${sessionId}/`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === 'completed') {
+            stopFingerPoll();
+            const statusEl = document.getElementById('fpQrStatus');
+            if (statusEl) {
+                statusEl.style.background = '#dcfce7';
+                statusEl.style.color = '#16a34a';
+                statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Fingerprint received successfully';
+            }
+            showToast('Barmoq izi muvaffaqiyatli olindi!', 'success');
+            await loadFingerSources(currentBioUserId);
+            await loadUsers();
+        } else if (data.status === 'expired') {
+            stopFingerPoll();
+            const statusEl = document.getElementById('fpQrStatus');
+            if (statusEl) statusEl.innerHTML = '<i class="fas fa-clock"></i> Sessiya muddati tugadi. QR ni yangilang.';
+        }
+    } catch(e) { /* silent — polling continues */ }
+}
+
+/* ── Events ─────────────────────────────────────────────────────── */
 document.getElementById('logoutBtn').addEventListener('click', () => {
     adminLogout();
     window.location.href = '{% url "login" %}';
@@ -754,7 +1139,6 @@ document.getElementById('closeBioModal').addEventListener('click', () => {
 document.querySelectorAll('.bio-tab').forEach(tab => {
     tab.addEventListener('click', () => switchBioTab(tab.dataset.tab));
 });
-
 document.getElementById('faceZone').addEventListener('click', () => document.getElementById('faceFile').click());
 document.getElementById('faceFile').addEventListener('change', () => {
     const file = document.getElementById('faceFile').files[0];
@@ -769,11 +1153,6 @@ document.getElementById('stopWebcamBtn').addEventListener('click', stopWebcam);
 document.getElementById('updateFaceBtn').addEventListener('click', updateFace);
 document.getElementById('saveFaceBtn').addEventListener('click', saveFace);
 document.getElementById('deleteFaceBtn').addEventListener('click', () => deleteBiometric('face'));
-document.getElementById('refreshQrBtn').addEventListener('click', startFingerSession);
-document.getElementById('usbScannerBtn').addEventListener('click', scanUsbFinger);
-document.getElementById('updateFingerBtn').addEventListener('click', updateFinger);
-document.getElementById('deleteFingerBtn').addEventListener('click', () => deleteBiometric('finger'));
-
 window.addEventListener('click', e => {
     if (e.target === userModal) userModal.style.display = 'none';
     if (e.target === bioModal) { stopWebcam(); stopFingerPoll(); bioModal.style.display = 'none'; }

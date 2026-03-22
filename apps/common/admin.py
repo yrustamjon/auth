@@ -29,3 +29,4 @@ class AdminUserAdmin(BaseUserAdmin):
 
 admin.site.register(AdminUser, AdminUserAdmin)
 admin.site.register(Organization)
+admin.site.register(BiometricFace)

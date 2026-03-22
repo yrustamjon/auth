@@ -29,7 +29,7 @@ CRYPTO_SECRET_KEY ="SS8O-PP0W5NdgoA4fagzCl29QlOLgrqA1NncmrD0wtc="  # 32 ta belgi
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["admin.com", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["*"]
 
 
 
@@ -42,6 +42,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://192.168.0.166:80",
 ]
 # Application definition
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://sibilantly-penanceless-young.ngrok-free.dev"
+]
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',

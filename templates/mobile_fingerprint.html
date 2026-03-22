@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Biometrik Tasdiqlash</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 1.75rem;
+        }
+        .icon.blue   { background: #eff6ff; color: #2563eb; }
+        .icon.green  { background: #f0fdf4; color: #16a34a; }
+        .icon.red    { background: #fef2f2; color: #dc2626; }
+        .icon.yellow { background: #fffbeb; color: #d97706; }
+        .icon.purple { background: #f5f3ff; color: #7c3aed; }
+        .icon.spin   { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: .5rem;
+        }
+        p {
+            font-size: .88rem;
+            color: #6b7280;
+            line-height: 1.55;
+            margin-bottom: .25rem;
+        }
+        .stage-label {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            font-size: .72rem;
+            font-weight: 600;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 1.25rem;
+        }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        video {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+            margin: 1rem 0 .75rem;
+            display: none;
+        }
+        canvas { display: none; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+            width: 100%;
+            padding: .75rem 1rem;
+            border: none;
+            border-radius: 12px;
+            font-size: .9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity .15s, transform .1s;
+            margin-top: .5rem;
+        }
+        .btn:hover { opacity: .88; transform: translateY(-1px); }
+        .btn.primary   { background: #6c63ff; color: #fff; }
+        .btn.secondary { background: #f3f4f6; color: #374151; }
+        .btn.danger    { background: #fee2e2; color: #dc2626; }
+        .btn-row { display: flex; gap: .5rem; margin-top: .75rem; }
+        .btn-row .btn { margin-top: 0; }
+        .progress {
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 999px;
+            background: #6c63ff;
+            transition: width .4s ease;
+        }
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: .75rem 1rem;
+            font-size: .83rem;
+            color: #dc2626;
+            margin-top: .75rem;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card" id="card"><!-- injected by JS --></div>
+<canvas id="snapCanvas"></canvas>
+<video id="camVideo" autoplay playsinline></video>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+/* URL dan session_id olamiz: /mobile/fingerprint/{session_id}/
+   Django template render bo'lmasa ham ishlaydi                  */
+const SESSION_ID = window.location.pathname.split('/').filter(Boolean).pop();
+let   camStream           = null;
+window.tempCredentialId   = null;   /* holds WebAuthn credential.id until face verified */
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER HELPERS
+══════════════════════════════════════════════════════════════ */
+function render(html) {
+    document.getElementById('card').innerHTML = html;
+}
+function progressBar(pct) {
+    return `<div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>`;
+}
+function iconHtml(emoji, cls) {
+    return `<div class="icon ${cls}">${emoji}</div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STAGE 0 — FINGERPRINT (WebAuthn only, no submit yet)
+══════════════════════════════════════════════════════════════ */
+async function startFingerprint() {
+    render(`
+        ${progressBar(66)}
+        <div class="stage-label"><span class="dot"></span> 2 / 2 — Barmoq izi</div>
+        ${iconHtml('🔐', 'blue spin')}
+        <h3>Barmoq izini tekshiring</h3>
+        <p>Qurilmangizdagi sensor orqali barmoq izingizni tasdiqlang</p>
+    `);
+
+    try {
+        const credential = await navigator.credentials.create({
+            publicKey: {
+                challenge: crypto.getRandomValues(new Uint8Array(32)),
+                rp: { name: "AD BioGuard" },
+                user: {
+                    id: new Uint8Array(16),
+                    name: "user@test.com",
+                    displayName: "User"
+                },
+                pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                authenticatorSelection: { userVerification: "required" },
+                timeout: 60000
+            }
+        });
+
+        window.tempCredentialId = credential.id;
+
+        /* face verified bo'lganda tempCredentialId set bo'lgan,
+           shuning uchun to'g'ridan submit qilamiz — startFaceStage EMAS */
+        await submitFingerprintAfterFace();
+
+    } catch(e) {
+        window.tempCredentialId = null;
+        render(`
+            ${progressBar(66)}
+            ${iconHtml('✕', 'red')}
+            <h3>Barmoq izi xatosi</h3>
+            <p>${e.message || e.toString()}</p>
+            <div class="error-box">${e.toString()}</div>
+            <button class="btn secondary" onclick="startFaceStage()">Qaytadan boshlash</button>
+        `);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STAGE 1 — FACE VERIFICATION
+══════════════════════════════════════════════════════════════ */
+async function startFaceStage() {
+    /*
+     * NOTE: video element stays OUTSIDE card div on purpose.
+     * render() calls card.innerHTML = ... which would destroy
+     * a video element moved inside it, losing the camera stream.
+     */
+    render(`
+        ${progressBar(33)}
+        <div class="stage-label"><span class="dot"></span> 1 / 2 — Yuz tekshiruvi</div>
+        ${iconHtml('📷', 'purple')}
+        <h3>Yuz tekshirilmoqda...</h3>
+        <p>Kamera ochilmoqda, iltimos kuting</p>
+    `);
+
+    const video = document.getElementById('camVideo');
+
+    try {
+        camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        video.srcObject = camStream;
+        video.style.display = 'block';
+
+        /* wait for first real frame */
+        await new Promise((resolve, reject) => {
+            const timeout = setTimeout(resolve, 3000);
+            video.onloadeddata = () => { clearTimeout(timeout); resolve(); };
+            video.onerror      = (err) => { clearTimeout(timeout); reject(err); };
+        });
+
+        /* extra settle so frame is not black */
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        await captureAndCheckFace();
+
+    } catch(e) {
+        stopCam();
+        render(`
+            ${progressBar(66)}
+            ${iconHtml('📷', 'red')}
+            <h3>Kameraga ruxsat yo'q</h3>
+            <p>${e.message || 'Kameraga kirishga ruxsat berilmagan'}</p>
+            <button class="btn secondary" onclick="startFaceStage()">Qayta urinish</button>
+        `);
+    }
+}
+
+async function captureAndCheckFace() {
+    const video  = document.getElementById('camVideo');
+    const canvas = document.getElementById('snapCanvas');
+
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+
+    /* guard: must have real frame dimensions */
+    if (!w || !h) {
+        stopCam();
+        render(`
+            ${progressBar(66)}
+            ${iconHtml('📷', 'red')}
+            <h3>Kamera tayyor emas</h3>
+            <p>Kamera hali ishga tushmadi. Qayta urinib ko'ring.</p>
+            <button class="btn secondary" onclick="startFaceStage()">Qayta urinish</button>
+        `);
+        return;
+    }
+
+    canvas.width  = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const imageBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+
+    stopCam();
+
+    render(`
+        ${progressBar(50)}
+        <div class="stage-label"><span class="dot"></span> 1 / 2 — Yuz tekshiruvi</div>
+        ${iconHtml('⏳', 'yellow')}
+        <h3>Yuz tekshirilmoqda...</h3>
+        <p>Serverga yuborilmoqda...</p>
+    `);
+
+    try {
+        const res = await fetch('/api/face/phone/check/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: SESSION_ID, image: imageBase64 })
+        });
+
+        let data;
+        try { data = await res.json(); } catch(_) { data = {}; }
+
+        if (!res.ok) {
+            /* any HTTP error → fingerprint must NOT be saved */
+            window.tempCredentialId = null;
+            throw new Error(data.detail || data.message || ('Yuz tekshirishda xato: ' + res.status));
+        }
+
+        handleFaceResult(data);
+
+    } catch(e) {
+        /* any exception → fingerprint must NOT be saved */
+        window.tempCredentialId = null;
+        render(`
+            ${progressBar(33)}
+            ${iconHtml('✕', 'red')}
+            <h3>Xato yuz berdi</h3>
+            <p>${e.message || e.toString()}</p>
+            <div class="error-box">${e.toString()}</div>
+            <button class="btn secondary" onclick="startFaceStage()">Qaytadan boshlash</button>
+        `);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FACE RESULT HANDLER
+   Only "verified" path calls submitFingerprintAfterFace().
+   All other paths clear tempCredentialId without submitting.
+══════════════════════════════════════════════════════════════ */
+function handleFaceResult(data) {
+
+    if (data.status === 'verified') {
+        /* ✓ Yuz tasdiqlandi — endi barmoq izi WebAuthn boshlaydi.
+           startFingerprint() credential oladi, keyin submitFingerprintAfterFace() chaqiradi */
+        startFingerprint();
+
+    } else if (data.status === 'not_found') {
+        /*
+         * Face template not in system.
+         * Fingerprint is NOT saved — tempCredentialId cleared.
+         * Face enrollment is only done by admin — user cannot enroll here.
+         */
+        window.tempCredentialId = null;
+        render(`
+            ${progressBar(100)}
+            ${iconHtml('🔍', 'yellow')}
+            <h3>Yuz topilmadi</h3>
+            <p>Tizimda yuz ma'lumotingiz mavjud emas.</p>
+            <p style="margin-top:.5rem;">Iltimos, administrator bilan bog'laning.</p>
+        `);
+
+    } else if (data.status === 'mismatch') {
+        window.tempCredentialId = null;
+        render(`
+            ${progressBar(100)}
+            ${iconHtml('✕', 'red')}
+            <h3>Yuz mos kelmadi</h3>
+            <p>Tasdiqlangan barmoq izi egasi bilan yuz mos kelmadi</p>
+            <button class="btn secondary" onclick="startFaceStage()">Qaytadan boshlash</button>
+        `);
+
+    } else {
+        window.tempCredentialId = null;
+        render(`
+            ${progressBar(90)}
+            ${iconHtml('✕', 'red')}
+            <h3>Noma'lum holat</h3>
+            <p>Server javobi: ${JSON.stringify(data)}</p>
+            <button class="btn secondary" onclick="startFaceStage()">Qaytadan boshlash</button>
+        `);
+    }
+}
+
+async function submitFingerprintAfterFace() {
+    render(`
+        ${progressBar(95)}
+        <div class="stage-label"><span class="dot"></span> Yakunlanmoqda</div>
+        ${iconHtml('⏳', 'yellow')}
+        <h3>Barmoq izi saqlanmoqda...</h3>
+        <p>Iltimos kuting</p>
+    `);
+
+    const embedding = window.tempCredentialId;
+
+    if (!embedding) {
+        render(`
+            ${progressBar(0)}
+            ${iconHtml('✕', 'red')}
+            <h3>Sessiya muddati o'tdi</h3>
+            <p>Iltimos qaytadan boshlang</p>
+            <button class="btn secondary" onclick="startFaceStage()">Qaytadan boshlash</button>
+        `);
+        return;
+    }
+
+    window.tempCredentialId = null;
+
+    try {
+        const res = await fetch('/api/fingerprint/phone/submit/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: SESSION_ID,
+                embedding:  embedding
+            })
+        });
+
+        let data;
+        try { data = await res.json(); } catch(_) { data = {}; }
+
+        if (!res.ok) {
+            throw new Error(data.detail || data.message || ('Barmoq izi yuborishda xato: ' + res.status));
+        }
+
+        render(`
+            ${progressBar(100)}
+            ${iconHtml('✓', 'green')}
+            <h3>Shaxs tasdiqlandi</h3>
+            <p>Barmoq izi va yuz muvaffaqiyatli tasdiqlandi</p>
+        `);
+
+    } catch(e) {
+        render(`
+            ${progressBar(66)}
+            ${iconHtml('✕', 'red')}
+            <h3>Barmoq izi saqlanmadi</h3>
+            <p>${e.message || e.toString()}</p>
+            <div class="error-box">${e.toString()}</div>
+            <button class="btn secondary" onclick="startFaceStage()">Qaytadan boshlash</button>
+        `);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+function stopCam() {
+    if (camStream) {
+        camStream.getTracks().forEach(t => t.stop());
+        camStream = null;
+    }
+    const video = document.getElementById('camVideo');
+    if (video) video.style.display = 'none';
+}
+
+function showSessionError(msg) {
+    render(`
+        ${progressBar(0)}
+        ${iconHtml('⏳', 'red')}
+        <h3>Sessiya yaroqsiz</h3>
+        <p>${msg || 'Bu havola eskirgan yoki noto\'g\'ri.'}</p>
+        <p style="margin-top:.5rem;font-size:.8rem;color:#9ca3af;">QR kodni qayta skanerlang.</p>
+    `);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BOOT — session tekshirib keyin face boshlaydi
+══════════════════════════════════════════════════════════════ */
+async function boot() {
+    /* SESSION_ID URL dan olinadi — bo'sh bo'lsa URL noto'g'ri */
+    if (!SESSION_ID) {
+        showSessionError('Session ID topilmadi. URL noto\'g\'ri.');
+        return;
+    }
+
+    render(`
+        ${progressBar(5)}
+        ${iconHtml('⏳', 'yellow')}
+        <h3>Tekshirilmoqda...</h3>
+        <p>Sessiya tasdiqlanmoqda</p>
+    `);
+
+    try {
+        const res = await fetch(`/api/fingerprint/phone/status/${SESSION_ID}/`);
+        let data;
+        try { data = await res.json(); } catch(_) { data = {}; }
+
+        /* backend string qaytarishi mumkin: "pending"
+           yoki object: {"status": "pending"} — ikkalasini ham handle qilamiz */
+        const status = typeof data === 'string' ? data : (data.status || '');
+
+        console.log('SESSION STATUS:', res.status, status);
+
+        if (status === 'expired') {
+            showSessionError('Sessiya muddati tugagan. QR kodni yangilang.');
+            return;
+        }
+
+        if (status === 'completed') {
+            showSessionError('Bu sessiya allaqachon ishlatilgan.');
+            return;
+        }
+
+        if (!res.ok) {
+            showSessionError(data.detail || data.message || 'Sessiya topilmadi.');
+            return;
+        }
+
+        /* pending yoki boshqa holat → face boshlash */
+        startFaceStage();
+
+    } catch(e) {
+        showSessionError('Server bilan bog\'lanishda xato: ' + e.message);
+    }
+}
+
+window.onload = boot;
+</script>
+</body>
+</html>

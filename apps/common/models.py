@@ -177,7 +177,7 @@ class Devices(models.Model):
         return self.pc_id
 
 class BiometricFace(models.Model):
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         Users,
         on_delete=models.CASCADE,
         related_name="face"
@@ -199,6 +199,14 @@ class BiometricFace(models.Model):
 
 
 class BiometricFingerprint(models.Model):
+
+    SOURCE_CHOICES = [
+        ("manual", "Manual"),
+        ("phone", "Phone"),
+        ("scanner", "Scanner"),
+        ("external", "External"),
+    ]
+
     user = models.ForeignKey(
         Users,
         on_delete=models.CASCADE,
@@ -207,9 +215,12 @@ class BiometricFingerprint(models.Model):
 
 
     source = models.CharField(
-        max_length=30,
-        default="scanner"
+        max_length=20,
+        choices=SOURCE_CHOICES,
+        default="manual"
     )
+
+    
     embedding = models.BinaryField()
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
