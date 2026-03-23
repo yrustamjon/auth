@@ -25,4 +25,5 @@ urlpatterns = [
     path('',include('apps.device.urls')),
     path('',include('apps.log.urls')),
     path('',include('apps.biometrik.urls')),
+    path('',include('apps.agent.urls')),
 ]

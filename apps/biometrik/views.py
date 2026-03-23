@@ -2,7 +2,7 @@ import base64, os, tempfile, numpy as np
 from django.shortcuts import render
 from rest_framework.views import APIView, Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
+from django.views.decorators.csrf import csrf_exempt
 
 from apps.biometrik.embedding import extract_embedding
 
@@ -132,6 +132,7 @@ class FingerprintPhoneSubmitView(APIView):
 class FingerprintPhoneStatusView(APIView):
     permission_classes = [AllowAny]
 
+    @csrf_exempt
     def get(self, request, session_id):
         session = FingerprintSession.objects.get(session_id=session_id)
         print(session.status)

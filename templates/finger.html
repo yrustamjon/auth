@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AD BioGuard — Fingerprint</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#04080f; --surface:#080e1a; --border:#0d1829;
+    --accent:#00d4ff; --accent2:#0066ff; --success:#00ff88;
+    --error:#ff3355; --warn:#ffaa00; --text:#e8eef8; --muted:#4a5a78;
+    --mono:'DM Mono',monospace; --sans:'Syne',sans-serif;
+  }
+  html,body { height:100%; background:var(--bg); color:var(--text); font-family:var(--sans); overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+  body::after { content:''; position:fixed; top:-30%; left:50%; transform:translateX(-50%); width:600px; height:600px; background:radial-gradient(ellipse,rgba(0,102,255,0.12) 0%,transparent 70%); pointer-events:none; z-index:0; animation:orbPulse 4s ease-in-out infinite; }
+  @keyframes orbPulse { 0%,100%{opacity:.6;transform:translateX(-50%) scale(1)} 50%{opacity:1;transform:translateX(-50%) scale(1.1)} }
+  .container { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 20px; gap:28px; }
+  .header { text-align:center; animation:fadeDown .6s ease both; }
+  .logo-badge { display:inline-flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:100px; padding:6px 16px 6px 10px; font-family:var(--mono); font-size:11px; color:var(--accent); letter-spacing:.12em; margin-bottom:16px; }
+  .logo-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+  h1 { font-size:26px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+  h1 span { color:var(--accent); }
+  .subtitle { font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:8px; letter-spacing:.06em; }
+  .card { width:100%; max-width:360px; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:32px 24px; display:flex; flex-direction:column; align-items:center; gap:24px; animation:fadeUp .6s .15s ease both; position:relative; overflow:hidden; }
+  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--accent2),var(--accent),var(--accent2),transparent); opacity:.6; }
+  .sensor-wrap { position:relative; width:160px; height:160px; }
+  .sensor-ring { position:absolute; inset:0; border-radius:50%; border:2px solid var(--border); transition:border-color .3s; }
+  .sensor-ring.ring2 { inset:10px; border-color:#0d1829; }
+  .sensor-ring.ring3 { inset:20px; border-color:#0a1422; }
+  .sensor-btn { position:absolute; inset:28px; border-radius:50%; background:#060c18; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; -webkit-tap-highlight-color:transparent; outline:none; }
+  .sensor-btn:active { transform:scale(.96); }
+  .fingerprint-svg { width:52px; height:52px; opacity:.5; transition:opacity .3s; }
+  .pulse-ring { position:absolute; inset:-4px; border-radius:50%; border:2px solid var(--accent); opacity:0; }
+  .sensor-wrap.idle .fingerprint-svg { opacity:.3; }
+  .sensor-wrap.scanning .sensor-ring.ring1 { border:none; background:conic-gradient(transparent 270deg,var(--accent2) 360deg); -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),black calc(100% - 2px)); mask:radial-gradient(farthest-side,transparent calc(100% - 2px),black calc(100% - 2px)); animation:rotateBorder 2s linear infinite; }
+  .sensor-wrap.scanning .sensor-ring.ring2 { border-color:rgba(0,102,255,0.3); }
+  .sensor-wrap.scanning .fingerprint-svg { opacity:.9; filter:drop-shadow(0 0 8px var(--accent)); }
+  .sensor-wrap.scanning .pulse-ring { animation:pulseRing 1.6s ease-out infinite; }
+  .sensor-wrap.success .sensor-ring.ring1 { border-color:var(--success); }
+  .sensor-wrap.success .sensor-ring.ring2 { border-color:rgba(0,255,136,0.3); }
+  .sensor-wrap.success .fingerprint-svg { opacity:1; filter:drop-shadow(0 0 12px var(--success)); }
+  .sensor-wrap.success .pulse-ring { border-color:var(--success); animation:pulseRing 1s ease-out 1; }
+  .sensor-wrap.error .sensor-ring.ring1 { border-color:var(--error); }
+  .sensor-wrap.error .sensor-ring.ring2 { border-color:rgba(255,51,85,0.3); }
+  .sensor-wrap.error .fingerprint-svg { opacity:1; filter:drop-shadow(0 0 10px var(--error)); }
+  @keyframes rotateBorder { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  @keyframes pulseRing { 0%{opacity:.8;transform:scale(1)} 100%{opacity:0;transform:scale(1.5)} }
+  .sensor-progress { position:absolute; inset:28px; border-radius:50%; pointer-events:none; }
+  .status-block { text-align:center; width:100%; }
+  .status-label { font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+  .status-msg { font-size:15px; font-weight:600; color:var(--text); min-height:22px; transition:color .3s; }
+  .status-msg.success{color:var(--success)} .status-msg.error{color:var(--error)} .status-msg.warn{color:var(--warn)}
+  .action-btn { width:100%; padding:14px; border-radius:12px; border:none; font-family:var(--sans); font-size:15px; font-weight:700; letter-spacing:.04em; cursor:pointer; transition:all .2s; -webkit-tap-highlight-color:transparent; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#fff; }
+  .action-btn:active{transform:scale(.98);opacity:.9} .action-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+  .timer-wrap{width:100%} .timer-bar-bg{height:2px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:6px}
+  .timer-bar{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width 1s linear,background .5s;width:100%}
+  .timer-bar.warn{background:linear-gradient(90deg,var(--warn),#ff6600)} .timer-bar.critical{background:var(--error)}
+  .steps{width:100%;display:flex;flex-direction:column;gap:10px;animation:fadeUp .6s .35s ease both}
+  .step{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:360px;width:100%}
+  .step-num{width:22px;height:22px;border-radius:50%;background:var(--border);border:1px solid var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0;transition:all .3s}
+  .step.done .step-num{background:rgba(0,255,136,0.15);border-color:var(--success);color:var(--success)}
+  .step-text{font-size:13px;color:var(--muted);transition:color .3s}
+  .step.active .step-text{color:var(--text)} .step.done .step-text{color:var(--success)}
+  .session-info{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;animation:fadeUp .6s .3s ease both}
+  .session-key{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em}
+  .session-val{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .shake{animation:shake .4s ease}
+  .success-overlay{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s;pointer-events:none}
+  .sensor-wrap.success .success-overlay{opacity:1}
+  .check-svg{width:36px;height:36px;stroke:var(--success);stroke-width:3;fill:none;stroke-dasharray:50;stroke-dashoffset:50;transition:stroke-dashoffset .5s .1s ease}
+  .sensor-wrap.success .check-svg{stroke-dashoffset:0}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo-badge"><div class="logo-dot"></div>AD BIOGUARD</div>
+    <h1>Barmoq izi <span>tasdiqlash</span></h1>
+    <div class="subtitle">SESSION // <span id="sessionIdShort">--------</span></div>
+  </div>
+
+  <div class="card">
+    <div class="sensor-wrap idle" id="sensorWrap">
+      <div class="sensor-ring ring1"></div>
+      <div class="sensor-ring ring2"></div>
+      <div class="sensor-ring ring3"></div>
+      <div class="pulse-ring"></div>
+      <div class="sensor-progress" id="sensorProgress"></div>
+      <button class="sensor-btn" id="sensorBtn" onclick="onSensorTap()">
+        <svg class="fingerprint-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 8C19.85 8 10 17.85 10 30c0 8.28 4.47 15.52 11.12 19.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M32 14c-8.84 0-16 7.16-16 16 0 5.3 2.57 10 6.5 12.96" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M32 20c-5.52 0-10 4.48-10 10 0 3.18 1.48 6.02 3.8 7.9" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M32 26c-2.21 0-4 1.79-4 4 0 1.4.72 2.63 1.8 3.34" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="32" cy="30" r="2" fill="var(--accent)"/>
+          <path d="M38 26.5c1.24 1.02 2 2.57 2 4.32 0 3.6-2.4 6.63-5.67 7.6" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M43.5 22c2.8 2.2 4.6 5.56 4.6 9.32 0 6.5-4.33 12-10.27 13.76" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M49 17.5C53 21.2 55.5 26.4 55.5 32.2c0 9.8-6.5 18.1-15.5 20.8" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <div class="success-overlay">
+          <svg class="check-svg" viewBox="0 0 36 36">
+            <polyline points="6,18 14,26 30,10" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
+    </div>
+
+    <div class="status-block">
+      <div class="status-label">holat</div>
+      <div class="status-msg" id="statusMsg">Bosing va barmoqingizni ushlab turing</div>
+    </div>
+
+    <div class="timer-wrap" id="timerWrap">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em">SESSIYA VAQTI</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--accent)" id="timerLabel">02:00</span>
+      </div>
+      <div class="timer-bar-bg"><div class="timer-bar" id="timerBar"></div></div>
+    </div>
+
+    <button class="action-btn" id="actionBtn" onclick="onSensorTap()">Barmoq izini skanerlash</button>
+  </div>
+
+  <div class="steps">
+    <div class="step" id="step1"><div class="step-num">1</div><div class="step-text">Yuqoridagi doiraga bosing</div></div>
+    <div class="step" id="step2"><div class="step-num">2</div><div class="step-text">Barmoqingizni sensor ustida ushlab turing</div></div>
+    <div class="step" id="step3"><div class="step-num">3</div><div class="step-text">Tasdiqlashni kuting</div></div>
+  </div>
+
+  <div class="session-info">
+    <span class="session-key">SESSION ID</span>
+    <span class="session-val" id="sessionIdFull">YUKLANMOQDA...</span>
+  </div>
+</div>
+
+<script>
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const SESSION_ID = pathParts[pathParts.length-1] || pathParts[pathParts.length-2] || 'UNKNOWN';
+  document.getElementById('sessionIdFull').textContent = SESSION_ID;
+  document.getElementById('sessionIdShort').textContent = SESSION_ID.slice(0,8).toUpperCase();
+
+  let state='idle', timerSeconds=120, timerInterval=null, submitted=false;
+  const wrap=document.getElementById('sensorWrap'), statusMsg=document.getElementById('statusMsg'),
+        actionBtn=document.getElementById('actionBtn'), timerBar=document.getElementById('timerBar'),
+        timerLabel=document.getElementById('timerLabel'), progress=document.getElementById('sensorProgress');
+
+  function startTimer() {
+    timerInterval = setInterval(()=>{
+      timerSeconds--;
+      const m=Math.floor(timerSeconds/60).toString().padStart(2,'0');
+      const s=(timerSeconds%60).toString().padStart(2,'0');
+      timerLabel.textContent=`${m}:${s}`;
+      const pct=(timerSeconds/120)*100;
+      timerBar.style.width=pct+'%';
+      if(pct<25) timerBar.className='timer-bar critical';
+      else if(pct<50) timerBar.className='timer-bar warn';
+      if(timerSeconds<=0){
+        clearInterval(timerInterval);
+        setStatus('error','Sessiya tugadi. Sahifani yangilang.');
+        setState('error'); actionBtn.textContent='Qayta urinish'; actionBtn.disabled=false; submitted=true;
+      }
+    },1000);
+  }
+  startTimer();
+
+  function setState(s){state=s; wrap.className='sensor-wrap '+s;}
+  function setStatus(type,msg){statusMsg.textContent=msg; statusMsg.className='status-msg '+(type!=='info'?type:'');}
+  function setStep(n){
+    [1,2,3].forEach(i=>{
+      const el=document.getElementById('step'+i);
+      el.className='step'+(i<n?' done':i===n?' active':'');
+      if(i<n) el.querySelector('.step-num').textContent='✓';
+    });
+  }
+
+  function onSensorTap(){
+    if(submitted||state==='success') return;
+    if(state==='error'&&timerSeconds<=0){window.location.reload();return;}
+    if(state==='scanning') return;
+    submitFingerprint();
+  }
+
+  async function submitFingerprint(){
+    submitted=true; setState('scanning');
+    setStatus('info','Barmoq izi skanerlanmoqda...'); setStep(2);
+    actionBtn.disabled=true; actionBtn.textContent='Skanerlanmoqda...';
+
+    let prog=0;
+    const progInterval=setInterval(()=>{
+      prog=Math.min(prog+1.5,80);
+      progress.style.background=`conic-gradient(rgba(0,212,255,0.18) ${prog}%, transparent 0%)`;
+    },40);
+
+    if(!window.PublicKeyCredential){clearInterval(progInterval); onNoWebAuthn(); return;}
+
+    try {
+      const challenge=new Uint8Array(32); crypto.getRandomValues(challenge);
+      const userId=new Uint8Array(16); crypto.getRandomValues(userId);
+
+      // credentials.create() — telefon barmoq izi / Face ID dialogini ochadi
+      // MUHIM: credentials.get() EMAS — u passkey qidiradi va ishlamaydi
+      const credential = await navigator.credentials.create({
+        publicKey:{
+          challenge,
+          rp:{ name:'AD BioGuard', id:window.location.hostname },
+          user:{ id:userId, name:SESSION_ID+'@adguard.local', displayName:'Foydalanuvchi' },
+          pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+          authenticatorSelection:{
+            authenticatorAttachment:'platform',  // faqat qurilma sensori
+            userVerification:'required',          // barmoq izi majburiy
+            residentKey:'discouraged',
+          },
+          timeout:60000,
+        }
+      });
+
+      clearInterval(progInterval);
+      await sendToBackend(credential.id);
+
+    } catch(err){
+      clearInterval(progInterval);
+      const name=err?.name||'';
+      if(name==='NotAllowedError'){submitted=false; onError('Barmoq izi tasdiqlanmadi. Qayta urining.'); return;}
+      if(name==='NotSupportedError'){submitted=false; onNoWebAuthn(); return;}
+      // InvalidStateError = allaqachon ro'yxatda bor, biometrik bajarildi
+      await sendToBackend('biometric_verified_'+Date.now());
+    }
+  }
+
+  async function sendToBackend(credentialId){
+    setStatus('info','Tekshirilmoqda...'); setStep(3);
+    progress.style.background=`conic-gradient(rgba(0,212,255,0.18) 95%, transparent 0%)`;
+    try{
+      const res=await fetch(`/api/agent/fingerprint/phone/submit/${SESSION_ID}/`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({session_id:SESSION_ID,source:'mobile_web',verified:true,embedding:credentialId})
+      });
+      const data=await res.json();
+      if(res.ok&&(data.status==='completed'||data.status==='ok')) onSuccess();
+      else if(data.status==='no_biometric') onNoBiometric(data.detail);
+      else onError(data.detail||'Barmoq izi tanilmadi');
+    }catch(err){ onPending(); }
+  }
+
+  function onPending(){setState('scanning');setStatus('info','Tasdiq kutilmoqda...');actionBtn.textContent='Kutilmoqda...';actionBtn.disabled=true;progress.style.background=`conic-gradient(rgba(0,212,255,0.18) 100%, transparent 0%)`;}
+  function onNoBiometric(msg){submitted=false;setState('error');wrap.classList.add('shake');setTimeout(()=>wrap.classList.remove('shake'),400);setStatus('warn',msg||'Barmoq izi topilmadi. Boshqa usulni tanlang.');actionBtn.textContent='⚠️ Boshqa usulni tanlang';actionBtn.disabled=true;actionBtn.style.background='linear-gradient(135deg,#cc5500,var(--warn))';progress.style.background='none';}
+  function onNoWebAuthn(){submitted=false;setState('error');setStatus('warn','Qurilmangizda biometrik sensor topilmadi.');actionBtn.textContent='⚠️ Boshqa usulni tanlang';actionBtn.disabled=true;actionBtn.style.background='linear-gradient(135deg,#cc5500,var(--warn))';progress.style.background='none';}
+  function onSuccess(){clearInterval(timerInterval);setState('success');setStatus('success','Barmoq izi tasdiqlandi!');setStep(4);actionBtn.textContent='✓ Muvaffaqiyatli';actionBtn.style.background='linear-gradient(135deg,#00994d,var(--success))';actionBtn.disabled=true;document.getElementById('timerWrap').style.opacity='0.3';}
+  function onError(msg){submitted=false;setState('error');wrap.classList.add('shake');setTimeout(()=>wrap.classList.remove('shake'),400);setStatus('error',msg||'Xatolik yuz berdi');actionBtn.textContent='Qayta urinish';actionBtn.disabled=false;progress.style.background='none';setTimeout(()=>{setState('idle');setStatus('info','Barmoq izi belgisiga bosing');},2000);}
+
+  const sensorBtn=document.getElementById('sensorBtn');
+  sensorBtn.addEventListener('touchstart',(e)=>{e.preventDefault();onSensorTap();},{passive:false});
+  sensorBtn.addEventListener('touchend',(e)=>{e.preventDefault();},{passive:false});
+</script>
+</body>
+</html>

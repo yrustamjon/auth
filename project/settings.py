@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
+    "apps.agent",
     'apps.biometrik',
     'apps.common',
     'apps.org',
