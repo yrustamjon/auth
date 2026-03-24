@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import tempfile
+import secrets
 
 from django.http                  import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -75,12 +76,7 @@ def _get_session(session_id: str):
     return session
 
 
-# ─────────────────────────────────────────────────────────────────
-# MOBILE PAGES
-# main.py:
-#   qr_url = f"{API_BASE}/agent/mobile/fingerprint/{self._session_id}/"
-#   qr_url = f"{API_BASE}/agent/mobile/face/{self._session_id}/"
-# ─────────────────────────────────────────────────────────────────
+
 
 def mobile_fingerprint_page(request, session_id):
     """
@@ -366,50 +362,80 @@ def agent_face_phone_status(request, session_id):
     return HttpResponse("pending", content_type="text/plain")
 
 
-
 @csrf_exempt
-@require_http_methods(["POST"])
 def fingerprint_phone_submit(request, session_id):
-    data = _body(request)
-
-    verified = data.get("verified")
-    embedding = data.get("embedding", "").strip()
-
     session = _get_session(session_id)
 
     if session is None:
         return _err("Sessiya topilmadi yoki muddati tugadi", status=410)
 
-    if session.status == "completed":
-        return _ok({"status": "completed"})
+    if request.method == "GET":
+        fingerprint = BiometricFingerprint.objects.filter(user=session.user).first()
 
-    # user fingerprint mavjudmi
-    fingerprint_records = BiometricFingerprint.objects.filter(user=session.user)
+        if not fingerprint:
+            return _err("Fingerprint topilmadi")
 
-    if not fingerprint_records.exists():
-        return _ok({
-            "status": "no_biometric",
-            "detail": "Barmoq izi topilmadi. Boshqa usulni tanlang."
-        })
+        saved = fingerprint.get_embedding()
 
-    if not embedding:
-        return _err("embedding required")
+        if not saved:
+            return _err("Credential yo'q")
 
-    # browser biometric tasdiqlagan bo‘lsa
-    if verified:
-        session.status = "completed"
-        session.save(update_fields=["status"])
+        try:
+            saved_raw, saved_client, saved_attestation = saved.decode().split("|")
+        except:
+            return _err("Credential buzilgan")
 
-        logger.info("[fingerprint_phone_submit] COMPLETED id=%s", session_id)
+        challenge = secrets.token_urlsafe(32)
+
+        
 
         return _ok({
-            "status": "completed"
+            "challenge": challenge,
+            "credential_id": saved_raw
         })
 
-    return _ok({
-        "status": "failed",
-        "detail": "Barmoq izi tasdiqlanmadi"
-    })
+    elif request.method == "POST":
+        data = _body(request)
+
+        raw_id = data.get("rawId")
+
+        def normalize_base64(v):
+            if not v:
+                return ""
+            return v.replace("-", "+").replace("_", "/").rstrip("=")
+
+        raw_id_norm = normalize_base64(raw_id)
+
+        fingerprint_records = BiometricFingerprint.objects.filter(user=session.user)
+
+        matched = False
+
+        for fp in fingerprint_records:
+            saved = fp.get_embedding()
+
+            if not saved:
+                continue
+
+            try:
+                saved_raw, saved_client, saved_attestation = saved.decode().split("|")
+            except:
+                continue
+
+            if normalize_base64(saved_raw) == raw_id_norm:
+                matched = True
+                break
+
+        if matched:
+            session.status = "completed"
+            session.save(update_fields=["status"])
+
+            return _ok({
+                "status": "completed"
+            })
+
+        return _ok({
+            "status": "failed"
+        })
 
 @require_http_methods(["GET"])
 def agent_fingerprint_phone_status(request, session_id):

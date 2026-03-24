@@ -125,19 +125,13 @@
 <canvas id="snapCanvas"></canvas>
 <video id="camVideo" autoplay playsinline></video>
 
+
 <script>
-/* ══════════════════════════════════════════════════════════════
-   STATE
-══════════════════════════════════════════════════════════════ */
-/* URL dan session_id olamiz: /mobile/fingerprint/{session_id}/
-   Django template render bo'lmasa ham ishlaydi                  */
+
 const SESSION_ID = window.location.pathname.split('/').filter(Boolean).pop();
 let   camStream           = null;
-window.tempCredentialId   = null;   /* holds WebAuthn credential.id until face verified */
+window.tempCredentialId   = null;   
 
-/* ══════════════════════════════════════════════════════════════
-   RENDER HELPERS
-══════════════════════════════════════════════════════════════ */
 function render(html) {
     document.getElementById('card').innerHTML = html;
 }
@@ -147,10 +141,13 @@ function progressBar(pct) {
 function iconHtml(emoji, cls) {
     return `<div class="icon ${cls}">${emoji}</div>`;
 }
+function toBase64(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
 
-/* ══════════════════════════════════════════════════════════════
-   STAGE 0 — FINGERPRINT (WebAuthn only, no submit yet)
-══════════════════════════════════════════════════════════════ */
 async function startFingerprint() {
     render(`
         ${progressBar(66)}
@@ -176,10 +173,12 @@ async function startFingerprint() {
             }
         });
 
-        window.tempCredentialId = credential.id;
+        window.tempCredentialId = {
+            rawId: toBase64(credential.rawId),
+            clientDataJSON: toBase64(credential.response.clientDataJSON),
+            attestationObject: toBase64(credential.response.attestationObject)
+        };
 
-        /* face verified bo'lganda tempCredentialId set bo'lgan,
-           shuning uchun to'g'ridan submit qilamiz — startFaceStage EMAS */
         await submitFingerprintAfterFace();
 
     } catch(e) {
@@ -195,15 +194,7 @@ async function startFingerprint() {
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   STAGE 1 — FACE VERIFICATION
-══════════════════════════════════════════════════════════════ */
 async function startFaceStage() {
-    /*
-     * NOTE: video element stays OUTSIDE card div on purpose.
-     * render() calls card.innerHTML = ... which would destroy
-     * a video element moved inside it, losing the camera stream.
-     */
     render(`
         ${progressBar(33)}
         <div class="stage-label"><span class="dot"></span> 1 / 2 — Yuz tekshiruvi</div>
@@ -219,14 +210,12 @@ async function startFaceStage() {
         video.srcObject = camStream;
         video.style.display = 'block';
 
-        /* wait for first real frame */
         await new Promise((resolve, reject) => {
             const timeout = setTimeout(resolve, 3000);
             video.onloadeddata = () => { clearTimeout(timeout); resolve(); };
             video.onerror      = (err) => { clearTimeout(timeout); reject(err); };
         });
 
-        /* extra settle so frame is not black */
         await new Promise(resolve => setTimeout(resolve, 800));
 
         await captureAndCheckFace();
@@ -249,8 +238,6 @@ async function captureAndCheckFace() {
 
     const w = video.videoWidth;
     const h = video.videoHeight;
-
-    /* guard: must have real frame dimensions */
     if (!w || !h) {
         stopCam();
         render(`
@@ -289,7 +276,6 @@ async function captureAndCheckFace() {
         try { data = await res.json(); } catch(_) { data = {}; }
 
         if (!res.ok) {
-            /* any HTTP error → fingerprint must NOT be saved */
             window.tempCredentialId = null;
             throw new Error(data.detail || data.message || ('Yuz tekshirishda xato: ' + res.status));
         }
@@ -297,7 +283,6 @@ async function captureAndCheckFace() {
         handleFaceResult(data);
 
     } catch(e) {
-        /* any exception → fingerprint must NOT be saved */
         window.tempCredentialId = null;
         render(`
             ${progressBar(33)}
@@ -310,24 +295,13 @@ async function captureAndCheckFace() {
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   FACE RESULT HANDLER
-   Only "verified" path calls submitFingerprintAfterFace().
-   All other paths clear tempCredentialId without submitting.
-══════════════════════════════════════════════════════════════ */
 function handleFaceResult(data) {
 
     if (data.status === 'verified') {
-        /* ✓ Yuz tasdiqlandi — endi barmoq izi WebAuthn boshlaydi.
-           startFingerprint() credential oladi, keyin submitFingerprintAfterFace() chaqiradi */
         startFingerprint();
 
     } else if (data.status === 'not_found') {
-        /*
-         * Face template not in system.
-         * Fingerprint is NOT saved — tempCredentialId cleared.
-         * Face enrollment is only done by admin — user cannot enroll here.
-         */
+
         window.tempCredentialId = null;
         render(`
             ${progressBar(100)}
@@ -368,9 +342,9 @@ async function submitFingerprintAfterFace() {
         <p>Iltimos kuting</p>
     `);
 
-    const embedding = window.tempCredentialId;
+    const credential = window.tempCredentialId;
 
-    if (!embedding) {
+    if (!credential) {
         render(`
             ${progressBar(0)}
             ${iconHtml('✕', 'red')}
@@ -389,7 +363,9 @@ async function submitFingerprintAfterFace() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 session_id: SESSION_ID,
-                embedding:  embedding
+                rawId: credential.rawId,
+                clientDataJSON: credential.clientDataJSON,
+                attestationObject: credential.attestationObject
             })
         });
 
@@ -419,9 +395,6 @@ async function submitFingerprintAfterFace() {
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   HELPERS
-══════════════════════════════════════════════════════════════ */
 function stopCam() {
     if (camStream) {
         camStream.getTracks().forEach(t => t.stop());
@@ -441,11 +414,8 @@ function showSessionError(msg) {
     `);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   BOOT — session tekshirib keyin face boshlaydi
-══════════════════════════════════════════════════════════════ */
 async function boot() {
-    /* SESSION_ID URL dan olinadi — bo'sh bo'lsa URL noto'g'ri */
+
     if (!SESSION_ID) {
         showSessionError('Session ID topilmadi. URL noto\'g\'ri.');
         return;
@@ -463,14 +433,10 @@ async function boot() {
         let data;
         try { data = await res.json(); } catch(_) { data = {}; }
 
-        /* backend string qaytarishi mumkin: "pending"
-           yoki object: {"status": "pending"} — ikkalasini ham handle qilamiz */
         const status = typeof data === 'string' ? data : (data.status || '');
 
-        console.log('SESSION STATUS:', res.status, status);
-
         if (status === 'expired') {
-            showSessionError('Sessiya muddati tugagan. QR kodni yangilang.');
+            showSessionError('Sessiya muddati tugagan.');
             return;
         }
 
@@ -484,7 +450,6 @@ async function boot() {
             return;
         }
 
-        /* pending yoki boshqa holat → face boshlash */
         startFaceStage();
 
     } catch(e) {
@@ -494,5 +459,8 @@ async function boot() {
 
 window.onload = boot;
 </script>
+
+
+
 </body>
 </html>

@@ -95,7 +95,9 @@ class FingerprintPhoneSubmitView(APIView):
 
     def post(self, request):
         session_id = request.data.get("session_id")
-        embedding = request.data.get("embedding")
+        raw_id = request.data.get("rawId")
+        client_data = request.data.get("clientDataJSON")
+        attestation = request.data.get("attestationObject")
 
         session = FingerprintSession.objects.get(session_id=session_id)
 
@@ -113,20 +115,30 @@ class FingerprintPhoneSubmitView(APIView):
                 status=400
             )
 
+        if not raw_id or not client_data or not attestation:
+            return Response(
+                {"error": "Credential incomplete"},
+                status=400
+            )
+
+        combined = f"{raw_id}|{client_data}|{attestation}"
+
         fingerprint = BiometricFingerprint.objects.create(
             user=session.user,
             source="phone"
         )
 
-        fingerprint.set_embedding(embedding.encode())
+        fingerprint.set_embedding(combined.encode())
         fingerprint.save()
 
         session.status = "completed"
         session.save()
 
         return Response({
+            "status": "ok",
             "message": "Fingerprint saved"
         })
+    
     
 
 class FingerprintPhoneStatusView(APIView):

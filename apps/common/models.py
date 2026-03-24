@@ -197,7 +197,6 @@ class BiometricFace(models.Model):
     def __str__(self):
             return f"BiometricFace: {self.user}"
 
-
 class BiometricFingerprint(models.Model):
 
     SOURCE_CHOICES = [
@@ -213,20 +212,24 @@ class BiometricFingerprint(models.Model):
         related_name="fingerprint"
     )
 
-
     source = models.CharField(
         max_length=20,
         choices=SOURCE_CHOICES,
         default="manual"
     )
 
-    
-    embedding = models.BinaryField()
+    embedding = models.BinaryField(null=True, blank=True)
+
+    credential_id = models.BinaryField(null=True, blank=True)
+    public_key = models.BinaryField(null=True, blank=True)
+    sign_count = models.IntegerField(default=0)
+
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def set_embedding(self, raw_embedding):
-        self.embedding = encrypt_data(raw_embedding)
+        if raw_embedding:
+            self.embedding = encrypt_data(raw_embedding)
 
     def get_embedding(self):
         if not self.embedding:
@@ -234,7 +237,7 @@ class BiometricFingerprint(models.Model):
         return decrypt_data(self.embedding)
 
     def __str__(self):
-            return f"BiometricFingerprint: {self.user}"
+        return f"BiometricFingerprint: {self.user}"
 
 
 
