@@ -29,7 +29,7 @@ from apps.biometrik.embedding import extract_embedding
 from apps.biometrik.views import _cosine_similarity
 
 from .models import AgentSession
-from apps.common.models import BiometricFace, BiometricFingerprint, Users
+from apps.common.models import BiometricFace, BiometricFingerprint, Users,Organization
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +125,7 @@ def agent_session_start(request):
     if not username:
         return _err("username required")
 
+    org=Organization.objects.get(slug='no_organization')
     # Users modelidan foydalanuvchini topamiz
     try:
         user = Users.objects.get(username=username)
