@@ -28,23 +28,18 @@ SECRET_KEY = 'django-insecure-q+-=-m@_unflqqtwg1^l1@ol&29^5_%*p3_7vo3mo^bn(!4#z4
 CRYPTO_SECRET_KEY ="SS8O-PP0W5NdgoA4fagzCl29QlOLgrqA1NncmrD0wtc="  # 32 ta belgidan iborat maxfiy kalit, uni xavfsiz joyda saqlang va hech qachon oshkor qilmang
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = ["*"]
-
-
+ALLOWED_HOSTS = ["adauth.tech", "www.adauth.tech"]
 
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://admin.com",
-    "http://127.0.0.1:80",
-    "http://localhost:80",
-    "http://192.168.0.166:80",
+    "https://adauth.tech",
+    "https://www.adauth.tech",
 ]
-# Application definition
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://sibilantly-penanceless-young.ngrok-free.dev"
+    "https://adauth.tech",
+    "https://www.adauth.tech",
 ]
 
 
