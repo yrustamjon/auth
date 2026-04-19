@@ -158,23 +158,35 @@ class Roles(models.Model):
         return self.name
 
 
+class Device(models.Model):
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="devices"
+    )
 
-class Devices(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="devices")
-    pc_id=models.CharField(max_length=255)
-    location=models.CharField(max_length=255)
-    is_active=models.BooleanField(default=True)
-    last_seen=models.DateTimeField(auto_now=True)
-    revoked=models.BooleanField(default=False)
-    registered_at = models.DateTimeField(auto_now_add=True, null=True)
-    device_public_key=models.TextField(blank=True, null=True) # agar kerak bo'lsa, qurilmaning public key sini saqlash uchun
+    pc_id = models.CharField(max_length=255, db_index=True)
+    license = models.CharField(max_length=255)
+
+    location = models.CharField(max_length=255)
+
+    cert = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    device_public_key = models.TextField(blank=True, null=True)
+
+    is_active = models.BooleanField(default=True)
+
+    last_seen = models.DateTimeField(auto_now=True)
+    last_ip = models.GenericIPAddressField(null=True, blank=True)
+
+    registered_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('organization', 'pc_id')
 
-
     def __str__(self):
         return self.pc_id
+    
+
 
 class BiometricFace(models.Model):
     user = models.ForeignKey(
@@ -196,6 +208,7 @@ class BiometricFace(models.Model):
 
     def __str__(self):
             return f"BiometricFace: {self.user}"
+
 
 class BiometricFingerprint(models.Model):
 
@@ -246,7 +259,7 @@ class AccessLogs(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="access_logs")
     timestamp=models.DateTimeField(auto_now_add=True)
     user=models.ForeignKey(Users,on_delete=models.CASCADE)
-    device=models.ForeignKey(Devices,on_delete=models.CASCADE)
+    device=models.ForeignKey(Device,on_delete=models.CASCADE)
     success=models.BooleanField(default=False)
     cause=models.CharField(max_length=255, blank=True, null=True)
 

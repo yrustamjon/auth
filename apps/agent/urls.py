@@ -17,7 +17,6 @@ from . import views
 
 urlpatterns = [
 
-    # ── QR skanerlanganda telefonda ochiladi ───────────────────────
     path(
         "agent/mobile/fingerprint/<str:session_id>/",
         views.mobile_fingerprint_page,
@@ -29,14 +28,12 @@ urlpatterns = [
         name="mobile_face",
     ),
 
-    # ── Session ────────────────────────────────────────────────────
     path(
         "api/agent/session/start/",
         views.agent_session_start,
         name="agent_session_start",
     ),
 
-    # ── Face ───────────────────────────────────────────────────────
     path(
         "api/face/agent/check/",
         views.face_agent_check,
@@ -53,7 +50,6 @@ urlpatterns = [
         name="agent_face_phone_status",
     ),
 
-    # ── Fingerprint ────────────────────────────────────────────────
     path(
         "api/agent/fingerprint/phone/submit/<str:session_id>/",
         views.fingerprint_phone_submit,
@@ -64,4 +60,7 @@ urlpatterns = [
         views.agent_fingerprint_phone_status,
         name="agent_fingerprint_phone_status",
     ),
+    path('api/agent/validate-code/',views.ValidetAgent),
+    path('api/health/',views.health),
+    path("api/agent/device/status/",views.DeviceStatusView.as_view()),
 ]

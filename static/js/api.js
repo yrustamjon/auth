@@ -5,7 +5,7 @@
 
 // Base API URL (configure this based on your backend)
 
-const API_BASE_URL = "https://adauth.tech";
+const API_BASE_URL = "https://sibilantly-penanceless-young.ngrok-free.dev";
 
 
 

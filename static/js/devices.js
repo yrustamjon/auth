@@ -1,55 +1,88 @@
 /**
  * Device management functions
- * Handles CRUD operations for devices
  * Fields: id, pc_id, location, is_active, revoked, last_seen, registered_at, device_public_key
  */
 
-let devicesCache = [];
 
+
+// ── Load ───────────────────────────────────────────────────────
 async function loadDevices() {
     const tbody = document.querySelector('#devicesTable tbody');
     tbody.innerHTML = `
         <tr class="loading-row">
-            <td colspan="8">
+            <td colspan="9">
                 <div class="loading-spinner">
                     <i class="fas fa-circle-notch fa-spin"></i> Loading devices...
                 </div>
             </td>
-        </tr>
-    `;
+        </tr>`;
 
     try {
-        const response = await fetchWithAuth('/api/devices');
-        if (!response.ok) throw new Error(`Failed to load devices: ${response.status}`);
-        const devices = await response.json();
-        devicesCache = devices;
-        displayDevices(devices);
-    } catch (error) {
-        console.error('Error loading devices:', error);
+        const res = await fetchWithAuth('/api/devices');
+        if (!res.ok) throw new Error(`Failed to load devices: ${res.status}`);
+        devicesCache = await res.json();
+        filterDevices();
+    } catch (err) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="empty-state error-state">
+                <td colspan="9" class="empty-state error-state">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Error loading devices: ${error.message}</p>
+                    <p>Xatolik: ${err.message}</p>
                 </td>
-            </tr>
-        `;
+            </tr>`;
     }
 }
 
-function displayDevices(devices) {
+// ── Filter ─────────────────────────────────────────────────────
+function filterDevices() {
+    const q       = (document.getElementById('deviceSearch').value || '').toLowerCase().trim();
+    const statVal = document.getElementById('statusFilter').value;
+    const revVal  = document.getElementById('revokedFilter').value;
+
+    const filtered = devicesCache.filter(d => {
+        const matchQ = !q ||
+            (d.pc_id    || '').toLowerCase().includes(q) ||
+            (d.location || '').toLowerCase().includes(q);
+        const matchS = !statVal ||
+            (statVal === 'active'   &&  d.is_active) ||
+            (statVal === 'inactive' && !d.is_active);
+        const matchR = !revVal ||
+            (revVal === 'revoked'   &&  d.revoked) ||
+            (revVal === 'ok'        && !d.revoked);
+        return matchQ && matchS && matchR;
+    });
+
+    displayDevices(filtered, q);
+
+    const rc = document.getElementById('deviceResultCount');
+    if (filtered.length === devicesCache.length) {
+        rc.textContent = `${devicesCache.length} ta`;
+        rc.style.color = '#6b7280';
+    } else {
+        rc.textContent = `${filtered.length} / ${devicesCache.length} ta natija`;
+        rc.style.color = filtered.length === 0 ? '#dc2626' : '#6b7280';
+    }
+}
+
+function highlight(text, q) {
+    if (!q || !text) return String(text || '');
+    const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(text).replace(new RegExp(esc, 'gi'), m => `<mark>${m}</mark>`);
+}
+
+// ── Display ────────────────────────────────────────────────────
+function displayDevices(devices, q = '') {
     const tbody = document.querySelector('#devicesTable tbody');
     tbody.innerHTML = '';
 
     if (!devices || devices.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="empty-state">
+                <td colspan="9" class="empty-state">
                     <i class="fas fa-desktop"></i>
-                    <p>No devices found. Add your first device!</p>
+                    <p>Qurilmalar topilmadi.</p>
                 </td>
-            </tr>
-        `;
+            </tr>`;
         return;
     }
 
@@ -57,174 +90,139 @@ function displayDevices(devices) {
         const row = document.createElement('tr');
 
         const registeredAt = device.registered_at
-            ? new Date(device.registered_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
-            : '<span class="text-muted">N/A</span>';
+            ? new Date(device.registered_at).toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric' })
+            : '<span class="text-muted">—</span>';
 
         const lastSeen = device.last_seen
-            ? new Date(device.last_seen).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
-            : '<span class="text-muted">Never</span>';
+            ? new Date(device.last_seen).toLocaleString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '<span class="text-muted">Hech qachon</span>';
 
-        // is_active badge (display only)
-        const isActiveLabel = device.is_active
-            ? `<span class="badge badge-active"><i class="fas fa-check-circle"></i> Active</span>`
-            : `<span class="badge badge-inactive"><i class="fas fa-times-circle"></i> Inactive</span>`;
+        const did = device.id;
+        const activeBtn = device.is_active
+            ? `<button class="toggle-btn toggle-active" onclick="toggleDeviceField(${did}, 'is_active', false)" title="O'chirish">
+                   <i class="fas fa-check-circle"></i> Active
+               </button>`
+            : `<button class="toggle-btn toggle-inactive" onclick="toggleDeviceField(${did}, 'is_active', true)" title="Yoqish">
+                   <i class="fas fa-times-circle"></i> Inactive
+               </button>`;
 
-        // revoked badge (display only)
-        const revokedLabel = device.revoked
-            ? `<span class="badge badge-revoked"><i class="fas fa-ban"></i> Revoked</span>`
-            : `<span class="badge badge-ok"><i class="fas fa-shield-alt"></i> OK</span>`;
+        const revokedBtn = device.revoked
+            ? `<button class="toggle-btn toggle-revoked" onclick="toggleDeviceField(${did}, 'revoked', false)" title="Tiklash">
+                   <i class="fas fa-ban"></i> Revoked
+               </button>`
+            : `<button class="toggle-btn toggle-ok" onclick="toggleDeviceField(${did}, 'revoked', true)" title="Bloklash">
+                   <i class="fas fa-shield-alt"></i> OK
+               </button>`;
 
         row.innerHTML = `
             <td class="col-id">${device.id}</td>
-            <td class="col-pcid"><strong>${device.pc_id}</strong></td>
-            <td class="col-location">
+            <td class="col-pcid"><strong>${highlight(device.pc_id, q)}</strong></td>
+            <td>
                 <i class="fas fa-map-marker-alt location-icon"></i>
-                ${device.location}
+                ${highlight(device.location, q)}
             </td>
-            <td class="col-status">${isActiveLabel}</td>
-            <td class="col-revoked">${revokedLabel}</td>
-            <td class="col-registered">${registeredAt}</td>
-            <td class="col-lastseen">${lastSeen}</td>
-            <td class="col-actions actions">
-                <button class="btn-action btn-edit" onclick="editDevice(${device.id})" title="Edit Device">
+            <td>${activeBtn}</td>
+            <td>${revokedBtn}</td>
+            <td>${lastSeen}</td>
+            <td>${registeredAt}</td>
+            <td class="actions">
+                <button class="btn-action btn-edit" onclick="editDevice(${did})">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="btn-action btn-delete" onclick="deleteDevice(${device.id})" title="Delete Device">
+                <button class="btn-action btn-delete" onclick="deleteDevice(${did})">
                     <i class="fas fa-trash"></i> Delete
                 </button>
-                ${device.is_active
-                    ? `<button class="btn-action btn-toggle-inactive" onclick="toggleDeviceField(${device.id}, 'is_active', false)" title="Deactivate">
-                           <i class="fas fa-toggle-on"></i> Deactivate
-                       </button>`
-                    : `<button class="btn-action btn-toggle-active" onclick="toggleDeviceField(${device.id}, 'is_active', true)" title="Activate">
-                           <i class="fas fa-toggle-off"></i> Activate
-                       </button>`
-                }
-                ${device.revoked
-                    ? `<button class="btn-action btn-toggle-restore" onclick="toggleDeviceField(${device.id}, 'revoked', false)" title="Restore">
-                           <i class="fas fa-undo"></i> Restore
-                       </button>`
-                    : `<button class="btn-action btn-toggle-revoke" onclick="toggleDeviceField(${device.id}, 'revoked', true)" title="Revoke">
-                           <i class="fas fa-ban"></i> Revoke
-                       </button>`
-                }
-            </td>
-        `;
+            </td>`;
 
         tbody.appendChild(row);
     });
 }
 
-/**
- * Toggle is_active or revoked using PATCH
- */
+// ── Toggle field (is_active yoki revoked) ─────────────────────
 async function toggleDeviceField(deviceId, field, value) {
     try {
-        const response = await fetchWithAuth(`/api/devices/${deviceId}/`, {
+        const res = await fetchWithAuth(`/api/devices/${deviceId}/`, {
             method: 'PATCH',
             body: JSON.stringify({ [field]: value })
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || `Failed to update: ${response.status}`);
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed: ${res.status}`);
         }
 
-        // Update local cache
         const cached = devicesCache.find(d => d.id === deviceId);
         if (cached) cached[field] = value;
 
-        const label = field === 'is_active' ? 'Status' : 'Revoked';
-        showToast(`${label} updated successfully!`, 'success');
-
-        displayDevices(devicesCache);
-    } catch (error) {
-        console.error(`Error toggling ${field}:`, error);
-        showToast(`Error updating device: ${error.message}`, 'error');
+        const label = field === 'is_active' ? 'Status' : 'Revoked holati';
+        showToast(`${label} yangilandi!`, 'success');
+        filterDevices();
+    } catch (err) {
+        showToast('Xatolik: ' + err.message, 'error');
     }
 }
 
-async function createDevice(deviceData) {
-    try {
-        const response = await fetchWithAuth('/api/devices', {
-            method: 'POST',
-            body: JSON.stringify(deviceData)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || `Failed to create device: ${response.status}`);
-        }
-
-        showToast('Device created successfully!', 'success');
-        return await response.json();
-    } catch (error) {
-        console.error('Error creating device:', error);
-        throw error;
+// ── Create ─────────────────────────────────────────────────────
+async function createDevice(data) {
+    const res = await fetchWithAuth('/api/devices', { method: 'POST', body: JSON.stringify(data) });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Failed: ${res.status}`);
     }
+    showToast("Qurilma qo'shildi!", 'success');
+    return await res.json();
 }
 
-async function updateDevice(deviceId, deviceData) {
-    try {
-        const response = await fetchWithAuth(`/api/devices/${deviceId}`, {
-            method: 'PUT',
-            body: JSON.stringify(deviceData)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || `Failed to update device: ${response.status}`);
-        }
-
-        showToast('Device updated successfully!', 'success');
-        return await response.json();
-    } catch (error) {
-        console.error('Error updating device:', error);
-        throw error;
+// ── Update ─────────────────────────────────────────────────────
+async function updateDevice(deviceId, data) {
+    const res = await fetchWithAuth(`/api/devices/${deviceId}/`, { method: 'PUT', body: JSON.stringify(data) });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Failed: ${res.status}`);
     }
+    showToast('Qurilma yangilandi!', 'success');
+    return await res.json();
 }
 
+// ── Delete ─────────────────────────────────────────────────────
 async function deleteDevice(deviceId) {
-    if (!confirm('Are you sure you want to delete this device? This action cannot be undone.')) return;
-
+    if (!confirm("Bu qurilmani o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi.")) return;
     try {
-        const response = await fetchWithAuth(`/api/devices/${deviceId}/`, { method: 'DELETE' });
-
-        if (!response.ok) throw new Error(`Failed to delete device: ${response.status}`);
-
-        showToast('Device deleted successfully!', 'success');
+        const res = await fetchWithAuth(`/api/devices/${deviceId}/`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`Failed: ${res.status}`);
+        showToast("Qurilma o'chirildi!", 'success');
         loadDevices();
-    } catch (error) {
-        console.error('Error deleting device:', error);
-        showToast('Error deleting device: ' + error.message, 'error');
+    } catch (err) {
+        showToast('Xatolik: ' + err.message, 'error');
     }
 }
 
+// ── Edit ───────────────────────────────────────────────────────
 async function editDevice(deviceId) {
     try {
         let device = devicesCache.find(d => d.id === deviceId);
-
         if (!device) {
-            const response = await fetchWithAuth(`/api/devices/${deviceId}/`);
-            if (!response.ok) throw new Error('Device not found');
-            device = await response.json();
+            const res = await fetchWithAuth(`/api/devices/${deviceId}/`);
+            if (!res.ok) throw new Error('Qurilma topilmadi');
+            device = await res.json();
         }
 
-        document.getElementById('deviceModalTitle').textContent = 'Edit Device';
-        document.getElementById('deviceId').value = device.id;
-        document.getElementById('pc_id').value = device.pc_id;
-        document.getElementById('location').value = device.location;
-        document.getElementById('is_active').checked = device.is_active;
-        document.getElementById('revoked').checked = device.revoked;
-        document.getElementById('device_public_key').value = device.device_public_key || '';
+        document.getElementById('deviceModalTitle').textContent = 'Qurilmani tahrirlash';
+        document.getElementById('deviceId').value              = device.id;
+        document.getElementById('pc_id').value                 = device.pc_id;
+        document.getElementById('location').value              = device.location;
+        document.getElementById('license').value               = device.license || '';
+        document.getElementById('is_active').checked           = device.is_active;
+        document.getElementById('revoked').checked             = device.revoked;
+        document.getElementById('device_public_key').value     = device.device_public_key || '';
 
         document.getElementById('deviceModal').style.display = 'flex';
-    } catch (error) {
-        console.error('Error loading device for edit:', error);
-        showToast('Error loading device data: ' + error.message, 'error');
+    } catch (err) {
+        showToast('Xatolik: ' + err.message, 'error');
     }
 }
 
+// ── Toast ──────────────────────────────────────────────────────
 function showToast(message, type = 'success') {
     const existing = document.querySelector('.toast-notification');
     if (existing) existing.remove();
@@ -233,8 +231,7 @@ function showToast(message, type = 'success') {
     toast.className = `toast-notification toast-${type}`;
     toast.innerHTML = `
         <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        <span>${message}</span>
-    `;
+        <span>${message}</span>`;
     document.body.appendChild(toast);
 
     setTimeout(() => toast.classList.add('toast-show'), 10);
@@ -243,3 +240,79 @@ function showToast(message, type = 'success') {
         setTimeout(() => toast.remove(), 400);
     }, 3000);
 }
+
+// ── Events (DOMContentLoaded) ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadDevices();
+
+    // Search & filter
+    document.getElementById('deviceSearch').addEventListener('input', filterDevices);
+    document.getElementById('statusFilter').addEventListener('change', filterDevices);
+    document.getElementById('revokedFilter').addEventListener('change', filterDevices);
+    document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+        document.getElementById('deviceSearch').value  = '';
+        document.getElementById('statusFilter').value  = '';
+        document.getElementById('revokedFilter').value = '';
+        filterDevices();
+    });
+
+    // Modal — Add
+    document.getElementById('addDeviceBtn').addEventListener('click', () => {
+        document.getElementById('deviceModalTitle').textContent = "Yangi qurilma qo'shish";
+        document.getElementById('deviceForm').reset();
+        document.getElementById('deviceId').value    = '';
+        document.getElementById('is_active').checked = true;
+        document.getElementById('revoked').checked   = false;
+        document.getElementById('deviceModal').style.display = 'flex';
+    });
+
+    // Modal — Close
+    const modal = document.getElementById('deviceModal');
+    document.getElementById('closeDeviceModal').addEventListener('click', () => modal.style.display = 'none');
+    document.getElementById('cancelDeviceBtn').addEventListener('click', () => modal.style.display = 'none');
+    window.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+
+    // Form submit
+    document.getElementById('deviceForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const deviceId = document.getElementById('deviceId').value;
+        const data = {
+            pc_id:             document.getElementById('pc_id').value.trim(),
+            location:          document.getElementById('location').value.trim(),
+            license:           document.getElementById('license').value.trim(),
+            is_active:         document.getElementById('is_active').checked,
+            revoked:           document.getElementById('revoked').checked,
+            device_public_key: document.getElementById('device_public_key').value.trim() || null,
+        };
+
+        if (!data.pc_id || !data.location || !data.license) {
+            showToast("PC ID, Location va License to'ldirilishi shart.", 'error');
+            return;
+        }
+
+        try {
+            if (deviceId) {
+                await updateDevice(parseInt(deviceId), data);
+            } else {
+                await createDevice(data);
+            }
+            modal.style.display = 'none';
+            loadDevices();
+        } catch (err) {
+            showToast('Xatolik: ' + err.message, 'error');
+        }
+    });
+
+    // Logout (optional — agar index.html da bo'lsa)
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            if (typeof adminLogout === 'function') adminLogout();
+            window.location.href = '/login/';
+        });
+    }
+});
+
+window.editDevice = editDevice;
+window.deleteDevice = deleteDevice;
+window.toggleDeviceField = toggleDeviceField;

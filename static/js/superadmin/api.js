@@ -2,7 +2,7 @@
 // api.js — Shared utilities for all superadmin pages
 // ============================================================
 
-const API_BASE_URL = "https://adauth.tech";
+const API_BASE_URL = "https://sibilantly-penanceless-young.ngrok-free.dev";
 
 // ===== CSRF =====
 function getCookie(name) {

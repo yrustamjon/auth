@@ -28,18 +28,16 @@ SECRET_KEY = 'django-insecure-q+-=-m@_unflqqtwg1^l1@ol&29^5_%*p3_7vo3mo^bn(!4#z4
 CRYPTO_SECRET_KEY ="SS8O-PP0W5NdgoA4fagzCl29QlOLgrqA1NncmrD0wtc="  # 32 ta belgidan iborat maxfiy kalit, uni xavfsiz joyda saqlang va hech qachon oshkor qilmang
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = ["adauth.tech", "www.adauth.tech"]
+ALLOWED_HOSTS = ["*"]
 
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "https://adauth.tech",
-    "https://www.adauth.tech",
+    "https://sibilantly-penanceless-young.ngrok-free.dev"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://adauth.tech",
-    "https://www.adauth.tech",
+    "https://sibilantly-penanceless-young.ngrok-free.dev"
 ]
 
 
@@ -78,6 +76,19 @@ LOGGING = {
     },
 }
 
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "generate-org-tokens-every-day": {
+        "task": "apps.common.tasks.generate_daily_tokens",
+        "schedule": crontab(hour=0, minute=0),  # har kuni 00:00
+    },
+}
+
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

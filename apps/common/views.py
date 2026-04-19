@@ -58,7 +58,7 @@ def sender_about_user(view_func):
     return wrapper
 
 def _(request):
-    return redirect('login')
+    return render(request, "home.html")
 
 def login_page(request):
     if request.user.is_authenticated:

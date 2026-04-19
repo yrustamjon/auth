@@ -92,8 +92,28 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            
+                            <div class="compact-info-item">
+                                <div class="compact-label-value">
+                                    <div class="compact-label">Token</div>
+                                    
+                                    <div style="
+                                        display:flex;
+                                        align-items:center;
+                                        justify-content:space-between;
+                                        background:#f5f6fa;
+                                        padding:5px 8px;
+                                        border-radius:6px;
+                                        font-family:monospace;
+                                    ">
+                                        <button onclick="copyToken()" style="border:none; background:none; cursor:pointer;">
+                                                📋
+                                        </button>
+                                        <span id="org-token">Loading...</span>
+
+                                        
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -196,5 +216,85 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+});
+</script>
+
+<script>
+// =========================
+// TOKEN LOAD
+// =========================
+async function loadToken() {
+    try {
+        const res = await fetch("/api/token/", {
+            method: "GET",
+            credentials: "include"
+        });
+
+        const data = await res.json();
+
+        const el = document.getElementById("org-token");
+
+        if (!el) return;
+
+        if (res.ok && data.token) {
+            const short = data.token.slice(0, 6) + "..." + data.token.slice(-4);
+            el.innerText = short;
+
+            // full token saqlab qo‘yamiz
+            window.fullToken = data.token;
+        } else {
+            el.innerText = "No token";
+        }
+
+    } catch (e) {
+        const el = document.getElementById("org-token");
+        if (el) el.innerText = "Error";
+    }
+}
+
+
+// =========================
+// COPY TOKEN
+// =========================
+function copyToken() {
+    if (!window.fullToken) return;
+
+    navigator.clipboard.writeText(window.fullToken);
+    alert("Token copied!");
+}
+
+
+// =========================
+// SWITCH ORG override (ESKINI BUZMASDAN)
+// =========================
+const oldSwitchOrganization = switchOrganization;
+
+switchOrganization = function(orgId) {
+    fetch("/api/switch-organization/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify({ organization_id: orgId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.ok) {
+            // 🔥 TOKENNI YANGILAYMIZ (reloadsiz)
+            loadToken();
+
+            // agar reload qoldirmoqchi bo‘lsang:
+            location.reload();
+        }
+    })
+}
+
+
+// =========================
+// PAGE LOAD
+// =========================
+document.addEventListener('DOMContentLoaded', function() {
+    loadToken();
 });
 </script>
