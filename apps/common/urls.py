@@ -29,4 +29,6 @@ urlpatterns = [
 
     path("api/system/login", views.Super_AdminLogin.as_view()),
     path("api/system/logout", views.Super_AdminLogout.as_view(), name="system_logout"),
+
+    path("api/system/admins/<int:id>/force-logout/", views.ForceLogoutAdmin.as_view()),
 ]

@@ -33,11 +33,15 @@ ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "https://sibilantly-penanceless-young.ngrok-free.dev"
+    "https://adauth.tech",
+    "https://www.adauth.tech",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://sibilantly-penanceless-young.ngrok-free.dev"
+    "https://adauth.tech",
+    "https://www.adauth.tech",
 ]
 
 

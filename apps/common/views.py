@@ -437,3 +437,27 @@ class Admin(APIView):
             admin.delete()
             return Response({"ok": True})
         return Response({"detail": "Admin not found"}, status=404)
+    
+
+class ForceLogoutAdmin(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        admin = AdminUser.objects.filter(id=id).first()
+
+        if not admin:
+            return Response({"detail": "Admin not found"}, status=404)
+
+        sessions = Session.objects.filter(expire_date__gte=timezone.now())
+
+        deleted = 0
+        for s in sessions:
+            if s.get_decoded().get("_auth_user_id") == str(admin.id):
+                s.delete()
+                deleted += 1
+
+        return Response({
+            "ok": True,
+            "message": f"{deleted} ta session o‘chirildi"
+        })
+
