@@ -479,9 +479,8 @@ def ValidetAgent(request):
     if not device.is_active:
         return JsonResponse({"ok": False, "detail": "Device faol emas"}, status=403)
 
-    try:
-        OrgToken.objects.get(org=device.organization)
-    except OrgToken.DoesNotExist:
+    orgtoken = OrgToken.get_active_for_org(device.organization)
+    if orgtoken is None:
         return JsonResponse({"ok": False, "detail": "Token topilmadi"}, status=404)
 
     return JsonResponse({"ok": True})
@@ -499,6 +498,30 @@ class DeviceStatusView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        pc_id    = request.GET.get("pc_id")
-        username = request.GET.get("username")
-        return Response({"pc_id": pc_id, "username": username, "status": "ok"})
+        pc_id = (request.GET.get("pc_id") or "").strip()
+        username = (request.GET.get("username") or "").strip()
+
+        if not pc_id:
+            return Response({"status": "blocked_device", "detail": "pc_id required"}, status=400)
+
+        try:
+            device = Device.objects.get(pc_id=pc_id)
+        except Device.DoesNotExist:
+            return Response({"status": "blocked_device", "detail": "Device topilmadi"}, status=404)
+
+        cert_id = (request.headers.get("X-Cert-ID") or "").strip()
+        if cert_id and device.cert and cert_id != device.cert:
+            return Response({"status": "revoked", "detail": "Certificate mismatch"}, status=403)
+
+        if not device.is_active or not device.organization.is_active:
+            return Response({"status": "blocked_device"})
+
+        if username:
+            user = Users.objects.filter(
+                username=username,
+                organization=device.organization,
+            ).first()
+            if not user or not user.status:
+                return Response({"status": "blocked_user"})
+
+        return Response({"status": "active"})

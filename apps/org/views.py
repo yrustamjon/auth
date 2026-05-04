@@ -1,13 +1,12 @@
-from django.shortcuts import render
-from django.utils import timezone
 from django.db import transaction
+from django.utils import timezone
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from apps.common.models import Device, AdminUser, Organization
-from apps.org.models import  OrgToken
+from apps.common.models import AdminUser, Device, Organization
+from apps.org.models import OrgToken
 
 import uuid
 
@@ -128,31 +127,14 @@ class GetActiveToken(APIView):
         if not org_id:
             return Response({"error": "No org selected"}, status=400)
 
-        # user shu orgga tegishlimi
         if not request.user.organizations.filter(id=org_id).exists():
             return Response({"detail": "Forbidden"}, status=403)
 
-        token = OrgToken.objects.filter(
-            org_id=org_id,
-            is_used=False,
-            expires_at__gt=timezone.now()
-        ).first()
-
-         # 🔥 ASOSIY FIX
-        if not token or token.expires_at < timezone.now():
-            # eski tokenlarni yopamiz
-            OrgToken.objects.filter(
-                org_id=org_id,
-                is_used=False
-            ).update(is_used=True)
-
-            # yangi token yaratamiz
-            token = OrgToken.objects.create(org_id=org_id)
-
+        token = OrgToken.get_or_create_active_for_org(org_id)
 
         return Response({
             "token": token.token,
-            "expires_at": token.expires_at
+            "expires_at": token.expires_at,
         })
 
 
@@ -161,8 +143,8 @@ class GetActiveToken(APIView):
 # =========================
 class ActivateAgent(APIView):
     permission_classes = [AllowAny]
+
     def post(self, request):
-        
         token = request.data.get("token") or request.data.get("activation_code")
         device_uuid = request.data.get("device_uuid")
         license_key = request.data.get("license") or request.data.get("windows_license")
@@ -172,23 +154,21 @@ class ActivateAgent(APIView):
             return Response({"error": "Missing fields"}, status=400)
 
         with transaction.atomic():
-
             org_token = OrgToken.objects.select_for_update().filter(
                 token=token,
-                is_used=False
+                is_used=False,
             ).first()
 
             if not org_token:
                 return Response({"error": "Invalid token"}, status=400)
-            print(request.data)
+
             if org_token.expires_at < timezone.now():
                 return Response({"error": "Token expired"}, status=400)
 
-            # DEVICE FIX (senda pc_id edi)
             try:
                 device = Device.objects.get(
                     pc_id=device_uuid,
-                    organization=org_token.org
+                    organization=org_token.org,
                 )
             except Device.DoesNotExist:
                 return Response({"error": "Device not registered"}, status=400)
@@ -196,7 +176,6 @@ class ActivateAgent(APIView):
             if device.license != license_key:
                 return Response({"error": "License mismatch"}, status=400)
 
-            # cert yaratish
             cert = str(uuid.uuid4())
 
             device.cert = cert
@@ -204,12 +183,15 @@ class ActivateAgent(APIView):
             device.is_active = True
             device.save()
 
-            # tokenni yopamiz
             org_token.is_used = True
-            org_token.save()
+            org_token.save(update_fields=["is_used"])
 
         return Response({
-            "certificate": cert,
-            'org_slug': org_token.org.slug,
-            "message": "Activated"
+            "certificate": {
+                "cert_id": cert,
+                "org_slug": org_token.org.slug,
+                "pc_id": device.pc_id,
+            },
+            "org_slug": org_token.org.slug,
+            "message": "Activated",
         })
