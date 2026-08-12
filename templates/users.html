@@ -1101,11 +1101,6 @@ async function pollPhoneFingerStatus(sessionId) {
 }
 
 /* ── Events ─────────────────────────────────────────────────────── */
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    adminLogout();
-    window.location.href = '{% url "login" %}';
-});
-
 document.addEventListener('DOMContentLoaded', async () => {
     await loadRoles();
     await loadUsers();

@@ -1,5 +1,5 @@
 {% load static %}
-<header class="header">
+<header class="admin-header">
     <div class="header-left">
         <h1>
             <i class="{{ page_icon }}"></i>
@@ -131,13 +131,7 @@
     </div>
 </header>
 
-<!-- Faqat header uchun CSS -->
-<link rel="stylesheet" href="{% static 'css/styleheader.css' %}">
-
-<!-- Kichiklashtirilgan dropdown uchun qo'shimcha CSS -->
-
-
-<!-- Faqat header uchun JavaScript -->
+<!-- Header JavaScript -->
 <script>
 // CSRF cookie olish
 function getCookie(name) {
@@ -200,18 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
             logoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 if (confirm('Haqiqatan ham chiqmoqchimisiz?')) {
-                    fetch("/api/logout/", {
-                        method: "POST",
-                        headers: {
-                            "X-CSRFToken": getCookie("csrftoken"),
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.ok) {
-                            window.location.href = "/login/"
-                        }
-                    })
+                    adminLogout();
                 }
             });
         }

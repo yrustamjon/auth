@@ -1,5 +1,10 @@
 {% extends "index.html" %}
+{% load static %}
 {% block title %}Role Management{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/roles.js' %}"></script>
+{% endblock %}
 
 {% block content %}
 
@@ -372,11 +377,6 @@
 </div>
 
 <script>
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        adminLogout();
-        window.location.href = '{% url "login" %}';
-    });
-
     document.addEventListener('DOMContentLoaded', () => loadRoles());
 
     // ── Search ────────────────────────────────────────────────────

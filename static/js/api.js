@@ -5,7 +5,7 @@
 
 // Base API URL (configure this based on your backend)
 
-const API_BASE_URL = "https://sibilantly-penanceless-young.ngrok-free.dev";
+const API_BASE_URL = "http://127.0.0.1:8000"; // Change this to your backend URL
 
 
 

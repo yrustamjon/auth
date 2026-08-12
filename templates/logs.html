@@ -587,11 +587,6 @@
     }
 
     // ── Events ────────────────────────────────────────────────────
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-        adminLogout();
-        window.location.href = '{% url "login" %}';
-    });
-
     document.addEventListener('DOMContentLoaded', function() {
         // Default: bugun
         var today = new Date().toISOString().split('T')[0];

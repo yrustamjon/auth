@@ -267,11 +267,6 @@
 </div>
 
 <script>
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-        adminLogout();
-        window.location.href = '{% url "login" %}';
-    });
-
     async function loadDashboardData() {
         try {
             var today = new Date().toISOString().split('T')[0];
