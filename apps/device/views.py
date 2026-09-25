@@ -7,6 +7,13 @@ from rest_framework.permissions import IsAuthenticated,AllowAny
 from apps.common.models import *
 
 
+def _platform_or_error(value):
+    platform = value or Device.Platform.WINDOWS
+    if platform not in Device.Platform.values:
+        return None
+    return platform
+
+
 class DeviceView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -23,7 +30,8 @@ class DeviceView(APIView):
                 "last_seen": device.last_seen,
                 "is_active": device.is_active,
                 "registered_at": device.registered_at,
-                "device_public_key": device.device_public_key
+                "device_public_key": device.device_public_key,
+                "platform": device.platform,
             } for device in devices
         ])
 
@@ -32,16 +40,20 @@ class DeviceView(APIView):
         pc_id    = request.data.get("pc_id")
         location = request.data.get("location")
         license  = request.data.get("license")
+        platform = _platform_or_error(request.data.get("platform"))
         print(pc_id,license)
 
         if not pc_id or not location or not license:
             return Response({"detail": "pc_id, location va license majburiy."}, status=400)
+        if platform is None:
+            return Response({"detail": "Invalid platform"}, status=400)
 
         device = Device.objects.create(
             organization_id=org.id,
             pc_id=pc_id,
             location=location,
-            license=license
+            license=license,
+            platform=platform,
         )
         i=device
         print(i.pc_id,i.license )
@@ -58,6 +70,11 @@ class DeviceView(APIView):
         device.pc_id = request.data.get("pc_id", device.pc_id)
         device.is_active = request.data.get("is_active", device.is_active)
         device.location = request.data.get("location", device.location)
+        if "platform" in request.data:
+            platform = _platform_or_error(request.data.get("platform"))
+            if platform is None:
+                return Response({"detail": "Invalid platform"}, status=400)
+            device.platform = platform
         pub_key = request.data.get("device_public_key")
 
         if pub_key is not None:

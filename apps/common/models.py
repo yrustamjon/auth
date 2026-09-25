@@ -159,6 +159,11 @@ class Roles(models.Model):
 
 
 class Device(models.Model):
+    class Platform(models.TextChoices):
+        WINDOWS = "windows", "Windows"
+        MACOS = "macos", "macOS"
+        LINUX = "linux", "Linux"
+
     organization = models.ForeignKey(
         Organization,
         on_delete=models.CASCADE,
@@ -167,6 +172,12 @@ class Device(models.Model):
 
     pc_id = models.CharField(max_length=255, db_index=True)
     license = models.CharField(max_length=255)
+    platform = models.CharField(
+        max_length=16,
+        choices=Platform.choices,
+        default=Platform.WINDOWS,
+        db_index=True,
+    )
 
     location = models.CharField(max_length=255)
 
@@ -271,4 +282,3 @@ class AccessLogs(models.Model):
 
     def __str__(self):
         return f"AccessLog: {self.user} - {self.device} - {'Success' if self.success else 'Failure'}"
-

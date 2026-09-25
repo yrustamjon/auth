@@ -1,6 +1,6 @@
 /**
  * Device management functions
- * Fields: id, pc_id, location, is_active, revoked, last_seen, registered_at, device_public_key
+ * Fields: id, pc_id, platform, location, is_active, revoked, last_seen, registered_at, device_public_key
  */
 
 
@@ -36,6 +36,7 @@ async function loadDevices() {
 // ── Filter ─────────────────────────────────────────────────────
 function filterDevices() {
     const q       = (document.getElementById('deviceSearch').value || '').toLowerCase().trim();
+    const platformVal = document.getElementById('platformFilter').value;
     const statVal = document.getElementById('statusFilter').value;
     const revVal  = document.getElementById('revokedFilter').value;
 
@@ -43,13 +44,14 @@ function filterDevices() {
         const matchQ = !q ||
             (d.pc_id    || '').toLowerCase().includes(q) ||
             (d.location || '').toLowerCase().includes(q);
+        const matchPlatform = !platformVal || (d.platform || 'windows') === platformVal;
         const matchS = !statVal ||
             (statVal === 'active'   &&  d.is_active) ||
             (statVal === 'inactive' && !d.is_active);
         const matchR = !revVal ||
             (revVal === 'revoked'   &&  d.revoked) ||
             (revVal === 'ok'        && !d.revoked);
-        return matchQ && matchS && matchR;
+        return matchQ && matchPlatform && matchS && matchR;
     });
 
     displayDevices(filtered, q);
@@ -68,6 +70,14 @@ function highlight(text, q) {
     if (!q || !text) return String(text || '');
     const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return String(text).replace(new RegExp(esc, 'gi'), m => `<mark>${m}</mark>`);
+}
+
+function platformLabel(platform) {
+    return {
+        windows: 'Windows',
+        macos: 'macOS',
+        linux: 'Linux',
+    }[platform || 'windows'] || 'Windows';
 }
 
 // ── Display ────────────────────────────────────────────────────
@@ -117,6 +127,7 @@ function displayDevices(devices, q = '') {
         row.innerHTML = `
             <td class="col-id">${device.id}</td>
             <td class="col-pcid"><strong>${highlight(device.pc_id, q)}</strong></td>
+            <td><span class="toggle-btn toggle-ok">${platformLabel(device.platform)}</span></td>
             <td>
                 <i class="fas fa-map-marker-alt location-icon"></i>
                 ${highlight(device.location, q)}
@@ -210,6 +221,7 @@ async function editDevice(deviceId) {
         document.getElementById('deviceModalTitle').textContent = 'Qurilmani tahrirlash';
         document.getElementById('deviceId').value              = device.id;
         document.getElementById('pc_id').value                 = device.pc_id;
+        document.getElementById('platform').value              = device.platform || 'windows';
         document.getElementById('location').value              = device.location;
         document.getElementById('license').value               = device.license || '';
         document.getElementById('is_active').checked           = device.is_active;
@@ -247,10 +259,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Search & filter
     document.getElementById('deviceSearch').addEventListener('input', filterDevices);
+    document.getElementById('platformFilter').addEventListener('change', filterDevices);
     document.getElementById('statusFilter').addEventListener('change', filterDevices);
     document.getElementById('revokedFilter').addEventListener('change', filterDevices);
     document.getElementById('clearFiltersBtn').addEventListener('click', () => {
         document.getElementById('deviceSearch').value  = '';
+        document.getElementById('platformFilter').value = '';
         document.getElementById('statusFilter').value  = '';
         document.getElementById('revokedFilter').value = '';
         filterDevices();
@@ -278,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const deviceId = document.getElementById('deviceId').value;
         const data = {
             pc_id:             document.getElementById('pc_id').value.trim(),
+            platform:          document.getElementById("platform").value,
             location:          document.getElementById('location').value.trim(),
             license:           document.getElementById('license').value.trim(),
             is_active:         document.getElementById('is_active').checked,
