@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioGuard — PC ro‘yxatdan o‘tkazish</title>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#f5f6fb;color:#1b2340;margin:0;padding:2rem}
+    main{max-width:38rem;margin:auto;background:#fff;padding:2rem;border-radius:18px;box-shadow:0 8px 28px #15204a14}
+    button{font:inherit;padding:.8rem 1rem;width:100%;border:0;border-radius:9px;background:#4f46e5;color:#fff;cursor:pointer;margin:.4rem 0}
+    button.secondary{background:#64748b}#status{padding:1rem;background:#eef2ff;border-radius:9px;text-align:center}
+    #qr svg{display:block;max-width:19rem;height:auto;margin:1rem auto}#displayCode{font-size:1.3rem;text-align:center;font-weight:700}small{color:#64748b}
+  </style>
+</head>
+<body><main>
+  <h1>Kompyuterni tez ro‘yxatdan o‘tkazish</h1>
+  <p>Bu sahifani ro‘yxatdan o‘tkazilayotgan kompyuterda oching. Hech qanday ID’ni qo‘lda yozmaysiz.</p>
+  <button id="scan" type="button">Scan this PC</button>
+  <button id="cancel" type="button" class="secondary" hidden>Bekor qilish</button>
+  <p id="status" role="status">Scan tugmasini bosing.</p>
+  <div id="qr" hidden></div><p id="displayCode"></p>
+  <small>Scan helper Agent’dan alohida. Paketni yuklab, ichidagi registration helper’ni bir marta ishga tushiring. U OS’ga qarab MachineGUID/Product ID, Platform UUID/serial yoki machine-id/product UUID va hostname’ni o‘qiydi. Ma’lumot kelgandan keyin QR chiqadi; admin Devices bo‘limidagi skaner bilan ko‘rib tasdiqlaydi.</small>
+</main>
+<script>
+  const root='/api/devices/browser-enrollment/session/';
+  const status=document.getElementById('status');
+  const cancel=document.getElementById('cancel');
+  const scan=document.getElementById('scan');
+  const qr=document.getElementById('qr');
+  let id=null,timer=null,deadline=0,qrSvg='',displayCode='',qrShown=false;
+  const messages={approved:'Device approved',rejected:'Device rejected',expired:'QR expired',cancelled:'Session cancelled'};
+  const csrf=()=>decodeURIComponent(document.cookie.split('; ').find(v=>v.startsWith('csrftoken='))?.split('=')[1]||'');
+  function platform(){
+    const value=(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||'').toLowerCase();
+    if(value.includes('win'))return 'windows';
+    if(value.includes('mac'))return 'macos';
+    if(value.includes('linux'))return 'linux';
+    return null;
+  }
+  async function architecture(){
+    try{
+      const hints=await navigator.userAgentData?.getHighEntropyValues(['architecture']);
+      if(hints?.architecture==='arm')return 'arm64';
+      if(hints?.architecture==='x86')return 'amd64';
+    }catch(e){}
+    const value=(navigator.userAgent||navigator.platform||'').toLowerCase();
+    if(value.includes('arm64')||value.includes('aarch64'))return 'arm64';
+    if(value.includes('x86_64')||value.includes('amd64')||value.includes('intel'))return 'amd64';
+    return null;
+  }
+  function stop(){if(timer)clearTimeout(timer);timer=null;}
+  function showQr(){qr.innerHTML=qrSvg;qr.hidden=false;document.getElementById('displayCode').textContent='Tasdiqlash kodi: '+displayCode;qrShown=true;}
+  async function poll(){
+    if(!id)return;
+    if(Date.now()>deadline){status.textContent='QR expired';cancel.hidden=true;stop();return;}
+    try{
+      const response=await fetch(root+id+'/',{credentials:'same-origin'});
+      const data=await response.json();
+      if(!response.ok)throw Error(data.error||'Network error');
+      if(data.identity_ready&&!qrShown)showQr();
+      if(messages[data.status]){status.textContent=messages[data.status];cancel.hidden=true;stop();return;}
+      status.textContent=data.identity_ready?'PC ma’lumotlari olindi. Admin QR’ni skanerlab tasdiqlasin.':'Helper ishga tushishini va PC ma’lumotlarini kutyapmiz...';
+      timer=setTimeout(poll,1000);
+    }catch(e){status.textContent='Network error';timer=setTimeout(poll,5000);}
+  }
+  scan.addEventListener('click',async()=>{
+    const os=platform();
+    if(!os){status.textContent='Faqat Windows, macOS va Linux qo‘llab-quvvatlanadi.';return;}
+    stop();scan.disabled=true;qr.hidden=true;qrShown=false;status.textContent='Scan sessiya yaratilmoqda...';
+    try{
+      const arch=await architecture();
+      const created=await fetch(root,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:'{}'});
+      const data=await created.json();
+      if(!created.ok)throw Error(data.error||'Network error');
+      id=data.session_id;deadline=Date.parse(data.expires_at)+5000;qrSvg=data.qr_svg;displayCode=data.display_code;
+      cancel.hidden=false;
+      const packageResponse=await fetch(root+id+'/helper/'+os+'/',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify({scan_token:data.scan_token,architecture:arch})});
+      if(!packageResponse.ok){const failure=await packageResponse.json();throw Error(failure.error||'Helper download failed');}
+      const bundle=await packageResponse.blob();
+      const url=URL.createObjectURL(bundle);const link=document.createElement('a');link.href=url;link.download='bioguard-registration-'+os+'.zip';link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+      status.textContent='Helper yuklandi. ZIP’ni ochib registration helper’ni ishga tushiring.';
+      timer=setTimeout(poll,1000);
+    }catch(e){status.textContent=e.message||'Network error';}
+    finally{scan.disabled=false;}
+  });
+  cancel.addEventListener('click',async()=>{
+    if(!id)return;
+    try{const response=await fetch(root+id+'/cancel/',{method:'POST',credentials:'same-origin',headers:{'X-CSRFToken':csrf()}});if(!response.ok)throw Error();status.textContent='Session cancelled';cancel.hidden=true;stop();qr.hidden=true;}catch(e){status.textContent='Network error';}
+  });
+</script></body></html>

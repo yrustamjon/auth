@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BioGuard — QR scanner</title><style>
+body{font-family:system-ui,sans-serif;background:#f5f6fb;margin:0;padding:2rem;color:#1b2340}main{max-width:36rem;margin:auto;background:white;padding:2rem;border-radius:18px}input,button{font:inherit;padding:.7rem;box-sizing:border-box}input{width:100%}button{background:#4f46e5;color:white;border:0;border-radius:8px;cursor:pointer}#reader{margin:1rem 0}
+</style></head><body><main>
+<a href="/devices/">← Devices</a><h1>QR skaner</h1>
+{% if error %}<p role="alert">{{ error }}</p>{% else %}
+<p>Target kompyuterdagi <code>/device/scan</code> QR kodini kameraga ko‘rsating yoki QR rasmini yuklang.</p>
+<p>Tasdiqlangan qurilma sizning joriy tashkilotingizga qo‘shiladi: <strong>{{ organization.name }}</strong>.</p>
+<div id="reader"></div><p id="scanStatus" role="status"></p>
+<label>QR URL’ni qo‘lda kiritish<input id="qrUrl" type="url" placeholder="https://.../device-enroll/..."></label>
+<button id="openQr" type="button">Tasdiqlash sahifasini ochish</button>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+function openEnrollment(text){
+  try{
+    const url=new URL(text);
+    const allowedOrigins=[location.origin,'{{ public_site_origin|escapejs }}'];
+    if(!allowedOrigins.includes(url.origin)||!/^\/device-enroll\/[A-Za-z0-9_-]{20,}$/.test(url.pathname))throw Error();
+    location.assign(url.href);
+  }catch(e){document.getElementById('scanStatus').textContent='Bu BioGuard enrollment QR URL emas.';}
+}
+document.getElementById('openQr').addEventListener('click',()=>openEnrollment(document.getElementById('qrUrl').value.trim()));
+if(window.Html5QrcodeScanner){
+  const scanner=new Html5QrcodeScanner('reader',{fps:10,qrbox:230,rememberLastUsedCamera:false},false);
+  scanner.render(openEnrollment,()=>{});
+}else document.getElementById('scanStatus').textContent='Kamera skaneri yuklanmadi. Telefon kamerasi yoki QR URL kiritishdan foydalaning.';
+</script>{% endif %}
+</main></body></html>

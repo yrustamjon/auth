@@ -379,7 +379,7 @@
                 const response = await adminLogin(username, password);
                 
                 if (response.success) {
-                    window.location.href = '/dashboard/';
+                    window.location.href = response.redirect || '/dashboard/';
                 } else {
                     errorMessage.textContent = response.message || 'Invalid credentials';
                     errorMessage.style.display = 'block';

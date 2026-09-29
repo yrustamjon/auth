@@ -8,3 +8,4 @@ media/
 
 venv/
 .worktrees/
+registration-helper/dist/

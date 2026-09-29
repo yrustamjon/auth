@@ -196,13 +196,14 @@ class AdminLogin(APIView):
             if s.get_decoded().get("_auth_user_id") == str(user.id):
                 s.delete()
 
-    def get_redirect_url(self):
+    def get_redirect_url(self, request=None):
         if self.allow_superadmin:
             return "/system/dashboard/"
+        if request is not None and request.session.get("browser_enrollment_token_hash"):
+            return "/device-enroll/approval/"
         return "/dashboard/"
 
     def post(self, request):
-        print("Login attempt data:", request.data)
         user, error = self.validate(request)
         if error:
             return error
@@ -218,7 +219,7 @@ class AdminLogin(APIView):
 
         return Response({
             "ok": True,
-            "redirect": self.get_redirect_url()
+            "redirect": self.get_redirect_url(request)
         })
 
 
@@ -460,4 +461,3 @@ class ForceLogoutAdmin(APIView):
             "ok": True,
             "message": f"{deleted} ta session o‘chirildi"
         })
-

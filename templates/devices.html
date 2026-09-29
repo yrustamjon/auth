@@ -227,6 +227,7 @@
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
     .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .form-group[hidden], .form-row[hidden] { display: none; }
     .form-group label { font-size: 0.82rem; font-weight: 600; color: #374151; }
     .form-group input[type="text"],
     .form-group select,
@@ -301,6 +302,7 @@
         <button class="btn-add" id="addDeviceBtn">
             <i class="fas fa-plus"></i> Add Device
         </button>
+        <a class="btn-add" href="/devices/scan-qr/" style="text-decoration:none;margin-left:.6rem"><i class="fas fa-qrcode"></i> QR skaner</a>
     </div>
 
     <div class="search-bar-row">
@@ -362,9 +364,9 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="pc_id">PC ID <span style="color:#dc2626">*</span></label>
+                    <label for="pc_id">Device ID <span style="color:#dc2626">*</span></label>
                     <input type="text" id="pc_id" name="pc_id" required placeholder="e.g., WIN-PC-01">
-                    <span class="form-hint">Windows MachineGUID yoki kompyuter nomi</span>
+                    <span class="form-hint" id="pcIdHint">Windows MachineGuid yoki kompyuter nomi</span>
                 </div>
                 <div class="form-group">
                     <label for="location">Location <span style="color:#dc2626">*</span></label>
@@ -382,20 +384,38 @@
                 <span class="form-hint">Qurilma ishlatadigan operatsion tizimni tanlang</span>
             </div>
 
-            <div class="form-group">
-                <label for="license">Windows License <span style="color:#dc2626">*</span></label>
-                <input type="text" id="license" name="license" required placeholder="e.g., XXXXX-XXXXX-XXXXX-XXXXX-XXXXX">
-                <span class="form-hint">Agent aktivatsiyada Windows License bilan taqqoslanadi</span>
+            <div class="form-group" id="licenseField">
+                <label for="product_id" id="licenseLabel">Windows Product ID <span style="color:#dc2626">*</span></label>
+                <input type="text" id="product_id" name="product_id" required placeholder="e.g., XXXXX-XXXXX-XXXXX-XXXXX-XXXXX">
+                <span class="form-hint" id="licenseHint">Agent yuboradigan windows_license qiymatiga aynan mos bo‘lsin</span>
             </div>
 
-            <div class="form-group">
-                <label for="device_public_key">
-                    Device Public Key
-                    <span style="color:#9ca3af; font-weight:400;">(ixtiyoriy)</span>
-                </label>
-                <textarea id="device_public_key" name="device_public_key" rows="3"
-                    placeholder="Agent aktivatsiyadan keyin avtomatik to'ldiriladi..."></textarea>
-                <span class="form-hint">Odatda agent tomonidan avtomatik yuboriladi</span>
+            <div class="form-row" id="windowsIdentifiers">
+                <div class="form-group">
+                    <label for="machine_guid">MachineGUID <span style="color:#dc2626">*</span></label>
+                    <input type="text" id="machine_guid" name="machine_guid" required>
+                    <span class="form-hint">Legacy Agent device_uuid va PC ID bilan bir xil bo‘lsin</span>
+                </div>
+            </div>
+            <div class="form-row" id="macosIdentifiers" hidden>
+                <div class="form-group">
+                    <label for="platform_uuid">Platform UUID <span style="color:#dc2626">*</span></label>
+                    <input type="text" id="platform_uuid" name="platform_uuid">
+                </div>
+                <div class="form-group">
+                    <label for="serial">Serial Number <span style="color:#dc2626">*</span></label>
+                    <input type="text" id="serial" name="serial">
+                </div>
+            </div>
+            <div class="form-row" id="linuxIdentifiers" hidden>
+                <div class="form-group">
+                    <label for="machine_id">Machine ID <span style="color:#dc2626">*</span></label>
+                    <input type="text" id="machine_id" name="machine_id">
+                </div>
+                <div class="form-group">
+                    <label for="product_uuid">Product UUID <span style="color:#dc2626">*</span></label>
+                    <input type="text" id="product_uuid" name="product_uuid">
+                </div>
             </div>
 
             <div class="checkbox-row">

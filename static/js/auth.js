@@ -42,7 +42,8 @@ async function adminLogin(username, password) {
         if (response.ok) {
             return {
                 success: true,
-                message: 'Login successful'
+                message: 'Login successful',
+                redirect: data.redirect
             };
         } else {
             console.log('Login failed:', data);
@@ -112,6 +113,5 @@ async function validateSession() {
         return false;
     }
 }
-
 
 

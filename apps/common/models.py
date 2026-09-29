@@ -178,6 +178,26 @@ class Device(models.Model):
         default=Platform.WINDOWS,
         db_index=True,
     )
+    identifiers = models.JSONField(default=dict, blank=True)
+
+    class EnrollmentStatus(models.TextChoices):
+        MANUAL_REGISTERED = "manual_registered", "Manual registration"
+        BROWSER_APPROVED = "browser_approved", "Browser approved"
+        AGENT_ENROLLED = "agent_enrolled", "Agent enrolled"
+
+    class AttestationStatus(models.TextChoices):
+        NOT_PROVIDED = "not_provided", "Not provided"
+        VERIFIED = "verified", "Verified"
+
+    enrollment_status = models.CharField(
+        max_length=32,
+        choices=EnrollmentStatus.choices,
+        default=EnrollmentStatus.MANUAL_REGISTERED,
+    )
+    attestation_status = models.CharField(
+        max_length=32, choices=AttestationStatus.choices,
+        default=AttestationStatus.NOT_PROVIDED,
+    )
 
     location = models.CharField(max_length=255)
 
@@ -190,12 +210,33 @@ class Device(models.Model):
     last_ip = models.GenericIPAddressField(null=True, blank=True)
 
     registered_at = models.DateTimeField(auto_now_add=True)
+    enrolled_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     class Meta:
         unique_together = ('organization', 'pc_id')
 
     def __str__(self):
         return self.pc_id
+
+    @property
+    def device_id(self):
+        """Platform-neutral name for the legacy pc_id lookup value."""
+        return self.pc_id
+
+    @device_id.setter
+    def device_id(self, value):
+        self.pc_id = value
+
+    @property
+    def public_key(self):
+        return self.device_public_key
+
+    @public_key.setter
+    def public_key(self, value):
+        self.device_public_key = value
     
 
 

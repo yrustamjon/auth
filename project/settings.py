@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,6 +38,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    'https://denny-halolike-tenisha.ngrok-free.dev',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -44,6 +46,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://www.adauth.tech",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://denny-halolike-tenisha.ngrok-free.dev",
 ]
 
 
@@ -177,6 +180,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = '/login/'
+PUBLIC_SITE_URL = os.environ.get('PUBLIC_SITE_URL', 'http://localhost:8000').rstrip('/')
+DEVICE_REGISTRATION_HELPER_DIR = BASE_DIR / 'registration-helper' / 'dist'
 LOGIN_REDIRECT_URL = '/dashboard/'
 
 LOGOUT_REDIRECT_URL = '/login/'

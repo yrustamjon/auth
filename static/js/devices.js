@@ -1,6 +1,6 @@
 /**
  * Device management functions
- * Fields: id, pc_id, platform, location, is_active, revoked, last_seen, registered_at, device_public_key
+ * Fields: id, device_id, platform, location, is_active, revoked, last_seen, registered_at, public_key
  */
 
 
@@ -42,7 +42,7 @@ function filterDevices() {
 
     const filtered = devicesCache.filter(d => {
         const matchQ = !q ||
-            (d.pc_id    || '').toLowerCase().includes(q) ||
+            (d.device_id || d.pc_id || '').toLowerCase().includes(q) ||
             (d.location || '').toLowerCase().includes(q);
         const matchPlatform = !platformVal || (d.platform || 'windows') === platformVal;
         const matchS = !statVal ||
@@ -66,10 +66,16 @@ function filterDevices() {
     }
 }
 
+function escapeHtml(text) {
+    return String(text ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+}
+
 function highlight(text, q) {
-    if (!q || !text) return String(text || '');
+    if (!q || !text) return escapeHtml(text);
     const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return String(text).replace(new RegExp(esc, 'gi'), m => `<mark>${m}</mark>`);
+    return escapeHtml(text).replace(new RegExp(esc, 'gi'), m => `<mark>${m}</mark>`);
 }
 
 function platformLabel(platform) {
@@ -78,6 +84,55 @@ function platformLabel(platform) {
         macos: 'macOS',
         linux: 'Linux',
     }[platform || 'windows'] || 'Windows';
+}
+
+function syncPlatformFields() {
+    const platform = document.getElementById('platform').value;
+    const pcId = document.getElementById('pc_id');
+    const pcIdHint = document.getElementById('pcIdHint');
+    const licenseField = document.getElementById('licenseField');
+    const license = document.getElementById('product_id');
+    const groups = {
+        windows: document.getElementById('windowsIdentifiers'),
+        macos: document.getElementById('macosIdentifiers'),
+        linux: document.getElementById('linuxIdentifiers'),
+    };
+    for (const [name, group] of Object.entries(groups)) {
+        group.hidden = name !== platform;
+        group.querySelectorAll('input').forEach(input => { input.required = name === platform; });
+    }
+
+    const platformCopy = {
+        windows: {
+            pcPlaceholder: 'e.g., WIN-PC-01',
+            pcHint: 'Windows MachineGuid yoki kompyuter nomi',
+        },
+        macos: {
+            pcPlaceholder: 'e.g., macOS Platform UUID',
+            pcHint: 'macOS Platform UUID yoki persistent Agent device ID',
+        },
+        linux: {
+            pcPlaceholder: 'e.g., Linux machine-id',
+            pcHint: 'Linux machine-id yoki persistent Agent device ID',
+        },
+    }[platform];
+
+    pcId.placeholder = platformCopy.pcPlaceholder;
+    pcIdHint.textContent = platformCopy.pcHint;
+
+    const isWindows = platform === 'windows';
+    licenseField.hidden = !isWindows;
+    license.required = isWindows;
+    if (!isWindows) license.value = '';
+}
+
+function selectedIdentifiers(platform) {
+    const fields = {
+        windows: ['machine_guid', 'product_id'],
+        macos: ['platform_uuid', 'serial'],
+        linux: ['machine_id', 'product_uuid'],
+    }[platform];
+    return Object.fromEntries(fields.map(field => [field, document.getElementById(field).value.trim()]));
 }
 
 // ── Display ────────────────────────────────────────────────────
@@ -108,7 +163,9 @@ function displayDevices(devices, q = '') {
             : '<span class="text-muted">Hech qachon</span>';
 
         const did = device.id;
-        const activeBtn = device.is_active
+        const activeBtn = device.enrollment_status === 'browser_approved'
+            ? `<span class="toggle-btn toggle-inactive" title="Agent public key hali bog‘lanmagan">Browser approved — Agent key kerak</span>`
+            : device.is_active
             ? `<button class="toggle-btn toggle-active" onclick="toggleDeviceField(${did}, 'is_active', false)" title="O'chirish">
                    <i class="fas fa-check-circle"></i> Active
                </button>`
@@ -126,7 +183,7 @@ function displayDevices(devices, q = '') {
 
         row.innerHTML = `
             <td class="col-id">${device.id}</td>
-            <td class="col-pcid"><strong>${highlight(device.pc_id, q)}</strong></td>
+            <td class="col-pcid"><strong>${highlight(device.device_id || device.pc_id, q)}</strong></td>
             <td><span class="toggle-btn toggle-ok">${platformLabel(device.platform)}</span></td>
             <td>
                 <i class="fas fa-map-marker-alt location-icon"></i>
@@ -137,9 +194,9 @@ function displayDevices(devices, q = '') {
             <td>${lastSeen}</td>
             <td>${registeredAt}</td>
             <td class="actions">
-                <button class="btn-action btn-edit" onclick="editDevice(${did})">
+                ${device.enrollment_status === 'browser_approved' ? '' : `<button class="btn-action btn-edit" onclick="editDevice(${did})">
                     <i class="fas fa-edit"></i> Edit
-                </button>
+                </button>`}
                 <button class="btn-action btn-delete" onclick="deleteDevice(${did})">
                     <i class="fas fa-trash"></i> Delete
                 </button>
@@ -223,10 +280,16 @@ async function editDevice(deviceId) {
         document.getElementById('pc_id').value                 = device.pc_id;
         document.getElementById('platform').value              = device.platform || 'windows';
         document.getElementById('location').value              = device.location;
-        document.getElementById('license').value               = device.license || '';
+        document.getElementById('product_id').value            = device.license || '';
+        for (const field of ['machine_guid', 'platform_uuid', 'serial', 'machine_id', 'product_uuid']) {
+            document.getElementById(field).value = (device.identifiers || {})[field] || '';
+        }
+        if (device.platform === 'windows' && !document.getElementById('machine_guid').value) {
+            document.getElementById('machine_guid').value = device.pc_id;
+        }
         document.getElementById('is_active').checked           = device.is_active;
         document.getElementById('revoked').checked             = device.revoked;
-        document.getElementById('device_public_key').value     = device.device_public_key || '';
+        syncPlatformFields();
 
         document.getElementById('deviceModal').style.display = 'flex';
     } catch (err) {
@@ -259,6 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Search & filter
     document.getElementById('deviceSearch').addEventListener('input', filterDevices);
+    document.getElementById('platform').addEventListener('change', syncPlatformFields);
     document.getElementById('platformFilter').addEventListener('change', filterDevices);
     document.getElementById('statusFilter').addEventListener('change', filterDevices);
     document.getElementById('revokedFilter').addEventListener('change', filterDevices);
@@ -277,6 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('deviceId').value    = '';
         document.getElementById('is_active').checked = true;
         document.getElementById('revoked').checked   = false;
+        syncPlatformFields();
         document.getElementById('deviceModal').style.display = 'flex';
     });
 
@@ -294,14 +359,17 @@ document.addEventListener('DOMContentLoaded', () => {
             pc_id:             document.getElementById('pc_id').value.trim(),
             platform:          document.getElementById("platform").value,
             location:          document.getElementById('location').value.trim(),
-            license:           document.getElementById('license').value.trim(),
+            license:           document.getElementById('platform').value === 'windows'
+                ? document.getElementById('product_id').value.trim()
+                : 'UNKNOWN',
+            identifiers:       selectedIdentifiers(document.getElementById('platform').value),
             is_active:         document.getElementById('is_active').checked,
             revoked:           document.getElementById('revoked').checked,
-            device_public_key: document.getElementById('device_public_key').value.trim() || null,
         };
 
-        if (!data.pc_id || !data.location || !data.license) {
-            showToast("PC ID, Location va License to'ldirilishi shart.", 'error');
+        if (!data.pc_id || !data.location || Object.values(data.identifiers).some(value => !value)
+            || (data.platform === 'windows' && (!data.license || data.identifiers.machine_guid !== data.pc_id))) {
+            showToast("Device ID, Location va tanlangan platforma identifierlarini to'ldiring. Windows MachineGUID Device ID bilan bir xil bo'lsin.", 'error');
             return;
         }
 
@@ -326,6 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = '/login/';
         });
     }
+
+    syncPlatformFields();
 });
 
 window.editDevice = editDevice;

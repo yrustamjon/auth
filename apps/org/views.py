@@ -173,6 +173,9 @@ class ActivateAgent(APIView):
             except Device.DoesNotExist:
                 return Response({"error": "Device not registered"}, status=400)
 
+            if device.enrollment_status == Device.EnrollmentStatus.BROWSER_APPROVED:
+                return Response({"error": "Agent enrollment required"}, status=409)
+
             if device.license != license_key:
                 return Response({"error": "License mismatch"}, status=400)
 

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BioGuard — Admin tasdig‘i</title><style>
+body{font-family:system-ui,sans-serif;background:#f5f6fb;margin:0;padding:2rem;color:#1b2340}main{max-width:32rem;margin:auto;background:#fff;padding:2rem;border-radius:18px;box-shadow:0 8px 28px #15204a14}
+button{font:inherit;border:0;border-radius:9px;padding:.8rem 1.2rem;cursor:pointer;color:white;background:#4f46e5;margin:.4rem}.reject{background:#b91c1c}dl{display:grid;grid-template-columns:1fr 2fr;gap:.8rem}dt{font-weight:700}
+.modal{position:fixed;inset:0;background:#11182799;display:grid;place-items:center;padding:1rem}.modal[hidden]{display:none}.modal-card{background:#fff;border-radius:16px;padding:1.5rem;max-width:25rem;text-align:center;box-shadow:0 12px 40px #11182740}.modal-card a{display:block;text-decoration:none;color:#fff;background:#4f46e5;border-radius:9px;padding:.8rem;margin-top:.7rem}.modal-card a.secondary{background:#374151}
+</style></head><body><main>
+  <h1>Qurilmani tasdiqlash</h1>
+  {% if error %}<p role="alert">{{ error }}</p>{% else %}
+  <dl><dt>Tashkilot</dt><dd>{{ organization.name }}</dd><dt>Platforma (helper xabari)</dt><dd>{{ enrollment.platform }}</dd><dt>Device ID / PC ID</dt><dd>{{ enrollment.device_id }}</dd><dt>Hostname</dt><dd>{{ enrollment.hostname }}</dd>{% for key, value in enrollment.identifiers.items %}<dt>{{ key }}</dt><dd>{{ value }}</dd>{% endfor %}<dt>Location</dt><dd>{{ enrollment.location }}</dd><dt>Display code</dt><dd><strong>{{ enrollment.display_code }}</strong></dd></dl>
+  <p>Target kompyuterdagi display code bilan solishtiring. Browser orqali tasdiqlash apparat yoki Agent kaliti tekshirilganini bildirmaydi.</p>
+  <label for="location">Location</label>
+  <input id="location" value="{{ enrollment.location }}" maxlength="255" required>
+  <p id="result" role="status">{{ enrollment.status }}</p>
+  {% if enrollment.status == 'pending' %}
+    <button id="approve">Approve device</button><button class="reject" id="reject">Reject device</button>
+  {% endif %}
+  <div id="approvalModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="approvalModalTitle">
+    <div class="modal-card">
+      <h2 id="approvalModalTitle">Natija</h2>
+      <p id="approvalModalMessage"></p>
+      <a href="/devices/add/qr">QR scannerga qaytish</a>
+      <a class="secondary" href="/devices/">Devices listga qaytish</a>
+    </div>
+  </div>
+  <script>
+    const base='/api/devices/browser-enrollment/session/{{ enrollment.session_id }}/';
+    const csrf=()=>decodeURIComponent(document.cookie.split('; ').find(v=>v.startsWith('csrftoken='))?.split('=')[1]||'');
+    async function decide(action){
+      const body=action==='approve'?JSON.stringify({location:document.getElementById('location').value.trim()}):'{}';
+      const headers={'X-CSRFToken':csrf(),'Content-Type':'application/json'};
+      const response=await fetch(base+action+'/',{method:'POST',credentials:'same-origin',headers,body});
+      const data=await response.json();document.getElementById('result').textContent=response.ok?data.status:(data.error||'Network error');
+      if(response.ok){
+        document.getElementById('approve').disabled=true;document.getElementById('reject').disabled=true;
+        document.getElementById('approvalModalTitle').textContent=action==='approve'?'Qurilma tasdiqlandi':'Qurilma rad etildi';
+        document.getElementById('approvalModalMessage').textContent=action==='approve'?'Qurilma browser_approved holatda saqlandi.':'Enrollment sessiyasi rad etildi.';
+        document.getElementById('approvalModal').hidden=false;
+      }
+    }
+    document.getElementById('approve')?.addEventListener('click',()=>decide('approve'));
+    document.getElementById('reject')?.addEventListener('click',()=>decide('reject'));
+  </script>
+  {% endif %}
+</main></body></html>
