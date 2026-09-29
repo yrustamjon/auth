@@ -1,0 +1,72 @@
+name: Build registration helpers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - registration-helper/main.go
+      - registration-helper/main_test.go
+      - registration-helper/go.mod
+      - registration-helper/Makefile
+      - .github/workflows/build-registration-helpers.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: registration-helpers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: registration-helper/go.mod
+          cache: false
+
+      - name: Test helper
+        working-directory: registration-helper
+        run: go test ./...
+
+      - name: Build all helper binaries
+        working-directory: registration-helper
+        run: make build
+
+      - name: Verify helper binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=(
+            windows-amd64.exe
+            windows-arm64.exe
+            macos-amd64
+            macos-arm64
+            linux-amd64
+            linux-arm64
+          )
+          for binary in "${expected[@]}"; do
+            test -s "registration-helper/dist/$binary"
+          done
+
+      - name: Commit rebuilt helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f registration-helper/dist/
+          if git diff --cached --quiet; then
+            echo "Helper binaries are already up to date."
+            exit 0
+          fi
+          git commit -m "chore: rebuild registration helpers [skip ci]"
+          git push

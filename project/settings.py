@@ -39,6 +39,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     'https://denny-halolike-tenisha.ngrok-free.dev',
+    "https://sibilantly-penanceless-young.ngrok-free.dev",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -47,6 +48,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://denny-halolike-tenisha.ngrok-free.dev",
+    "https://sibilantly-penanceless-young.ngrok-free.dev",
 ]
 
 
