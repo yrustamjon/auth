@@ -17,11 +17,11 @@ from apps.org.models import OrgToken
 
 
 class DevicePlatformApiTests(TestCase):
-    @staticmethod
-    def valid_public_key():
+    def valid_public_key(self):
         from cryptography.hazmat.primitives.asymmetric import rsa
         from cryptography.hazmat.primitives import serialization
-        return rsa.generate_private_key(public_exponent=65537, key_size=2048).public_key().public_bytes(
+        self.activation_key=rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        return self.activation_key.public_key().public_bytes(
             serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo).decode()
 
     def setUp(self):
@@ -151,16 +151,11 @@ class DevicePlatformApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         token = OrgToken.objects.create(org=self.organization)
-        activation = self.client.post(
-            "/api/agent/activate/",
-            data=json.dumps({
-                "activation_code": token.token,
-                "device_uuid": "win-machine-guid",
-                "windows_license": "WIN-PRODUCT-ID",
-                "public_key": self.valid_public_key(),
-            }),
-            content_type="application/json",
-        )
+        from apps.agent.tests import headers
+        payload=json.dumps({"activation_code":token.token,"device_uuid":"win-machine-guid",
+            "windows_license":"WIN-PRODUCT-ID","public_key":self.valid_public_key()}).encode()
+        activation=self.client.post('/api/agent/activate/',payload,content_type='application/json',
+            **headers(self.activation_key,'POST','/api/agent/activate/',payload,device='win-machine-guid',certificate='bootstrap'))
         self.assertEqual(activation.status_code, 200, activation.content)
 
     def test_device_keeps_neutral_lifecycle_fields_without_activating_it(self):
@@ -506,7 +501,7 @@ class BrowserEnrollmentTests(TestCase):
             "/api/agent/check-pc/", data=json.dumps({
                 "device_uuid": device.pc_id, "windows_license": "UNKNOWN",
             }), content_type="application/json",
-        ).status_code, 409)
+        ).status_code, 401)
         device.refresh_from_db()
         self.assertFalse(device.is_active)
         self.assertIsNone(device.device_public_key)

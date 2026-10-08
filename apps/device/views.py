@@ -161,16 +161,10 @@ class DeviceView(APIView):
 
 
 class DeviceCheck(APIView):
-    permission_classes =[AllowAny]
-    def post(self,request):
-        # {'device_uuid': 'b1806902-e17b-4ae4-a505-ba79e4f1595e', 'windows_license': '00331-10000-00001-AA904'}
-        device = Device.objects.filter(pc_id=request.data['device_uuid'],license=request.data['windows_license'])
+    permission_classes = [AllowAny]
 
-        if not device:
-            return Response({"error": "Device not found"}, status=404)
-        if device.filter(enrollment_status=Device.EnrollmentStatus.BROWSER_APPROVED).exists():
-            return Response({"error": "Agent enrollment required"}, status=409)
-        
-        return Response({
-            'ok':True
-        })
+    def post(self,request):
+        device=request.bioguard_device
+        if request.data.get('device_uuid') != device.pc_id or request.data.get('windows_license') != device.license:
+            return Response({'detail':'Device identity mismatch'},status=404)
+        return Response({'ok':True})

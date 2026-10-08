@@ -122,7 +122,7 @@ def agent_session_start(request):
     if not username:
         return _err("username required")
 
-    device = Device.objects.get(pc_id=pc_id)
+    device = request.bioguard_device
     org    = device.organization
 
     try:
@@ -135,7 +135,7 @@ def agent_session_start(request):
 
     AgentSession.objects.filter(user=user, status="pending").update(status="expired")
 
-    session = AgentSession.objects.create(user=user)
+    session = AgentSession.objects.create(user=user, device=device)
     # device ni session ga biriktiramiz — log uchun kerak bo'ladi
     session._device = device          # ← vaqtinchalik atribut (DB saqlashsiz)
 
@@ -174,7 +174,7 @@ def face_agent_check(request):
 
     # Device — log uchun kerak
     try:
-        device = Device.objects.get(pc_id=pc_id) if pc_id else session.user.device_set.first()
+        device = request.bioguard_device
     except Device.DoesNotExist:
         device = None
 
@@ -382,69 +382,23 @@ def agent_face_phone_status(request, session_id):
 
 @csrf_exempt
 def fingerprint_phone_submit(request, session_id):
-    session = _get_session(session_id)
-    if session is None:
-        return _err("Sessiya topilmadi yoki muddati tugadi", status=410)
-
-    device = Device.objects.filter(organization=session.user.organization).first()
-
-    if request.method == "GET":
-        fingerprint = BiometricFingerprint.objects.filter(user=session.user).first()
-        if not fingerprint:
-            return _err("Fingerprint topilmadi")
-
-        saved = fingerprint.get_embedding()
-        if not saved:
-            return _err("Credential yo'q")
-
-        try:
-            saved_raw, saved_client, saved_attestation = saved.decode().split("|")
-        except Exception:
-            return _err("Credential buzilgan")
-
-        challenge = secrets.token_urlsafe(32)
-        return _ok({"challenge": challenge, "credential_id": saved_raw})
-
-    elif request.method == "POST":
-        data   = _body(request)
-        raw_id = data.get("rawId")
-
-        def normalize_base64(v):
-            if not v:
-                return ""
-            return v.replace("-", "+").replace("_", "/").rstrip("=")
-
-        raw_id_norm         = normalize_base64(raw_id)
-        fingerprint_records = BiometricFingerprint.objects.filter(user=session.user)
-        matched             = False
-
-        for fp in fingerprint_records:
-            saved = fp.get_embedding()
-            if not saved:
-                continue
-            try:
-                saved_raw, _, _ = saved.decode().split("|")
-            except Exception:
-                continue
-            if normalize_base64(saved_raw) == raw_id_norm:
-                matched = True
-                break
-
-        if matched:
-            session.status = "completed"
-            session.save(update_fields=["status"])
-
-            if device:
-                _write_log(session, device, success=True, cause="Barmoq izi tasdiqlandi")  # ← LOG
-
-            return _ok({"status": "completed"})
-
-        # ── muvaffaqiyatsiz ───────────────────────────────────────
-        if device:
-            _write_log(session, device, success=False, cause="Barmoq izi tanilmadi")       # ← LOG
-
-        return _ok({"status": "failed"})
-
+    from apps.biometrik.webauthn_service import options,authenticate,WebAuthnException
+    from django.db import OperationalError
+    session=_get_session(session_id)
+    if session is None:return _err('Session expired',status=410)
+    device=session.device
+    if not device or device.revoked_at or not device.is_active or not device.organization.is_active or not session.user.status:
+        return _err('Session unauthorized',status=403)
+    if session.status!='pending':return _err('Session already completed',status=409)
+    try:
+        if request.method=='GET':return _ok(options(session))
+        if request.method!='POST':return _err('Method not allowed',status=405)
+        authenticate(session,_body(request))
+    except (ValueError,TypeError,WebAuthnException):
+        return _err('WebAuthn assertion rejected',status=400)
+    except OperationalError:
+        return _err('Authentication database busy',status=503)
+    return _ok({'status':'completed'})
 
 # ─────────────────────────────────────────────────────────────────
 # BARMOQ IZI — STATUS
@@ -505,7 +459,7 @@ class DeviceStatusView(APIView):
             return Response({"status": "blocked_device", "detail": "pc_id required"}, status=400)
 
         try:
-            device = Device.objects.get(pc_id=pc_id)
+            device = request.bioguard_device
         except Device.DoesNotExist:
             return Response({"status": "blocked_device", "detail": "Device topilmadi"}, status=404)
 

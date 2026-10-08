@@ -8,6 +8,7 @@ from apps.common.models import *
 
 
 class FingerprintSession(models.Model):
+    challenge = models.BinaryField(null=True, blank=True)
     STATUS_CHOICES = [
         ("pending", "Pending"),
         ("completed", "Completed"),

@@ -285,9 +285,10 @@ class BiometricFingerprint(models.Model):
 
     embedding = models.BinaryField(null=True, blank=True)
 
-    credential_id = models.BinaryField(null=True, blank=True)
+    credential_id = models.BinaryField(null=True, blank=True, unique=True)
     public_key = models.BinaryField(null=True, blank=True)
-    sign_count = models.IntegerField(default=0)
+    rp_id = models.CharField(max_length=255, blank=True)
+    sign_count = models.PositiveBigIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)

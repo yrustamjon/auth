@@ -1,0 +1,26 @@
+name: Backend security regression
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned backend dependencies
+        run: python -m pip install -r req.text
+      - name: Validate dependencies and migrations
+        run: |
+          python -m pip check
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Run real security and regression tests
+        run: python manage.py test apps.device.tests apps.org.tests apps.agent.tests apps.common.tests apps.biometrik.tests apps.role.tests apps.log.tests --noinput -v 2
+        env:
+          TF_CPP_MIN_LOG_LEVEL: '2'

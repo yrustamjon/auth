@@ -120,6 +120,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 
     'django.middleware.common.CommonMiddleware',
+    'apps.agent.security.DeviceSignatureMiddleware',
 
 
     'django.middleware.csrf.CsrfViewMiddleware',

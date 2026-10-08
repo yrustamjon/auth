@@ -164,6 +164,12 @@ class ActivateAgent(APIView):
         except (ValueError, TypeError, UnsupportedAlgorithm):
             return Response({'detail': 'Invalid public key: RSA >=2048 required'}, status=400)
 
+        from apps.agent.security import verify_bootstrap, AuthenticationFailure
+        try:
+            verify_bootstrap(request, {'public_key':public_key, 'device_uuid':device_uuid})
+        except AuthenticationFailure as error:
+            return Response({'detail':'Bootstrap proof rejected'},status=error.status)
+
         with transaction.atomic():
             org_token = OrgToken.objects.select_for_update().filter(
                 token=token,

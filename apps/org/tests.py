@@ -11,10 +11,13 @@ from apps.org.models import OrgToken
 class EnrollmentTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.public = rsa.generate_private_key(public_exponent=65537, key_size=2048).public_key().public_bytes(
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        cls.private = key.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption())
+        cls.public = key.public_key().public_bytes(
             serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo).decode()
 
     def setUp(self):
+        self.key = serialization.load_pem_private_key(self.private,password=None)
         self.org = Organization.objects.create(name='Test org', slug='test-enroll')
         self.device = Device.objects.create(organization=self.org, pc_id='test-pc', license='UNKNOWN',
             location='Test', enrollment_status=Device.EnrollmentStatus.BROWSER_APPROVED, is_active=False)
@@ -22,7 +25,10 @@ class EnrollmentTests(TestCase):
         self.payload = dict(activation_code=self.token.token, device_uuid='test-pc', windows_license='TEST-PRODUCT', public_key=self.public)
 
     def activate(self):
-        return self.client.post('/api/agent/activate/', json.dumps(self.payload), content_type='application/json')
+        from apps.agent.tests import headers
+        body=json.dumps(self.payload).encode()
+        return self.client.post('/api/agent/activate/', body, content_type='application/json',
+            **headers(self.key,'POST','/api/agent/activate/',body,device='test-pc',certificate='bootstrap'))
 
     def assert_unchanged(self):
         self.device.refresh_from_db(); self.token.refresh_from_db()
@@ -40,9 +46,12 @@ class EnrollmentTests(TestCase):
         self.assertIsNotNone(self.device.enrolled_at)
         self.assertEqual(self.device.license, 'TEST-PRODUCT')
         self.assertEqual(self.device.device_public_key, self.public)
-        self.assertEqual(self.client.post('/api/agent/check-pc/', json.dumps(dict(device_uuid='test-pc',windows_license='TEST-PRODUCT')), content_type='application/json').status_code, 200)
+        from apps.agent.tests import headers
+        body=json.dumps(dict(device_uuid='test-pc',windows_license='TEST-PRODUCT')).encode()
+        self.assertEqual(self.client.post('/api/agent/check-pc/', body,content_type='application/json',**headers(self.key,'POST','/api/agent/check-pc/',body,device='test-pc',certificate=self.device.cert)).status_code,200)
         Users.objects.create(organization=self.org, username='synthetic', fio='Test', lavozim='Test')
-        response = self.client.post('/api/agent/session/start/', json.dumps(dict(pc_id='test-pc',username='synthetic')), content_type='application/json')
+        body=json.dumps(dict(pc_id='test-pc',username='synthetic')).encode()
+        response = self.client.post('/api/agent/session/start/',body,content_type='application/json',**headers(self.key,'POST','/api/agent/session/start/',body,device='test-pc',certificate=self.device.cert))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'pending')
 

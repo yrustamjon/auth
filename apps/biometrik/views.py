@@ -74,72 +74,32 @@ class FingerprintPhoneStartView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        user_id = request.data.get("user_id")
-        user = Users.objects.get(id=user_id)
-        FingerprintSession.cleanup_expired()
-
-        session = FingerprintSession.objects.create(
-            user=user
-        )
-
-        return Response({
-            "session_id": str(session.session_id),
-            "expires_in": 120,
-            "status": session.status
-        })
-
+        import secrets
+        user=Users.objects.filter(pk=request.data.get('user_id')).first()
+        if not user:
+            return Response({'detail':'User not found'},status=404)
+        if not request.user.organizations.filter(pk=user.organization_id).exists() or not user.status or not user.organization.is_active:
+            return Response({'detail':'Forbidden'},status=403)
+        session=FingerprintSession.objects.create(user=user,challenge=secrets.token_bytes(32))
+        return Response({'session_id':str(session.session_id),'expires_in':120,'status':session.status})
 
 
 class FingerprintPhoneSubmitView(APIView):
     permission_classes = [AllowAny]
 
-    def post(self, request):
-        session_id = request.data.get("session_id")
-        raw_id = request.data.get("rawId")
-        client_data = request.data.get("clientDataJSON")
-        attestation = request.data.get("attestationObject")
+    def post(self,request):
+        from .webauthn_service import register, WebAuthnException
+        from django.db import IntegrityError
+        from django.core.exceptions import ValidationError
+        try:
+            session=FingerprintSession.objects.select_related('user__organization').get(session_id=request.data.get('session_id'))
+            register(session,request.data)
+        except (FingerprintSession.DoesNotExist,ValueError,TypeError,ValidationError,WebAuthnException):
+            return Response({'detail':'WebAuthn registration rejected'},status=400)
+        except IntegrityError:
+            return Response({'detail':'Credential already registered'},status=409)
+        return Response({'status':'ok','message':'WebAuthn credential verified and saved'})
 
-        session = FingerprintSession.objects.get(session_id=session_id)
-
-        if session.status != "pending":
-            return Response(
-                {"error": "Session invalid"},
-                status=400
-            )
-
-        if session.expires_at < timezone.now():
-            session.status = "expired"
-            session.save()
-            return Response(
-                {"error": "Session expired"},
-                status=400
-            )
-
-        if not raw_id or not client_data or not attestation:
-            return Response(
-                {"error": "Credential incomplete"},
-                status=400
-            )
-
-        combined = f"{raw_id}|{client_data}|{attestation}"
-
-        fingerprint = BiometricFingerprint.objects.create(
-            user=session.user,
-            source="phone"
-        )
-
-        fingerprint.set_embedding(combined.encode())
-        fingerprint.save()
-
-        session.status = "completed"
-        session.save()
-
-        return Response({
-            "status": "ok",
-            "message": "Fingerprint saved"
-        })
-    
-    
 
 class FingerprintPhoneStatusView(APIView):
     permission_classes = [AllowAny]
@@ -195,11 +155,15 @@ class BiometricFingerprintListView(APIView):
 class MobileFingerprintView(APIView):
     permission_classes = [AllowAny]
     def get(self, request, session_id):
-        return render(
-            request,
-            "mobile_fingerprint.html",
-            {"session_id": session_id}
-        )
+        from .webauthn_service import b64,rp
+        session=FingerprintSession.objects.filter(session_id=session_id,status='pending',expires_at__gt=timezone.now()).first()
+        if not session or not session.challenge:
+            return Response({'detail':'Registration session expired'},status=410)
+        rp_id,_=rp()
+        return render(request,'mobile_fingerprint.html',{'session_id':session_id,
+            'webauthn_options':{'challenge':b64(bytes(session.challenge)),'rp_id':rp_id,
+                'user_id':b64(str(session.user_id).encode()),'username':session.user.username}})
+
 
 
 
