@@ -126,6 +126,7 @@
 <video id="camVideo" autoplay playsinline></video>
 
 
+{{ webauthn_options|json_script:"webauthn-options" }}
 <script>
 
 const SESSION_ID = window.location.pathname.split('/').filter(Boolean).pop();
@@ -160,11 +161,11 @@ async function startFingerprint() {
     try {
         const credential = await navigator.credentials.create({
             publicKey: {
-                challenge: crypto.getRandomValues(new Uint8Array(32)),
-                rp: { name: "AD BioGuard" },
+                challenge: Uint8Array.from(atob(JSON.parse(document.getElementById('webauthn-options').textContent).challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
+                rp: { name: 'AD BioGuard', id: JSON.parse(document.getElementById('webauthn-options').textContent).rp_id },
                 user: {
-                    id: new Uint8Array(16),
-                    name: "user@test.com",
+                    id: Uint8Array.from(atob(JSON.parse(document.getElementById('webauthn-options').textContent).user_id), c => c.charCodeAt(0)),
+                    name: JSON.parse(document.getElementById('webauthn-options').textContent).username,
                     displayName: "User"
                 },
                 pubKeyCredParams: [{ type: "public-key", alg: -7 }],

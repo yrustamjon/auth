@@ -615,7 +615,7 @@
       const credential = await navigator.credentials.get({
         publicKey: {
           challenge: base64ToUint8Array(options.challenge),
-          rpId: window.location.hostname,
+          rpId: options.rp_id,
           allowCredentials: [{
             id: base64ToUint8Array(options.credential_id),
             type: 'public-key'
