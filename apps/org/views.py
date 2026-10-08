@@ -9,6 +9,9 @@ from apps.common.models import AdminUser, Device, Organization
 from apps.org.models import OrgToken
 
 import uuid
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 # =========================
@@ -150,8 +153,16 @@ class ActivateAgent(APIView):
         license_key = request.data.get("license") or request.data.get("windows_license")
         public_key = request.data.get("public_key")
 
-        if not all([token, device_uuid, license_key, public_key]):
+        if not all(isinstance(v, str) and v.strip() and len(v) <= limit
+                   for v, limit in ((token, 255), (device_uuid, 255), (license_key, 255), (public_key, 16384))):
             return Response({"error": "Missing fields"}, status=400)
+
+        try:
+            key = serialization.load_pem_public_key(public_key.encode())
+            if not isinstance(key, rsa.RSAPublicKey) or key.key_size < 2048:
+                raise ValueError('RSA >=2048 required')
+        except (ValueError, TypeError, UnsupportedAlgorithm):
+            return Response({'detail': 'Invalid public key: RSA >=2048 required'}, status=400)
 
         with transaction.atomic():
             org_token = OrgToken.objects.select_for_update().filter(
@@ -166,28 +177,38 @@ class ActivateAgent(APIView):
                 return Response({"error": "Token expired"}, status=400)
 
             try:
-                device = Device.objects.get(
+                device = Device.objects.select_for_update().get(
                     pc_id=device_uuid,
                     organization=org_token.org,
                 )
             except Device.DoesNotExist:
                 return Response({"error": "Device not registered"}, status=400)
 
-            if device.enrollment_status == Device.EnrollmentStatus.BROWSER_APPROVED:
-                return Response({"error": "Agent enrollment required"}, status=409)
-
-            if device.license != license_key:
+            if not org_token.org.is_active or device.revoked_at is not None:
+                return Response({'detail': 'Organization inactive or device revoked'}, status=403)
+            browser_pending = device.enrollment_status == Device.EnrollmentStatus.BROWSER_APPROVED
+            if device.cert or device.device_public_key:
+                return Response({'detail': 'Device already enrolled'}, status=409)
+            if not device.is_active and not browser_pending:
+                return Response({'detail': 'Device inactive'}, status=403)
+            if device.license != license_key and not (browser_pending and device.license == 'UNKNOWN'):
                 return Response({"error": "License mismatch"}, status=400)
 
+            # Conditional write is the final claim: row locks alone are not supported by SQLite.
+            if OrgToken.objects.filter(pk=org_token.pk, is_used=False, expires_at__gt=timezone.now()).update(is_used=True) != 1:
+                return Response({'detail': 'Token already consumed or expired'}, status=409)
             cert = str(uuid.uuid4())
+            device.license = license_key
+            if device.platform == Device.Platform.WINDOWS:
+                device.identifiers = {**device.identifiers, 'product_id': license_key}
+            device.enrollment_status = Device.EnrollmentStatus.AGENT_ENROLLED
+            device.enrolled_at = timezone.now()
 
             device.cert = cert
             device.device_public_key = public_key
             device.is_active = True
             device.save()
 
-            org_token.is_used = True
-            org_token.save(update_fields=["is_used"])
 
         return Response({
             "certificate": {

@@ -17,6 +17,13 @@ from apps.org.models import OrgToken
 
 
 class DevicePlatformApiTests(TestCase):
+    @staticmethod
+    def valid_public_key():
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+        return rsa.generate_private_key(public_exponent=65537, key_size=2048).public_key().public_bytes(
+            serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo).decode()
+
     def setUp(self):
         self.organization = Organization.objects.create(
             name="Platform test organization", slug="platform-test-organization"
@@ -150,7 +157,7 @@ class DevicePlatformApiTests(TestCase):
                 "activation_code": token.token,
                 "device_uuid": "win-machine-guid",
                 "windows_license": "WIN-PRODUCT-ID",
-                "public_key": "test-public-key",
+                "public_key": self.valid_public_key(),
             }),
             content_type="application/json",
         )
@@ -494,7 +501,7 @@ class BrowserEnrollmentTests(TestCase):
                 "activation_code": token.token, "device_uuid": device.pc_id,
                 "windows_license": "UNKNOWN", "public_key": "fake-key",
             }), content_type="application/json",
-        ).status_code, 409)
+        ).status_code, 400)
         self.assertEqual(self.target.post(
             "/api/agent/check-pc/", data=json.dumps({
                 "device_uuid": device.pc_id, "windows_license": "UNKNOWN",
