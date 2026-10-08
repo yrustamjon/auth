@@ -422,12 +422,9 @@ def agent_fingerprint_phone_status(request, session_id):
 @require_http_methods(["POST"])
 def ValidetAgent(request):
     data = json.loads(request.body)
-    try:
-        device = Device.objects.get(
-            pc_id=data["device_uuid"],
-            license=data["windows_license"],
-        )
-    except Device.DoesNotExist:
+    device = request.bioguard_device
+    if (data.get("device_uuid") != device.pc_id or
+            data.get("windows_license") != device.license):
         return JsonResponse({"ok": False, "detail": "Device topilmadi"}, status=404)
 
     if not device.is_active:

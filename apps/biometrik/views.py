@@ -89,7 +89,7 @@ class FingerprintPhoneSubmitView(APIView):
 
     def post(self,request):
         from .webauthn_service import register, WebAuthnException
-        from django.db import IntegrityError
+        from django.db import IntegrityError, OperationalError
         from django.core.exceptions import ValidationError
         try:
             session=FingerprintSession.objects.select_related('user__organization').get(session_id=request.data.get('session_id'))
@@ -98,6 +98,8 @@ class FingerprintPhoneSubmitView(APIView):
             return Response({'detail':'WebAuthn registration rejected'},status=400)
         except IntegrityError:
             return Response({'detail':'Credential already registered'},status=409)
+        except OperationalError:
+            return Response({'detail':'Registration database busy; retry'},status=503)
         return Response({'status':'ok','message':'WebAuthn credential verified and saved'})
 
 

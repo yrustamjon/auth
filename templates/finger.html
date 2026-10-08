@@ -579,6 +579,10 @@
     return await res.json();
   }
 
+  function base64url(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+
   async function postResult(credential) {
     const res = await fetch(`/api/agent/fingerprint/phone/submit/${SESSION_ID}/`, {
       method: 'POST',
@@ -587,10 +591,10 @@
       },
       body: JSON.stringify({
         credential_id: credential.id,
-        rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
-        clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(credential.response.clientDataJSON))),
-        authenticatorData: btoa(String.fromCharCode(...new Uint8Array(credential.response.authenticatorData))),
-        signature: btoa(String.fromCharCode(...new Uint8Array(credential.response.signature)))
+        rawId: base64url(credential.rawId),
+        clientDataJSON: base64url(credential.response.clientDataJSON),
+        authenticatorData: base64url(credential.response.authenticatorData),
+        signature: base64url(credential.response.signature)
       })
     });
 

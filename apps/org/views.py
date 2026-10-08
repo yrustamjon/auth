@@ -148,6 +148,13 @@ class ActivateAgent(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        from django.db import OperationalError
+        try:
+            return self._activate(request)
+        except OperationalError:
+            return Response({'detail': 'Enrollment database busy; retry'}, status=503)
+
+    def _activate(self, request):
         token = request.data.get("token") or request.data.get("activation_code")
         device_uuid = request.data.get("device_uuid")
         license_key = request.data.get("license") or request.data.get("windows_license")

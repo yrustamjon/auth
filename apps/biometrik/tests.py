@@ -77,3 +77,71 @@ class WebAuthnTests(TestCase):
         user=Users.objects.create(organization=other,username='other',fio='Test',lavozim='Test')
         response=self.client.post('/api/fingerprint/phone/start/',json.dumps({'user_id':user.pk}),content_type='application/json')
         self.assertEqual(response.status_code,403)
+
+    def test_browser_standard_base64_assertion_is_normalized_safely(self):
+        self.assertEqual(self.enroll().status_code,200)
+        session=self.session();path=f'/api/agent/fingerprint/phone/submit/{session.session_id}/'
+        options=self.client.get(path).json()
+        payload=self.assertion(session,options['challenge'])
+        for name in payload:
+            raw=base64.urlsafe_b64decode(payload[name]+'='*(-len(payload[name])%4))
+            payload[name]=base64.b64encode(raw).decode()
+        response=self.client.post(path,json.dumps(payload),content_type='application/json')
+        self.assertEqual(response.status_code,200,response.content)
+
+    def test_expired_assertion_challenge_never_completes_session(self):
+        self.assertEqual(self.enroll().status_code,200)
+        session=self.session();path=f'/api/agent/fingerprint/phone/submit/{session.session_id}/'
+        options=self.client.get(path).json()
+        AgentSession.objects.filter(pk=session.pk).update(fingerprint_challenge_expires=timezone.now()-timedelta(seconds=1))
+        payload=self.assertion(session,options['challenge'])
+        self.assertEqual(self.client.post(path,json.dumps(payload),content_type='application/json').status_code,400)
+        session.refresh_from_db();self.assertEqual(session.status,'pending')
+
+from django.test import TransactionTestCase, Client
+from django.db import close_old_connections
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+
+@override_settings(PUBLIC_SITE_URL='https://bioguard.example')
+class WebAuthnRaceTests(TransactionTestCase):
+    setUp = WebAuthnTests.setUp
+    enroll = WebAuthnTests.enroll
+    session = WebAuthnTests.session
+    assertion = WebAuthnTests.assertion
+
+    def parallel(self,path,payload):
+        barrier=Barrier(4)
+        def send(_):
+            close_old_connections()
+            try:
+                barrier.wait(timeout=10)
+                return Client().post(path,json.dumps(payload),content_type='application/json').status_code
+            finally:close_old_connections()
+        with ThreadPoolExecutor(max_workers=4) as pool: statuses=list(pool.map(send,range(4)))
+        self.assertTrue(all(code in (200,400,409,503) for code in statuses),statuses)
+        if 200 not in statuses:
+            statuses.append(Client().post(path,json.dumps(payload),content_type='application/json').status_code)
+        self.assertEqual(statuses.count(200),1,statuses)
+
+    def test_parallel_registration_consumes_challenge_once(self):
+        from unittest.mock import patch
+        original=self.client.post
+        captured={}
+        def capture(path,body,**kwargs):
+            if path.endswith('/submit/'):
+                captured.update(json.loads(body))
+                return None
+            return original(path,body,**kwargs)
+        with patch.object(self.client,'post',side_effect=capture):self.enroll()
+        self.parallel('/api/fingerprint/phone/submit/',captured)
+        self.assertEqual(BiometricFingerprint.objects.filter(user=self.user).count(),1)
+        self.assertEqual(FingerprintSession.objects.get(session_id=captured['session_id']).status,'completed')
+
+    def test_parallel_assertion_consumes_challenge_once(self):
+        self.assertEqual(self.enroll().status_code,200)
+        session=self.session();path=f'/api/agent/fingerprint/phone/submit/{session.session_id}/'
+        payload=self.assertion(session,self.client.get(path).json()['challenge'])
+        self.parallel(path,payload)
+        session.refresh_from_db();self.assertEqual(session.status,'completed')
+        self.assertEqual(BiometricFingerprint.objects.get(user=self.user).sign_count,1)

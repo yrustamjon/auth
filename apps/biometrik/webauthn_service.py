@@ -32,6 +32,8 @@ def credential(payload,registration=False):
     if not isinstance(payload,dict) or any(not isinstance(payload.get(k),str) or not payload[k] or len(payload[k])>65536 for k in required):
         raise ValueError('Credential incomplete')
     raw=payload['rawId']
+    decoded=base64.b64decode(raw+'='*(-len(raw)%4),altchars=b'-_',validate=True)
+    raw=b64(decoded)
     response={'clientDataJSON':payload['clientDataJSON']}
     for name in required[2:]:response[name]=payload[name]
     return {'id':raw,'rawId':raw,'type':'public-key','response':response}

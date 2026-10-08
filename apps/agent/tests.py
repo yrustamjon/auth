@@ -95,6 +95,24 @@ class SignedRequestTests(TestCase):
         self.assertEqual(response.status_code,200,response.content)
         self.assertGreaterEqual(self.client.post(path,payload,content_type='application/json',**signed).status_code,400)
 
+    def test_validate_code_cannot_select_foreign_org_license(self):
+        other=Organization.objects.create(name='Other',slug='other')
+        Device.objects.create(organization=other,pc_id=self.device.pc_id,license='foreign-license',location='Test')
+        OrgToken.objects.create(org=other)
+        path='/api/agent/validate-code/'
+        body=json.dumps({'device_uuid':self.device.pc_id,'windows_license':'foreign-license'}).encode()
+        response=self.client.post(path,body,content_type='application/json',**headers(self.key,'POST',path,body))
+        self.assertEqual(response.status_code,404,response.content)
+
+    def test_validate_code_duplicate_identity_in_other_org_uses_signed_device(self):
+        other=Organization.objects.create(name='Other',slug='other')
+        Device.objects.create(organization=other,pc_id=self.device.pc_id,license=self.device.license,location='Test')
+        OrgToken.objects.create(org=self.org)
+        path='/api/agent/validate-code/'
+        body=json.dumps({'device_uuid':self.device.pc_id,'windows_license':self.device.license}).encode()
+        response=self.client.post(path,body,content_type='application/json',**headers(self.key,'POST',path,body))
+        self.assertEqual(response.status_code,200,response.content)
+
     def test_signed_face_request_uses_authenticated_device_without_redundant_pc_id(self):
         session=self.post(signed=headers(self.key,'POST',self.path,self.body)).json()['session_id']
         path='/api/face/agent/check/'
@@ -116,3 +134,33 @@ class NonceRaceTests(TransactionTestCase):
         self.assertEqual(result.count(True),1)
         from apps.agent.models import RequestNonce
         self.assertEqual(RequestNonce.objects.count(),1)
+
+class BootstrapRaceTests(TransactionTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        SignedRequestTests.setUpTestData.__func__(cls)
+    setUp = SignedRequestTests.setUp
+
+    def test_parallel_bootstrap_requests_consume_token_once(self):
+        from django.test import Client
+        from threading import Barrier
+        token=OrgToken.objects.create(org=self.org)
+        device=Device.objects.create(organization=self.org,pc_id='bootstrap-race',license='UNKNOWN',location='Test',is_active=False,enrollment_status=Device.EnrollmentStatus.BROWSER_APPROVED)
+        path='/api/agent/activate/'
+        body=json.dumps({'activation_code':token.token,'device_uuid':device.pc_id,'windows_license':'TEST','public_key':self.public}).encode()
+        barrier=Barrier(4)
+        def send(_):
+            close_old_connections()
+            try:
+                barrier.wait(timeout=10)
+                return Client().post(path,body,content_type='application/json',**headers(self.key,'POST',path,body,device=device.pc_id,certificate='bootstrap')).status_code
+            finally:close_old_connections()
+        with ThreadPoolExecutor(max_workers=4) as pool: statuses=list(pool.map(send,range(4)))
+        self.assertTrue(all(code in (200,400,409,503) for code in statuses),statuses)
+        if 200 not in statuses:
+            statuses.append(Client().post(path,body,content_type='application/json',**headers(self.key,'POST',path,body,device=device.pc_id,certificate='bootstrap')).status_code)
+        self.assertEqual(statuses.count(200),1,statuses)
+        token.refresh_from_db();device.refresh_from_db()
+        self.assertTrue(token.is_used);self.assertTrue(device.cert)
+        self.assertEqual(device.device_public_key,self.public)
