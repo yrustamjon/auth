@@ -30,7 +30,7 @@ function Header() {
   }, []);
 
   const handleLogout = async () => {
-    try { await adminLogout(); } catch (_) {}
+    try { await adminLogout(); } catch {}
     navigate('/login');
   };
 

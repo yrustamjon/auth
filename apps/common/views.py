@@ -6,6 +6,26 @@ from django.contrib.auth import authenticate, login, logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_GET
+from .permissions import IsSystemAdmin, IsWorkspaceAdmin
+
+
+@ensure_csrf_cookie
+@require_GET
+def frontend_session(request):
+    authenticated = request.user.is_authenticated
+    workspace = request.user.organizations.filter(pk=request.session.get('current_org_id')).first() if authenticated else None
+    organizations = list(request.user.organizations.exclude(slug='system').values('id', 'name')) if authenticated else []
+    return JsonResponse({
+        'authenticated': authenticated,
+        'panel': request.session.get('panel') if authenticated else None,
+        'user': {'id': request.user.id, 'username': request.user.username} if authenticated else None,
+        'organization_id': request.session.get('current_org_id') if authenticated else None,
+        'organizations': organizations,
+        'workspace': {'kind':workspace.kind,'status':workspace.approval_status,'active':workspace.is_active} if workspace else None,
+    })
 
 from .models import *
 from functools import wraps
@@ -201,6 +221,8 @@ class AdminLogin(APIView):
             return "/system/dashboard/"
         if request is not None and request.session.get("browser_enrollment_token_hash"):
             return "/device-enroll/approval/"
+        if request is not None and request.user.organizations.filter(pk=request.session.get('current_org_id'),kind='personal').exists():
+            return '/personal/computer'
         return "/dashboard/"
 
     def post(self, request):
@@ -219,7 +241,7 @@ class AdminLogin(APIView):
 
         return Response({
             "ok": True,
-            "redirect": self.get_redirect_url(request)
+            "redirect": '/registration/status' if not self.allow_superadmin and default_org and default_org.approval_status != 'approved' else self.get_redirect_url(request)
         })
 
 
@@ -232,7 +254,7 @@ class AdminLogout(APIView):
 
 
 class Admin_Users(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsWorkspaceAdmin]
 
     def get(self, request):
         
@@ -290,7 +312,9 @@ class Admin_Users(APIView):
     
     def patch(self, request, id):
         status=request.data.get("status")
-        user=Users.objects.filter(id=id).first()
+        user=Users.objects.filter(id=id,organization_id=request.session.get('current_org_id')).first()
+        if not user:
+            return Response({'detail':'User not found'},status=404)
         print("Updating user:", user, "with data:", request.data)
         print(user.status, status)
         
@@ -307,7 +331,7 @@ class Admin_Users(APIView):
         return Response({"ok": True})
     
     def delete(self, request, id):
-        user=Users.objects.filter(id=id).first()
+        user=Users.objects.filter(id=id,organization_id=request.session.get('current_org_id')).first()
         if user:
             user.delete()
             return Response({"ok": True})
@@ -326,7 +350,7 @@ class Super_AdminLogout(APIView):
         return Response({"ok": True})
     
 class Admin(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsSystemAdmin]
 
     def get(self, request):
         
@@ -441,7 +465,7 @@ class Admin(APIView):
     
 
 class ForceLogoutAdmin(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsSystemAdmin]
 
     def post(self, request, id):
         admin = AdminUser.objects.filter(id=id).first()

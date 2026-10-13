@@ -1,32 +1,33 @@
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Search, Lock, Unlock, RefreshCw, LogOut, Link } from 'lucide-react';
+import { readCollection } from '../../api/contracts';
+import { useEffect, useRef, useState } from 'react';
+import { Plus, Pencil, Trash2, Search, Lock, Unlock,  LogOut, Link } from 'lucide-react';
 import Table from '../../components/Table';
 import Badge from '../../components/Badge';
 import Modal from '../../components/Modal';
 import {
   getSystemAdmins, createSystemAdmin, updateSystemAdmin, deleteSystemAdmin,
-  getOrganizations, forceLogoutAdmin, resetAdminAttempts, toggleAdminLock, attachAdminToOrg,
+  getOrganizations, forceLogoutAdmin,  toggleAdminLock, attachAdminToOrg,
 } from '../../api/superadmin';
-import { useSystemToast } from '../../layouts/SystemLayout';
+import { useSystemToast } from '../../contexts/toast';
 
 const emptyCreate = { username: '', password: '', organization_id: '', is_superuser: false };
 
 const S = {
-  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1rem', marginBottom: '1.5rem' },
-  statCard: { borderRadius: '1rem', padding: '1.25rem 1.5rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '1rem' },
+  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(135px,1fr))', gap: '1rem', marginBottom: '1.5rem' },
+  statCard: { borderRadius: '1rem', padding: '1.25rem 1.5rem', background: '#ffffff', border: '1px solid #e7ecf3', display: 'flex', alignItems: 'center', gap: '1rem' },
   statIcon: { width: '44px', height: '44px', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' },
   statLabel: { fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  statValue: { fontSize: '1.6rem', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 },
+  statValue: { fontSize: '1.6rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
   pageTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' },
-  right: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  searchBox: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' },
-  searchInput: { background: 'transparent', border: 'none', outline: 'none', color: '#cbd5e1', fontSize: '0.875rem', width: '176px' },
-  tableWrap: { borderRadius: '1rem', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' },
-  addBtn: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', boxShadow: '0 4px 14px rgba(139,92,246,0.35)' },
-  saveBtn: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
+  right: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', maxWidth: '100%' },
+  searchBox: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.75rem', background: '#ffffff', border: '1px solid #e7ecf3' },
+  searchInput: { background: 'transparent', border: 'none', outline: 'none', color: '#46566e', fontSize: '0.875rem', width: '176px' },
+  tableWrap: { borderRadius: '1rem', overflow: 'hidden', background: '#ffffff', border: '1px solid #e7ecf3' },
+  addBtn: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', background: '#2563eb', boxShadow: '0 3px 7px #2563eb18' },
+  saveBtn: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', background: '#2563eb' },
   actionBtn: { padding: '6px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', transition: 'all 0.2s', display: 'flex', alignItems: 'center' },
   label: { display: 'block', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' },
-  tab: (active) => ({ padding: '0.6rem 1rem', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: active ? '#a78bfa' : '#64748b', borderBottom: `2px solid ${active ? '#8b5cf6' : 'transparent'}`, display: 'flex', alignItems: 'center', gap: '0.375rem', transition: 'all 0.2s' }),
+  tab: (active) => ({ padding: '0.6rem 1rem', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: active ? '#2563eb' : '#64748b', borderBottom: `2px solid ${active ? '#2563eb' : 'transparent'}`, display: 'flex', alignItems: 'center', gap: '0.375rem', transition: 'all 0.2s' }),
 };
 
 function hoverBtn(el, color, bg) {
@@ -53,6 +54,8 @@ export default function Admins() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [orgError,setOrgError]=useState('');
+  const attachInFlight=useRef(false);
   const [search, setSearch] = useState('');
 
   // Create modal
@@ -73,12 +76,13 @@ export default function Admins() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = async () => {
-    setLoading(true);
+    setLoading(true); setError(''); setOrgError('');
     try {
       const [aRes, oRes] = await Promise.allSettled([getSystemAdmins(), getOrganizations()]);
-      const aData = aRes.status === 'fulfilled' ? (Array.isArray(aRes.value.data) ? aRes.value.data : aRes.value.data?.admins ?? []) : [];
-      const oData = oRes.status === 'fulfilled' ? (Array.isArray(oRes.value.data) ? oRes.value.data : oRes.value.data?.organizations ?? []) : [];
-      setAdmins(aData); setFiltered(aData); setOrgs(oData);
+      if (aRes.status === 'fulfilled') { const aData=readCollection(aRes.value.data,'admins'); setAdmins(aData); setFiltered(aData); }
+      else setError('Administratorlarni yuklab bo‘lmadi. Qayta urinib ko‘ring.');
+      if (oRes.status === 'fulfilled') setOrgs(readCollection(oRes.value.data,'organizations'));
+      else setOrgError('Tashkilotlarni yuklab bo‘lmadi. Sahifani yangilang.');
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -158,7 +162,9 @@ export default function Admins() {
 
   // Edit — Orgs tab: attach
   const handleAttachOrg = async () => {
+    if (attachInFlight.current) return;
     if (!attachOrgId) { toast('Tashkilot tanlang', 'error'); return; }
+    attachInFlight.current=true; setSaving(true);
     try {
       await attachAdminToOrg(editTarget.id, parseInt(attachOrgId));
       toast('Biriktirildi', 'success');
@@ -172,6 +178,7 @@ export default function Admins() {
       setAttachOrgId('');
       setAdmins(aData); setFiltered(aData);
     } catch (e) { toast(e.response?.data?.detail || 'Xato', 'error'); }
+    finally { attachInFlight.current=false; setSaving(false); }
   };
 
   // Row actions
@@ -183,13 +190,6 @@ export default function Admins() {
     } catch { toast('Xato', 'error'); }
   };
 
-  const handleResetAttempts = async (row) => {
-    try {
-      await resetAdminAttempts(row.id);
-      toast('Urinishlar tiklandi', 'success');
-      load();
-    } catch { toast('Xato', 'error'); }
-  };
 
   const handleForceLogout = async (row) => {
     try {
@@ -220,12 +220,12 @@ export default function Admins() {
     { key: 'id', label: '#', render: v => <span style={{ color: '#475569', fontSize: '0.75rem', fontFamily: 'monospace' }}>{v}</span> },
     {
       key: 'username', label: 'Admin',
-      render: (v, row) => (
+      render: v => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: 'white', flexShrink: 0, background: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', boxShadow: '0 2px 8px rgba(139,92,246,0.3)' }}>
+          <div style={{ width: '34px', height: '34px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: 'white', flexShrink: 0, background: '#2563eb', boxShadow: '0 2px 8px rgba(139,92,246,0.3)' }}>
             {(v || '?')[0].toUpperCase()}
           </div>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e2e8f0' }}>{v}</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink)' }}>{v}</span>
         </div>
       ),
     },
@@ -239,7 +239,7 @@ export default function Admins() {
       },
     },
     {
-      key: 'superadmin', label: 'Super Admin',
+      key: 'superadmin', label: 'Superadministrator',
       render: (v, row) => {
         const is = v || row.is_superuser;
         return <Badge variant={is ? 'indigo' : 'default'} dot={!!is}>{is ? 'Ha' : "Yo'q"}</Badge>;
@@ -250,10 +250,10 @@ export default function Admins() {
       render: v => <Badge variant={v ? 'danger' : 'success'} dot>{v ? 'Qulflangan' : 'Faol'}</Badge>,
     },
     {
-      key: 'failed_attempts', label: 'Failed',
+      key: 'failed_attempts', label: 'Xato urinishlar',
       render: v => {
         const n = v ?? 0;
-        const color = n > 3 ? '#f87171' : n > 0 ? '#fbbf24' : '#34d399';
+        const color = n > 3 ? '#cf4650' : n > 0 ? '#b77b17' : '#168557';
         return <span style={{ fontWeight: 700, color, fontSize: '0.875rem' }}>{n > 3 ? `${n} ⚠` : n}</span>;
       },
     },
@@ -264,23 +264,24 @@ export default function Admins() {
 
   return (
     <div className="page-container">
+      {orgError && <div className="alert-error" role="alert">{orgError}</div>}
       {/* Stat cards */}
       <div style={S.statGrid}>
-        <StatCard icon="👥" label="Jami adminlar" value={totalAdmins} color="#8b5cf6" bg="rgba(139,92,246,0.12)" />
-        <StatCard icon="⭐" label="Super adminlar" value={superAdmins} color="#a78bfa" bg="rgba(167,139,250,0.12)" />
-        <StatCard icon="🔒" label="Qulflangan" value={lockedAdmins} color="#f87171" bg="rgba(239,68,68,0.12)" />
-        <StatCard icon="⚠️" label="Xavfli (>3 urinish)" value={highRisk} color="#fbbf24" bg="rgba(245,158,11,0.12)" />
+        <StatCard icon="👥" label="Jami adminlar" value={loading ? '…' : error ? '—' : totalAdmins} color="#2563eb" bg="#edf3ff" />
+        <StatCard icon="⭐" label="Super adminlar" value={loading ? '…' : error ? '—' : superAdmins} color="#2563eb" bg="rgba(167,139,250,0.12)" />
+        <StatCard icon="🔒" label="Qulflangan" value={loading ? '…' : error ? '—' : lockedAdmins} color="#cf4650" bg="rgba(239,68,68,0.12)" />
+        <StatCard icon="⚠️" label="Xavfli (>3 urinish)" value={loading ? '…' : error ? '—' : highRisk} color="#b77b17" bg="rgba(245,158,11,0.12)" />
       </div>
 
       <div style={S.pageTop}>
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.025em' }}>System Adminlar</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.025em' }}>System Adminlar</h2>
           <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '2px' }}>{filtered.length} ta admin</p>
         </div>
         <div style={S.right}>
           <div style={S.searchBox}>
             <Search size={14} style={{ color: '#475569' }} />
-            <input type="text" placeholder="Qidirish..." value={search}
+            <input type="text" aria-label="Qidirish" placeholder="Qidirish..." value={search}
               onChange={e => setSearch(e.target.value)} style={S.searchInput} />
           </div>
           <button onClick={() => { setCreateForm(emptyCreate); setCreateModal(true); }} style={S.addBtn}>
@@ -294,23 +295,19 @@ export default function Admins() {
           actions={(row) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <button title="Tahrirlash" onClick={() => openEdit(row)} style={S.actionBtn}
-                ref={el => el && hoverBtn(el, '#a78bfa', 'rgba(139,92,246,0.1)')}>
+                ref={el => el && hoverBtn(el, '#2563eb', 'rgba(139,92,246,0.1)')}>
                 <Pencil size={13} />
               </button>
               <button title={row.locked ? 'Qulfni ochish' : 'Qulflash'} onClick={() => handleToggleLock(row)} style={S.actionBtn}
-                ref={el => el && hoverBtn(el, row.locked ? '#34d399' : '#fbbf24', row.locked ? 'rgba(52,211,153,0.1)' : 'rgba(251,191,36,0.1)')}>
+                ref={el => el && hoverBtn(el, row.locked ? '#168557' : '#b77b17', row.locked ? 'rgba(52,211,153,0.1)' : 'rgba(251,191,36,0.1)')}>
                 {row.locked ? <Unlock size={13} /> : <Lock size={13} />}
               </button>
-              <button title="Urinishlarni tiklash" onClick={() => handleResetAttempts(row)} style={S.actionBtn}
-                ref={el => el && hoverBtn(el, '#60a5fa', 'rgba(59,130,246,0.1)')}>
-                <RefreshCw size={13} />
-              </button>
-              <button title="Force logout" onClick={() => handleForceLogout(row)} style={S.actionBtn}
+              <button title="Hisobdan chiqarish" onClick={() => handleForceLogout(row)} style={S.actionBtn}
                 ref={el => el && hoverBtn(el, '#fb923c', 'rgba(251,146,60,0.1)')}>
                 <LogOut size={13} />
               </button>
               <button title="O'chirish" onClick={() => setDeleteTarget(row)} style={S.actionBtn}
-                ref={el => el && hoverBtn(el, '#f87171', 'rgba(239,68,68,0.1)')}>
+                ref={el => el && hoverBtn(el, '#cf4650', 'rgba(239,68,68,0.1)')}>
                 <Trash2 size={13} />
               </button>
             </div>
@@ -331,13 +328,13 @@ export default function Admins() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={S.label}>Username *</label>
-            <input type="text" placeholder="login" value={createForm.username}
+            <label htmlFor="admin-login" style={S.label}>Login *</label>
+            <input type="text" id="admin-login" aria-label="Username *" placeholder="login" value={createForm.username}
               onChange={e => setCreateForm(p => ({ ...p, username: e.target.value }))} className="input-field" />
           </div>
           <div>
-            <label style={S.label}>Parol *</label>
-            <input type="password" placeholder="••••••••" value={createForm.password}
+            <label htmlFor="admin-password" style={S.label}>Parol *</label>
+            <input type="password" id="admin-password" aria-label="Parol *" placeholder="••••••••" value={createForm.password}
               onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} className="input-field" />
           </div>
           <div>
@@ -351,8 +348,8 @@ export default function Admins() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <input type="checkbox" id="cSuper" checked={createForm.is_superuser}
               onChange={e => setCreateForm(p => ({ ...p, is_superuser: e.target.checked }))}
-              style={{ width: '16px', height: '16px', accentColor: '#8b5cf6' }} />
-            <label htmlFor="cSuper" style={{ fontSize: '0.875rem', color: '#94a3b8', cursor: 'pointer' }}>⭐ Super Admin</label>
+              style={{ width: '16px', height: '16px', accentColor: '#2563eb' }} />
+            <label htmlFor="cSuper" style={{ fontSize: '0.875rem', color: '#738096', cursor: 'pointer' }}>⭐ Superadministrator</label>
           </div>
         </div>
       </Modal>
@@ -362,8 +359,8 @@ export default function Admins() {
         {editTarget && (
           <>
             {/* Tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '1.25rem' }}>
-              {[['info', 'Info'], ['password', 'Parol'], ['orgs', 'Tashkilotlar']].map(([key, label]) => (
+            <div style={{ display: 'flex', borderBottom: '1px solid #e7ecf3', marginBottom: '1.25rem' }}>
+              {[['info', 'Ma’lumot'], ['password', 'Parol'], ['orgs', 'Tashkilotlar']].map(([key, label]) => (
                 <button key={key} onClick={() => setEditTab(key)} style={S.tab(editTab === key)}>{label}</button>
               ))}
             </div>
@@ -372,17 +369,17 @@ export default function Admins() {
             {editTab === 'info' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
-                  <label style={S.label}>Username *</label>
+                  <label style={S.label}>Login *</label>
                   <input type="text" value={editInfo.username}
                     onChange={e => setEditInfo(p => ({ ...p, username: e.target.value }))} className="input-field" />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <input type="checkbox" id="eSuper" checked={editInfo.is_superuser}
                     onChange={e => setEditInfo(p => ({ ...p, is_superuser: e.target.checked }))}
-                    style={{ width: '16px', height: '16px', accentColor: '#8b5cf6' }} />
-                  <label htmlFor="eSuper" style={{ fontSize: '0.875rem', color: '#94a3b8', cursor: 'pointer' }}>⭐ Super Admin</label>
+                    style={{ width: '16px', height: '16px', accentColor: '#2563eb' }} />
+                  <label htmlFor="eSuper" style={{ fontSize: '0.875rem', color: '#738096', cursor: 'pointer' }}>⭐ Superadministrator</label>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e7ecf3' }}>
                   <button onClick={() => setEditTarget(null)} className="btn-secondary">Bekor</button>
                   <button onClick={handleSaveInfo} disabled={saving} style={S.saveBtn}>
                     {saving ? 'Saqlanmoqda...' : 'Saqlash'}
@@ -394,7 +391,7 @@ export default function Admins() {
             {/* Password tab */}
             {editTab === 'password' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ padding: '0.75rem 1rem', borderRadius: '0.625rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', fontSize: '0.8rem', color: '#fbbf24' }}>
+                <div style={{ padding: '0.75rem 1rem', borderRadius: '0.625rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', fontSize: '0.8rem', color: '#b77b17' }}>
                   ⚠ Yangi parol kiritilsa admin sessiyasi bekor bo'ladi
                 </div>
                 <div>
@@ -407,7 +404,7 @@ export default function Admins() {
                   <input type="password" placeholder="••••••••" value={editPass.confirm}
                     onChange={e => setEditPass(p => ({ ...p, confirm: e.target.value }))} className="input-field" />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e7ecf3' }}>
                   <button onClick={() => setEditTarget(null)} className="btn-secondary">Bekor</button>
                   <button onClick={handleSavePass} disabled={saving} style={S.saveBtn}>
                     {saving ? 'Saqlanmoqda...' : 'Parolni o\'zgartirish'}
@@ -426,26 +423,26 @@ export default function Admins() {
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {editOrgs.map((name, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.875rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.625rem', background: 'rgba(255,255,255,0.02)' }}>
-                          <span style={{ fontSize: '0.875rem', color: '#e2e8f0', fontWeight: 500 }}>🏢 {name}</span>
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.875rem', border: '1px solid #e7ecf3', borderRadius: '0.625rem', background: '#f8fafc' }}>
+                          <span style={{ fontSize: '0.875rem', color: 'var(--ink)', fontWeight: 500 }}>🏢 {name}</span>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1rem' }}>
+                <div style={{ borderTop: '1px solid #e7ecf3', paddingTop: '1rem' }}>
                   <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.625rem' }}>Tashkilot qo'shish</p>
                   <div style={{ display: 'flex', gap: '0.625rem' }}>
                     <select value={attachOrgId} onChange={e => setAttachOrgId(e.target.value)} className="input-field" style={{ flex: 1 }}>
                       <option value="">— Tanlang —</option>
                       {unattachedOrgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                     </select>
-                    <button onClick={handleAttachOrg} style={{ ...S.saveBtn, padding: '0.625rem 1rem', gap: '0.375rem', fontSize: '0.8rem' }}>
+                    <button disabled={saving || !attachOrgId} onClick={handleAttachOrg} style={{ ...S.saveBtn, padding: '0.625rem 1rem', gap: '0.375rem', fontSize: '0.8rem' }}>
                       <Link size={13} /> Biriktirish
                     </button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.75rem', borderTop: '1px solid #e7ecf3' }}>
                   <button onClick={() => setEditTarget(null)} className="btn-secondary">Yopish</button>
                 </div>
               </div>
@@ -463,8 +460,8 @@ export default function Admins() {
           </>
         }
       >
-        <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
-          <span style={{ color: '#e2e8f0', fontWeight: 600 }}>"{deleteTarget?.username}"</span> adminni o'chirasizmi?
+        <p style={{ fontSize: '0.875rem', color: '#738096' }}>
+          <span style={{ color: 'var(--ink)', fontWeight: 600 }}>"{deleteTarget?.username}"</span> adminni o'chirasizmi?
         </p>
       </Modal>
     </div>

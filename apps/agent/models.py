@@ -7,6 +7,7 @@ from apps.common.models import *
 
 
 class AgentSession(models.Model):
+    request_context = models.JSONField(default=dict, blank=True)
     fingerprint_challenge = models.BinaryField(null=True, blank=True)
     fingerprint_challenge_expires = models.DateTimeField(null=True, blank=True)
     STATUS_CHOICES = [
@@ -60,3 +61,31 @@ class RequestNonce(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['certificate_id', 'nonce'], name='unique_device_request_nonce')]
+
+
+class AgentHealth(models.Model):
+    device=models.OneToOneField(Device,on_delete=models.CASCADE,related_name='agent_health')
+    last_heartbeat=models.DateTimeField()
+    last_ip=models.GenericIPAddressField(null=True,blank=True)
+    state=models.CharField(max_length=16,default='running')
+    loss_reported=models.BooleanField(default=False)
+    pause_until=models.DateTimeField(null=True,blank=True)
+
+
+class AgentEvent(models.Model):
+    organization=models.ForeignKey(Organization,on_delete=models.CASCADE)
+    device=models.ForeignKey(Device,on_delete=models.SET_NULL,null=True,blank=True)
+    device_key=models.PositiveBigIntegerField()
+    event_id=models.UUIDField(default=uuid.uuid4)
+    kind=models.CharField(max_length=40)
+    severity=models.CharField(max_length=16,default='info')
+    timestamp=models.DateTimeField(auto_now_add=True)
+    reported_at=models.DateTimeField(null=True,blank=True)
+    ip_address=models.GenericIPAddressField(null=True,blank=True)
+    device_snapshot=models.JSONField(default=dict)
+    details=models.JSONField(default=dict)
+    actor=models.CharField(max_length=255,blank=True,default='')
+
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['device_key','event_id'],name='unique_agent_event')]
+        indexes=[models.Index(fields=['organization','-timestamp'])]

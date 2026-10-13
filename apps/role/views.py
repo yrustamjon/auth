@@ -4,9 +4,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from apps.common.models import *
+from apps.common.permissions import IsWorkspaceAdmin
 
 class RoleListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsWorkspaceAdmin]
 
     def get(self, request):
         org = request.session.get("current_org_id")
@@ -33,9 +34,8 @@ class RoleListView(APIView):
         return Response({"ok": True})
     
     def patch(self, request, id):
-        role = Roles.objects.filter(id=id).first()
+        role = Roles.objects.filter(id=id,organization_id=request.session.get('current_org_id')).first()
         print("Updating role with id", id, "data:", request.data)
-        print(role.is_active)
         if not role:
             return Response({"detail": "Role not found"}, status=404)
         if "name"  in request.data:
@@ -47,7 +47,7 @@ class RoleListView(APIView):
         return Response({"ok": True})
     
     def delete(self, request, id):
-        role = Roles.objects.filter(id=id).first()
+        role = Roles.objects.filter(id=id,organization_id=request.session.get('current_org_id')).first()
         if not role:
             return Response({"detail": "Role not found"}, status=404)
         role.delete()

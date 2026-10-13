@@ -587,6 +587,7 @@
 
 </div>
 
+<script src="/static/js/client-info.js"></script>
 <script>
   // ─── Session ID ──────────────────────────────────────────────────
   const pathParts  = window.location.pathname.split('/').filter(Boolean);
@@ -716,7 +717,8 @@
         body: JSON.stringify({
           session_id: SESSION_ID,
           image:      imageB64,
-          source:     'mobile_web'
+          source:     'mobile_web',
+          client_info: window.auditClientInfo?.() || {}
         })
       });
 

@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.models import AdminUser, Device, Organization
+from apps.common.permissions import IsSystemAdmin, IsWorkspaceAdmin
 from apps.org.models import OrgToken
 
 import uuid
@@ -39,7 +40,7 @@ class SwitchOrganization(APIView):
 # ORGANIZATIONS CRUD
 # =========================
 class Organizations(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsSystemAdmin]
 
     def get(self, request, id=None):
         if id:
@@ -104,6 +105,8 @@ class Organizations(APIView):
         if slug:
             org.slug = slug
         if active is not None:
+            if org.approval_status != 'approved' and active:
+                return Response({'detail':'Registration review required'},status=409)
             org.is_active = active
 
         org.save()
@@ -122,7 +125,7 @@ class Organizations(APIView):
 # GET ACTIVE TOKEN (AUTH REQUIRED)
 # =========================
 class GetActiveToken(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsWorkspaceAdmin]
 
     def get(self, request):
         org_id = request.session.get("current_org_id")
@@ -197,15 +200,32 @@ class ActivateAgent(APIView):
             except Device.DoesNotExist:
                 return Response({"error": "Device not registered"}, status=400)
 
-            if not org_token.org.is_active or device.revoked_at is not None:
+            removed = device.removal_state == 'removed'
+            if not org_token.org.is_active or (device.revoked_at is not None and not removed):
                 return Response({'detail': 'Organization inactive or device revoked'}, status=403)
             browser_pending = device.enrollment_status == Device.EnrollmentStatus.BROWSER_APPROVED
-            if device.cert or device.device_public_key:
+            if (device.cert or device.device_public_key) and not removed:
                 return Response({'detail': 'Device already enrolled'}, status=409)
-            if not device.is_active and not browser_pending:
+            if not device.is_active and not browser_pending and not removed:
                 return Response({'detail': 'Device inactive'}, status=403)
             if device.license != license_key and not (browser_pending and device.license == 'UNKNOWN'):
                 return Response({"error": "License mismatch"}, status=400)
+
+            from apps.device.models import DeviceRemoval
+            canonical_key = key.public_bytes(serialization.Encoding.DER,
+                serialization.PublicFormat.SubjectPublicKeyInfo)
+            for archived in DeviceRemoval.objects.filter(device=device).values_list('old_public_key', flat=True):
+                if not archived:
+                    continue
+                try:
+                    archived_key = serialization.load_pem_public_key(archived.encode()).public_bytes(
+                        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+                except (ValueError, TypeError, UnsupportedAlgorithm):
+                    return Response({'detail': 'Archived key cannot be verified'}, status=409)
+                if archived_key == canonical_key:
+                    return Response({'detail': 'Previously revoked key cannot be reused'}, status=409)
+            public_key = key.public_bytes(serialization.Encoding.PEM,
+                serialization.PublicFormat.SubjectPublicKeyInfo).decode()
 
             # Conditional write is the final claim: row locks alone are not supported by SQLite.
             if OrgToken.objects.filter(pk=org_token.pk, is_used=False, expires_at__gt=timezone.now()).update(is_used=True) != 1:
@@ -220,6 +240,9 @@ class ActivateAgent(APIView):
             device.cert = cert
             device.device_public_key = public_key
             device.is_active = True
+            device.revoked_at = None
+            device.removal_state = 'active'
+            device.agent_allocation_active = True
             device.save()
 
 

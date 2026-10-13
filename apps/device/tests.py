@@ -171,14 +171,14 @@ class DevicePlatformApiTests(TestCase):
 
 class DevicePlatformUiContractTests(TestCase):
     def test_browser_approved_device_is_labeled_not_activatable_in_list(self):
-        script = (Path(settings.BASE_DIR) / "static" / "js" / "devices.js").read_text()
+        script = (Path(settings.BASE_DIR) / "static" / "js" / "devices.js").read_text(encoding='utf-8')
         self.assertIn("browser_approved", script)
-        self.assertIn("Agent key", script)
+        self.assertIn("Agent enrollment kutilmoqda", script)
         self.assertIn("escapeHtml", script)
 
     def test_devices_page_has_platform_filter_and_add_form_selector(self):
-        template = (Path(settings.BASE_DIR) / "templates" / "devices.html").read_text()
-        script = (Path(settings.BASE_DIR) / "static" / "js" / "devices.js").read_text()
+        template = (Path(settings.BASE_DIR) / "templates" / "devices.html").read_text(encoding='utf-8')
+        script = (Path(settings.BASE_DIR) / "static" / "js" / "devices.js").read_text(encoding='utf-8')
 
         self.assertIn('id="platformFilter"', template)
         self.assertIn('<option value="windows">Windows</option>', template)
@@ -190,8 +190,8 @@ class DevicePlatformUiContractTests(TestCase):
         self.assertIn('platform:          document.getElementById("platform").value', script)
 
     def test_add_form_uses_platform_specific_identifier_help(self):
-        template = (Path(settings.BASE_DIR) / "templates" / "devices.html").read_text()
-        script = (Path(settings.BASE_DIR) / "static" / "js" / "devices.js").read_text()
+        template = (Path(settings.BASE_DIR) / "templates" / "devices.html").read_text(encoding='utf-8')
+        script = (Path(settings.BASE_DIR) / "static" / "js" / "devices.js").read_text(encoding='utf-8')
 
         self.assertIn('id="licenseField"', template)
         self.assertIn('id="pcIdHint"', template)
@@ -199,7 +199,7 @@ class DevicePlatformUiContractTests(TestCase):
         self.assertIn("'UNKNOWN'", script)
 
     def test_add_form_has_platform_specific_identifier_fields(self):
-        template = (Path(settings.BASE_DIR) / "templates" / "devices.html").read_text()
+        template = (Path(settings.BASE_DIR) / "templates" / "devices.html").read_text(encoding='utf-8')
         for field_id in ("machine_guid", "product_id", "platform_uuid", "serial", "machine_id", "product_uuid"):
             self.assertIn(f'id="{field_id}"', template)
         self.assertIn('id="windowsIdentifiers"', template)
@@ -207,7 +207,7 @@ class DevicePlatformUiContractTests(TestCase):
         self.assertIn('id="linuxIdentifiers"', template)
 
     def test_target_scan_polls_for_helper_identity_every_second(self):
-        template = (Path(settings.BASE_DIR) / "templates" / "device_scan.html").read_text()
+        template = (Path(settings.BASE_DIR) / "templates" / "device_scan.html").read_text(encoding='utf-8')
         self.assertIn("timer=setTimeout(poll,1000)", template)
 
 
@@ -652,5 +652,8 @@ class NativeRegistrationScanTests(TestCase):
                     f"/api/devices/browser-enrollment/session/{payload['session_id']}/binary/linux/amd64/",
                     {"scan_token": payload["scan_token"]},
                 )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(b"".join(response.streaming_content), b"amd64-binary")
+                try:
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(b"".join(response.streaming_content), b"amd64-binary")
+                finally:
+                    response.close()

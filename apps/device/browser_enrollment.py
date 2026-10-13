@@ -238,7 +238,10 @@ chmod +x "{name}"
     with ZipFile(output, "w", compression=0) as archive:
         archive.writestr("scan.json", json.dumps(config))
         info = ZipInfo(launcher_name)
-        info.external_attr = 0o755 << 16
+        # Explicit Unix metadata: Windows-hosted ZIPs otherwise discard execute
+        # permissions when macOS Archive Utility extracts the .command file.
+        info.create_system = 3
+        info.external_attr = 0o100755 << 16
         archive.writestr(info, launcher)
     return output.getvalue()
 
@@ -246,7 +249,7 @@ chmod +x "{name}"
 def permitted_admin(admin, organization):
     if not admin.is_authenticated or not admin.is_active or not (admin.is_admin or admin.is_superadmin):
         raise EnrollmentError("UNAUTHORIZED", 403)
-    if not organization or not organization.is_active or not admin.organizations.filter(pk=organization.pk).exists():
+    if not organization or not organization.is_active or organization.approval_status != 'approved' or not admin.organizations.filter(pk=organization.pk).exists():
         raise EnrollmentError("WRONG_ORGANIZATION", 403)
 
 

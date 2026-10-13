@@ -1,7 +1,21 @@
 from django.urls import path
 from . import views
+from . import registration
+from . import downloads
+from .personal import PersonalProfile
+from .account_profile import AccountProfile, AccountPassword
 
 urlpatterns = [
+    path('api/profile/', AccountProfile.as_view()),
+    path('api/profile/password/', AccountPassword.as_view()),
+    path('api/personal/',PersonalProfile.as_view()),
+    path('api/downloads/',downloads.catalog),
+    path('api/downloads/<str:platform>/',downloads.download),
+    path('api/register/', registration.register),
+    path('api/registration/status/', registration.registration_status),
+    path('api/registration/applications/', registration.applications),
+    path('api/registration/<int:org_id>/decision/', registration.decision),
+    path('api/session/', views.frontend_session, name='frontend_session'),
     path("", views._, name="home"),
     path("login/", views.login_page, name="login"),
     path("dashboard/", views.dashboard, name="dashboard"),

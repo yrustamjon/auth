@@ -1,6 +1,6 @@
 /**
  * Device management functions
- * Fields: id, device_id, platform, location, is_active, revoked, last_seen, registered_at, public_key
+ * Fields: id, device_id, platform, location, is_active, revoked_at, last_seen, registered_at, public_key
  */
 
 
@@ -49,8 +49,8 @@ function filterDevices() {
             (statVal === 'active'   &&  d.is_active) ||
             (statVal === 'inactive' && !d.is_active);
         const matchR = !revVal ||
-            (revVal === 'revoked'   &&  d.revoked) ||
-            (revVal === 'ok'        && !d.revoked);
+            (revVal === 'revoked'   &&  d.revoked_at) ||
+            (revVal === 'ok'        && !d.revoked_at);
         return matchQ && matchPlatform && matchS && matchR;
     });
 
@@ -164,7 +164,7 @@ function displayDevices(devices, q = '') {
 
         const did = device.id;
         const activeBtn = device.enrollment_status === 'browser_approved'
-            ? `<span class="toggle-btn toggle-inactive" title="Agent public key hali bog‘lanmagan">Browser approved — Agent key kerak</span>`
+            ? `<span class="toggle-btn toggle-inactive" title="Qurilma tasdiqlangan, yakuniy Agent enrollment tugallanmagan">Agent enrollment kutilmoqda</span>`
             : device.is_active
             ? `<button class="toggle-btn toggle-active" onclick="toggleDeviceField(${did}, 'is_active', false)" title="O'chirish">
                    <i class="fas fa-check-circle"></i> Active
@@ -173,13 +173,11 @@ function displayDevices(devices, q = '') {
                    <i class="fas fa-times-circle"></i> Inactive
                </button>`;
 
-        const revokedBtn = device.revoked
-            ? `<button class="toggle-btn toggle-revoked" onclick="toggleDeviceField(${did}, 'revoked', false)" title="Tiklash">
-                   <i class="fas fa-ban"></i> Revoked
-               </button>`
-            : `<button class="toggle-btn toggle-ok" onclick="toggleDeviceField(${did}, 'revoked', true)" title="Bloklash">
-                   <i class="fas fa-shield-alt"></i> OK
-               </button>`;
+        const revokedBtn = device.enrollment_status === 'browser_approved'
+            ? `<span class="toggle-btn toggle-inactive">Enrollment tugallanmagan</span>`
+            : device.revoked_at
+            ? `<span class="toggle-btn toggle-revoked"><i class="fas fa-ban"></i> Revoked</span>`
+            : `<span class="toggle-btn toggle-ok"><i class="fas fa-shield-alt"></i> OK</span>`;
 
         row.innerHTML = `
             <td class="col-id">${device.id}</td>
@@ -206,7 +204,7 @@ function displayDevices(devices, q = '') {
     });
 }
 
-// ── Toggle field (is_active yoki revoked) ─────────────────────
+// ── Toggle active field ────────────────────────────────────────
 async function toggleDeviceField(deviceId, field, value) {
     try {
         const res = await fetchWithAuth(`/api/devices/${deviceId}/`, {
@@ -288,7 +286,6 @@ async function editDevice(deviceId) {
             document.getElementById('machine_guid').value = device.pc_id;
         }
         document.getElementById('is_active').checked           = device.is_active;
-        document.getElementById('revoked').checked             = device.revoked;
         syncPlatformFields();
 
         document.getElementById('deviceModal').style.display = 'flex';
@@ -340,7 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('deviceForm').reset();
         document.getElementById('deviceId').value    = '';
         document.getElementById('is_active').checked = true;
-        document.getElementById('revoked').checked   = false;
         syncPlatformFields();
         document.getElementById('deviceModal').style.display = 'flex';
     });
@@ -364,7 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 : 'UNKNOWN',
             identifiers:       selectedIdentifiers(document.getElementById('platform').value),
             is_active:         document.getElementById('is_active').checked,
-            revoked:           document.getElementById('revoked').checked,
         };
 
         if (!data.pc_id || !data.location || Object.values(data.identifiers).some(value => !value)

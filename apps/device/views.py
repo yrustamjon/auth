@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated,AllowAny
 
 
 from apps.common.models import *
+from apps.common.permissions import IsWorkspaceAdmin
 
 
 def _platform_or_error(value):
@@ -41,7 +42,7 @@ def _identifiers_or_error(value, platform, pc_id, license_value):
 
 
 class DeviceView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsWorkspaceAdmin]
 
     def get(self, request):
         org = request.session.get("current_org_id")
@@ -58,6 +59,8 @@ class DeviceView(APIView):
                 "location": device.location,
                 "last_seen": device.last_seen,
                 "is_active": device.is_active,
+                "removal_state": device.removal_state,
+                "agent_allocation_active": device.agent_allocation_active,
                 "registered_at": device.registered_at,
                 "device_public_key": device.device_public_key,
                 "public_key": device.public_key,
@@ -127,6 +130,9 @@ class DeviceView(APIView):
         device.location = request.data.get("location", device.location)
         device.platform = new_platform
         device.identifiers = identifiers
+        if device.cert or device.removal_state != 'active' or device.revoked_at:
+            return Response({'detail': 'Enrolled device identity cannot be edited'}, status=409)
+
         pub_key = request.data.get("public_key", request.data.get("device_public_key"))
 
         if pub_key is not None:
@@ -144,6 +150,9 @@ class DeviceView(APIView):
         if device.enrollment_status == Device.EnrollmentStatus.BROWSER_APPROVED:
             return Response({"error": "Agent enrollment required"}, status=409)
         
+        if device.removal_state != 'active' or device.revoked_at:
+            return Response({'detail': 'Use fresh activation after authorized removal'}, status=409)
+
         if "is_active" in request.data:
             device.is_active = request.data.get("is_active", device.is_active)
         
@@ -156,7 +165,7 @@ class DeviceView(APIView):
         if not device:
             return Response({"error": "Device not found"}, status=404)
         
-        device.delete()
+        return Response({'detail': 'Use the device-specific online removal workflow; audit records are retained.'}, status=409)
         return Response({"ok": True})
 
 

@@ -93,3 +93,26 @@ class BrowserEnrollmentAttempt(models.Model):
     creator_session_hash = models.CharField(max_length=64)
     source_ip = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DeviceRemovalCode(models.Model):
+    device = models.ForeignKey('common.Device', on_delete=models.PROTECT, related_name='removal_codes')
+    issuer = models.ForeignKey('common.AdminUser', on_delete=models.SET_NULL, null=True)
+    certificate_generation = models.CharField(max_length=255, blank=True)
+    code_digest = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    invalidated_at = models.DateTimeField(null=True, blank=True)
+
+
+class DeviceRemoval(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device = models.ForeignKey('common.Device', on_delete=models.PROTECT, related_name='removal_operations')
+    issuer = models.ForeignKey('common.AdminUser', on_delete=models.SET_NULL, null=True)
+    old_certificate = models.CharField(max_length=255, blank=True)
+    old_public_key = models.TextField(blank=True)
+    recovery_public_key = models.TextField()
+    state = models.CharField(max_length=24, default='removal_pending', choices=[('removal_pending', 'Removal pending'), ('removed', 'Removed')])
+    started_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)

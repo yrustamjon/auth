@@ -1,0 +1,9 @@
+# Personal user UI — approved bounded change
+
+User approved: account details → PC identification → create account → biometrics → download and activate Agent. Personal navigation consists of My computer, My biometrics and My access history; organization FK model remains. Company signup and administrator flow remain available for company workspaces.
+
+Implementation: registration wizard with account fields first and account submission after completed helper scan; personal profile API checks active membership and registered owner, returning own biometric profile/device info and own last 100 access events; personal routes and menu; biometric modal reuses working APIs; actual Agent download and activation-token reveal/copy on computer page, only after biometrics ready. No credential storage in browser storage, fetch token on demand. Device activation status polls existing backend data. Personal/company route choice enforces appropriate UI and login continuation.
+
+Verification: UI wizard/navigation/biometric modal/activation token/mobile tests; profile ownership/login backend tests; existing full test suites, lint and production build. Final independent review and visual inspection. No schema changes required.
+
+Completed: 83 Django tests, 22 browser tests and 11 Node tests pass. Fresh lint/build and focused personal tests pass. Desktop/mobile personal UI screenshots inspected. Local backend restarted to load new profile routes. Independent final review: no Critical/Important findings. Minor login continuation may briefly select a company route before the guard sends a personal account to its correct personal route; no access is granted. Physical biometric capture and Agent installation remain outside browser fixture verification. Token lives only in component state and is cleared when changing personal sections.

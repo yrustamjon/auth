@@ -1,0 +1,27 @@
+import { useEffect, useRef, useState } from 'react';
+import { ShieldCheck, Monitor, Download, RefreshCw } from 'lucide-react';
+import { getSession } from '../api/auth';
+import { createEnrollment, enrollmentStatus, enrollmentHelper, cancelEnrollment } from '../api/enrollment';
+import { isTerminalEnrollment } from '../api/enrollment-state';
+import { errorMessage } from '../api/contracts';
+const statusText={approved:'Qurilma tasdiqlandi. Endi Agent ulanishini yakunlang.',rejected:'Administrator qurilmani rad etdi.',cancelled:'Sessiya bekor qilindi.',expired:'QR muddati tugadi. Yangi sessiya yarating.'};
+export default function DeviceScan({ embedded=false, onIdentity }) {
+ const [session,setSession]=useState(null); const [busy,setBusy]=useState(false); const [error,setError]=useState('');const [downloaded,setDownloaded]=useState(false);
+ const [platform,setPlatform]=useState(()=>{const p=navigator.userAgent.toLowerCase();return p.includes('win')?'windows':p.includes('mac')?'macos':'linux';});
+ const [arch,setArch]=useState('amd64'); const current=useRef(null); const mounted=useRef(true);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ const sessionId=session?.session_id, sessionStatus=session?.status;
+ useEffect(()=>{onIdentity?.(session?.identity_ready && sessionStatus==='pending' ? sessionId : null);},[session?.identity_ready,sessionStatus,sessionId,onIdentity]);
+ useEffect(()=>{
+  if(!sessionId || isTerminalEnrollment(sessionStatus))return;
+  let stop=false,timer;
+  async function poll(){try{const res=await enrollmentStatus(sessionId);if(stop)return;setSession(p=>({...p,...res.data}));setError('');if(!isTerminalEnrollment(res.data.status))timer=setTimeout(poll,2000);}catch(e){if(stop)return;setError(errorMessage(e));timer=setTimeout(poll,5000);}}
+  timer=setTimeout(poll,2000);return()=>{stop=true;clearTimeout(timer);};
+ },[sessionId,sessionStatus]);
+ async function start(){setBusy(true);setError('');try{await getSession();const r=await createEnrollment();if(!mounted.current)return;current.current=r.data;setSession(r.data);setDownloaded(false);}catch(e){setError(errorMessage(e));}finally{if(mounted.current)setBusy(false);}}
+ async function download(){setBusy(true);setError('');try{const r=await enrollmentHelper(session.session_id,platform,current.current.scan_token,arch);const url=URL.createObjectURL(r.data);const a=document.createElement('a');a.href=url;a.download='adauth-registration-'+platform+'.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setDownloaded(true);}catch(e){let message=errorMessage(e);if(e.response?.data instanceof Blob){try{message=JSON.parse(await e.response.data.text()).error || message;}catch{}}setError(message);}finally{setBusy(false);}}
+ async function cancel(){setBusy(true);try{const r=await cancelEnrollment(session.session_id);setSession(p=>({...p,...r.data}));}catch(e){setError(errorMessage(e));}finally{setBusy(false);}}
+ return <div className={embedded ? "registration-device" : "public-page"}><div className="brand justify-center"><span className="brand-mark"><ShieldCheck size={24}/></span><span>AD<span className="brand-accent">Auth</span></span></div><section className="public-card"><div className="eyebrow">QURILMANI ULASH</div><h1>Kompyuterni ro‘yxatdan o‘tkazing</h1><p>Bu sahifani ulanishi kerak bo‘lgan kompyuterda oching. Avval yordamchi paketni yuklab, ishga tushiring. {embedded ? ' PC aniqlangach, hisob yaratishni davom ettiring.' : ' Keyin administrator QR kod orqali tasdiqlaydi.'}</p>{error&&<div className="alert-error" role="alert">{error}</div>}
+ {!session||isTerminalEnrollment(session.status)?<><div className="panel mt-5"><Monitor size={24}/><p>{session?statusText[session.status]:'Kompyuter ma’lumotlari yordamchi dastur orqali aniqlanadi.'}</p></div><button className="btn-primary mt-5" disabled={busy} onClick={start}><RefreshCw size={16}/>{busy?'Yaratilmoqda...':'Yangi ulanishni boshlash'}</button></>:<><div className="field-stack mt-5"><label>Tizim<select className="input-field" value={platform} onChange={e=>setPlatform(e.target.value)}><option value="windows">Windows</option><option value="macos">macOS</option><option value="linux">Linux</option></select></label><label>Protsessor<select className="input-field" value={arch} onChange={e=>setArch(e.target.value)}><option value="amd64">Intel / AMD (x64)</option><option value="arm64">ARM64 / Apple Silicon</option></select></label></div><button className="btn-primary mt-5" disabled={busy} onClick={download}><Download size={16}/>{downloaded?'Yordamchini qayta yuklash':'Yordamchi paketni yuklash'}</button><p role="status">{session.identity_ready?(embedded?'Kompyuter aniqlandi. Endi Hisob yaratish tugmasini bosing.':'Kompyuter aniqlandi. Administrator quyidagi QR kodni skanerlasin.'):downloaded?'Paketni ochib yordamchi dasturni ishga tushiring. Kompyuter ma’lumotlari kutilmoqda...':'Yordamchi paketni yuklab oling.'}</p>{session.identity_ready&&!embedded&&<><div className="qr-image" dangerouslySetInnerHTML={{__html:session.qr_svg}}/><div className="display-code">{session.display_code}</div><p className="text-center">Ikkala ekrandagi kod bir xil bo‘lishi kerak.</p></>}<p>Muddati: {new Date(session.expires_at).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})}</p><button className="btn-secondary" disabled={busy} onClick={cancel}>Bekor qilish</button></>}</section></div>;
+}
+

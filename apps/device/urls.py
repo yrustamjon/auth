@@ -1,8 +1,20 @@
 from django.urls import path
 from . import views
 from . import browser_views
+from . import frontend_views
+
+from .removal_views import IssueRemovalCode, RemovalAction, InstallStatus, ActivationStatus
 
 urlpatterns = [
+    path('api/devices/<int:device_id>/removal-code/', IssueRemovalCode.as_view()),
+    path('api/agent/removal/check/', RemovalAction.as_view(action='check')),
+    path('api/agent/removal/begin/', RemovalAction.as_view(action='begin')),
+    path('api/agent/removal/status/', RemovalAction.as_view(action='status')),
+    path('api/agent/removal/complete/', RemovalAction.as_view(action='complete')),
+    path('api/agent/install/status/', InstallStatus.as_view()),
+    path('api/agent/activate/status/', ActivationStatus.as_view()),
+    path('api/devices/browser-enrollment/claim/', frontend_views.claim_json),
+    path('api/devices/browser-enrollment/approval/', frontend_views.approval_json),
     path('device/scan', browser_views.scan_page, name='device_scan'),
     path('device-enroll/<str:token>', browser_views.qr_entry, name='device_enroll_entry'),
     path('device-enroll/approval/', browser_views.approval_page, name='device_enroll_approval'),

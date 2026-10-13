@@ -1,0 +1,119 @@
+name: Build BioGuard Installer
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Kodni yuklab olish
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Python 3.11 o'rnatish
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        architecture: 'x64'
+
+    - name: Kutubxonalar o'rnatish
+      run: |
+        pip install -r requirements.txt pyinstaller
+
+    - name: Agent regression tests on Windows
+      run: python -m unittest discover -v
+
+    - name: Build separate LocalService executable
+      run: python -m PyInstaller builders/windows/bioguard-service.spec --noconfirm
+
+    - name: Icon yaratish
+      run: |
+        python -c "
+        from PIL import Image, ImageDraw
+        img = Image.new('RGBA', (256,256), (4,8,18,255))
+        d = ImageDraw.Draw(img)
+        d.ellipse([40,40,216,216], fill=(0,180,255,255))
+        d.ellipse([80,80,176,176], fill=(4,8,18,255))
+        d.rectangle([120,90,136,166], fill=(0,180,255,255))
+        img.save('icon.ico', format='ICO', sizes=[(256,256),(128,128),(64,64),(32,32),(16,16)])
+        print('icon.ico yaratildi')
+        "
+
+    - name: QRCode.js kutubxonasini yuklab olish
+      run: |
+        curl -L "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" -o ui/qrcode.min.js
+        python -c "import os; print('qrcode.min.js:', os.path.getsize('ui/qrcode.min.js'), 'bytes')"
+
+    - name: PyInstaller bilan EXE yaratish
+      run: |
+        pyinstaller builders/windows/bioguard.spec --noconfirm
+
+    - name: Build standalone pre-copy activation and removal helper
+      run: python -m PyInstaller builders/windows/bioguard-lifecycle.spec --noconfirm
+
+    - name: Inno Setup o'rnatish
+      run: |
+        choco install innosetup --no-progress -y
+
+    - name: Installer yaratish
+      run: |
+        $agentVersion = (Get-Content releases/windows/VERSION -Raw).Trim()
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$agentVersion" builders/windows/bioguard_installer.iss
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Compile explicit disposable VM service installer
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" builders/windows/bioguard_service_vm.iss
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Upload VM service package (not native login enforcement)
+      uses: actions/upload-artifact@v4
+      with:
+        name: BioGuard-Authority-VM-test-${{ github.run_id }}
+        path: installer_output/BioGuard_Service_VM_*.exe
+        if-no-files-found: error
+
+    - name: OS va versiya bo'yicha arxivlash
+      run: |
+        $agentVersion = (Get-Content releases/windows/VERSION -Raw).Trim()
+        $agentReleaseFolder = python builders/archive_package.py --os windows --file "installer_output/BioGuard_Setup_v$agentVersion.exe"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        "AGENT_VERSION=$agentVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "AGENT_RELEASE_FOLDER=$agentReleaseFolder" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Tayyor faylni yuklash
+      uses: actions/upload-artifact@v4
+      with:
+        name: BioGuard-windows-${{ env.AGENT_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: releases/windows/*/
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: GitHub Releases ga installer chiqarish
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python builders/publish_release.py --folder "$env:AGENT_RELEASE_FOLDER" --update-catalog
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Versiya papkasini Git repositoryga saqlash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -- "$env:AGENT_RELEASE_FOLDER" releases/README.md
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        git commit -m "Archive Windows v$env:AGENT_VERSION package [skip ci]"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        git fetch origin "${{ github.ref_name }}"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        git rebase "origin/${{ github.ref_name }}"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        git push origin "HEAD:${{ github.ref_name }}"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

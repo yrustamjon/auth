@@ -129,6 +129,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'apps.common.middleware.SessionHijackProtectionMiddleware',
+    'apps.common.frontend.FrontendMiddleware',
 ]
 
 
@@ -184,7 +185,23 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LOGIN_URL = '/login/'
 PUBLIC_SITE_URL = os.environ.get('PUBLIC_SITE_URL', 'http://localhost:8000').rstrip('/')
+SERVE_FRONTEND = os.environ.get('SERVE_FRONTEND', '1') == '1'
+FRONTEND_DIST_DIR = BASE_DIR / 'frontend' / 'dist'
+# Ngrok terminates HTTPS before forwarding to this local server.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+AUDIT_TRUSTED_PROXY_IPS = [value.strip() for value in os.environ.get('AUDIT_TRUSTED_PROXY_IPS', '').split(',') if value.strip()]
+CELERY_BEAT_SCHEDULE = {
+    **globals().get('CELERY_BEAT_SCHEDULE', {}),
+    'agent-health-every-minute': {'task': 'agent.check_health', 'schedule': 60.0},
+}
+from urllib.parse import urlsplit
+_public_address = urlsplit(PUBLIC_SITE_URL)
+if _public_address.scheme in ('http', 'https') and _public_address.netloc:
+    _public_origin = f'{_public_address.scheme}://{_public_address.netloc}'
+    CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([*CSRF_TRUSTED_ORIGINS, _public_origin]))
+    CORS_ALLOWED_ORIGINS = list(dict.fromkeys([*CORS_ALLOWED_ORIGINS, _public_origin]))
 DEVICE_REGISTRATION_HELPER_DIR = BASE_DIR / 'registration-helper' / 'dist'
+AGENT_RELEASE_DIR = Path(os.environ.get('AGENT_RELEASE_DIR', str(BASE_DIR.parent / 'agent' / 'releases')))
 LOGIN_REDIRECT_URL = '/dashboard/'
 
 LOGOUT_REDIRECT_URL = '/login/'

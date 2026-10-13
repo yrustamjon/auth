@@ -1,45 +1,28 @@
 import axios from 'axios';
-
-const client = axios.create({
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Helper to get a cookie value by name
-function getCookie(name) {
+import { shouldRedirectUnauthorized } from './contracts.js';
+const client = axios.create({ withCredentials:true, headers:{'Content-Type':'application/json'} });
+function cookie(name) {
   if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
+  const part = document.cookie.split('; ').find(item => item.startsWith(name + '='));
+  return part ? decodeURIComponent(part.slice(name.length+1)) : null;
 }
-
-// Request interceptor — attach CSRF token header
-client.interceptors.request.use((config) => {
-  const csrfToken = getCookie('csrftoken');
-  if (csrfToken) {
-    config.headers['X-CSRFToken'] = csrfToken;
-  }
+client.interceptors.request.use(config => {
+  const token = cookie('csrftoken');
+  if (token) config.headers['X-CSRFToken'] = token;
   return config;
 });
-
-// Response interceptor — handle 401 globally
-client.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Determine redirect based on current path
-      const path = window.location.pathname;
-      if (path.startsWith('/system')) {
-        window.location.href = '/system/login';
-      } else {
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
+let sessionCheck = null;
+client.interceptors.response.use(response => response, async error => {
+  if (shouldRedirectUnauthorized(error.response?.status, error.config?.url, window.location.pathname)) window.location.assign(window.location.pathname.startsWith('/system') ? '/system/login' : '/login');
+  // DRF SessionAuthentication uses 403 for anonymous requests as well.
+  // Verify the session so genuine permission failures do not cause logout.
+  if (error.response?.status === 403 && error.config?.url !== '/api/session/' && !/\/login\/?$/.test(error.config?.url || '') && !window.location.pathname.includes('login') && !/^\/(device|mobile)/.test(window.location.pathname)) {
+    try {
+      sessionCheck ??= client.get('/api/session/').finally(() => { sessionCheck = null; });
+      const response = await sessionCheck;
+      if (!response.data.authenticated) window.location.assign(window.location.pathname.startsWith('/system') ? '/system/login' : '/login');
+    } catch { /* Preserve the original error when the session check is offline. */ }
   }
-);
-
+  return Promise.reject(error);
+});
 export default client;

@@ -75,14 +75,17 @@ class DeviceSignatureMiddleware:
 
     def __call__(self,request):
         desktop=(request.path.startswith('/api/agent/') or request.path == '/api/face/agent/check/')
-        bootstrap=request.path == '/api/agent/activate/'
+        bootstrap=request.path in {'/api/agent/activate/', '/api/agent/activate/status/'}
         phone='/phone/submit/' in request.path
         if bootstrap:
             _ = request.body  # Cache exact bytes before DRF parses its data stream.
-        if desktop and not bootstrap and not phone:
+        removal = request.path in {f'/api/agent/removal/{action}/' for action in ('check', 'begin', 'status', 'complete')}
+        if removal:
+            _ = request.body  # Removal views verify their own scoped proofs.
+        if desktop and not bootstrap and not phone and not removal:
             try:
                 certificate=request.headers.get('X-Cert-ID','')
-                device=Device.objects.select_related('organization').filter(cert=certificate).first() if certificate else None
+                device=Device.objects.select_related('organization__registration_owner').filter(cert=certificate).first() if certificate else None
                 if device is None or not device.device_public_key:
                     raise AuthenticationFailure()
                 nonce,expiry=verify_signature(request,device.device_public_key,device.pc_id,device.cert)
@@ -100,6 +103,14 @@ class DeviceSignatureMiddleware:
                     if name in payload and payload[name] != device.pc_id:
                         raise AuthenticationFailure(403)
                 username=payload.get('username')
+                if device.organization.kind == 'personal':
+                    owner = device.organization.registration_owner
+                    if not owner or not owner.is_active:
+                        raise AuthenticationFailure(403)
+                    username = owner.username
+                    # Resolve only from the signed certificate's workspace. The
+                    # supplied Windows account cannot choose a biometric user.
+                    request.bioguard_username = username
                 if username is not None and not Users.objects.filter(organization=device.organization,username=username,status=True).exists():
                     raise AuthenticationFailure(403)
                 session_id=payload.get('session_id')

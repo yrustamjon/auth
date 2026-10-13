@@ -430,6 +430,7 @@
 
 </div>
 
+<script src="/static/js/client-info.js"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -591,6 +592,7 @@
       },
       body: JSON.stringify({
         credential_id: credential.id,
+        client_info: window.auditClientInfo?.() || {},
         rawId: base64url(credential.rawId),
         clientDataJSON: base64url(credential.response.clientDataJSON),
         authenticatorData: base64url(credential.response.authenticatorData),

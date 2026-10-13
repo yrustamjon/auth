@@ -1,4 +1,4 @@
-import client from './client';
+import client from './client.js';
 
 // Organizations
 export const getOrganizations = () => client.get('/api/organizations/');
@@ -14,6 +14,5 @@ export const createSystemAdmin = (data) => client.post('/api/system/admins/', da
 export const updateSystemAdmin = (id, data) => client.patch(`/api/system/admins/${id}/`, data);
 export const deleteSystemAdmin = (id) => client.delete(`/api/system/admins/${id}/`);
 export const forceLogoutAdmin = (id) => client.post(`/api/system/admins/${id}/force-logout/`);
-export const attachAdminToOrg = (adminId, orgId) => client.patch(`/api/system/admins/${adminId}/`, { organization_id: orgId });
-export const resetAdminAttempts = (id) => client.post(`/api/system/admins/${id}/reset-attempts/`);
+export const attachAdminToOrg = (adminId, orgId) => client.patch(`/api/system/admins/${adminId}/`, {}, { params: { organization_id: orgId } });
 export const toggleAdminLock = (id, locked) => client.patch(`/api/system/admins/${id}/`, { locked });

@@ -1,53 +1,22 @@
-from django.shortcuts import render
+from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from apps.common.permissions import IsWorkspaceAdmin
 
-from apps.common.models import *
+from apps.common.models import AccessLogs
+from .audit import serialize_log
 
 # timestamp, user, device, success, cause
 
 class LogView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsWorkspaceAdmin]
 
     def get(self, request):
-        org = request.session.get("current_org_id")
-        query = request.query_params
-        try:
-            if query:
-                start_date = query.get("start_date")
-                end_date = datetime.now()
-                logs = AccessLogs.objects.filter(
-                    organization_id=org,
-                    timestamp__range=[start_date, end_date]
-                ).order_by("-timestamp").all()
-                print(logs)
-            else:
-                logs = AccessLogs.objects.filter(organization_id=org).order_by("-timestamp").all()
-                print(logs)
-        except Exception as e:
-            try:
-                if query.get("start_date"):
-                    start_date = query.get("start_date")
-                    logs = AccessLogs.objects.filter(
-                        organization_id=org,
-                        timestamp__gte=start_date
-                    ).order_by("-timestamp").all()
-                    print(logs)
-                else:
-                    logs = AccessLogs.objects.filter(organization_id=org).order_by("-timestamp").all()
-                    print(logs)
-            except Exception as e2:
-                print(f"Error filtering logs: {e2}")
-        
-        data=[
-            {
-                "id":           log.id,
-                "timestamp":    log.timestamp,
-                "success":      log.success,
-                "cause":        log.cause,
-                "user_fio":     log.user.fio      if log.user   else "Noma'lum",
-                "device_pc_id": log.device.pc_id  if log.device else "Noma'lum",
-            } for log in logs
-        ]
-        return Response({"logs": data})
+        logs=AccessLogs.objects.filter(organization_id=request.session.get('current_org_id')).select_related('user','device').order_by('-timestamp')
+        start=request.query_params.get('start_date')
+        if start:
+            try:value=parse_datetime(start) or parse_date(start)
+            except ValueError:value=None
+            if value is None:return Response({'detail':'start_date formati noto‘g‘ri'},status=400)
+            logs=logs.filter(timestamp__gte=value)
+        return Response({"logs": [serialize_log(log) for log in logs]})

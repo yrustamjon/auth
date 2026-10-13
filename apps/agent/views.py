@@ -29,6 +29,7 @@ from apps.common.models import (
 )
 
 logger = logging.getLogger(__name__)
+from apps.log.audit import write_access_log, request_snapshot
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -37,7 +38,11 @@ logger = logging.getLogger(__name__)
 
 def _body(request):
     try:
-        return json.loads(request.body)
+        data = json.loads(request.body)
+        canonical = getattr(request, 'bioguard_username', None)
+        if isinstance(data, dict) and canonical is not None and 'username' in data:
+            data['username'] = canonical
+        return data
     except Exception:
         return {}
 
@@ -65,19 +70,13 @@ def _get_session(session_id):
     return session
 
 
-def _write_log(session, device, success, cause=""):
+def _write_log(session, device, success, cause="", *, request=None, client_info=None):
     """
     AccessLogs jadvaliga yozuvchi yordamchi funksiya.
     session.user, device, organization avtomatik olinadi.
     """
     try:
-        AccessLogs.objects.create(
-            organization=device.organization,
-            user=session.user,
-            device=device,
-            success=success,
-            cause=cause,
-        )
+        return write_access_log(session,device,success,cause,request=request,client_info=client_info)
     except Exception as e:
         logger.error("[access_log] yozishda xato: %s", e)
 
@@ -135,7 +134,7 @@ def agent_session_start(request):
 
     AgentSession.objects.filter(user=user, status="pending").update(status="expired")
 
-    session = AgentSession.objects.create(user=user, device=device)
+    session = AgentSession.objects.create(user=user, device=device, request_context=request_snapshot(request,data.get('client_info')))
     # device ni session ga biriktiramiz — log uchun kerak bo'ladi
     session._device = device          # ← vaqtinchalik atribut (DB saqlashsiz)
 
@@ -182,7 +181,7 @@ def face_agent_check(request):
     face_records = BiometricFace.objects.filter(user=session.user)
     if not face_records.exists():
         if device:
-            _write_log(session, device, success=False, cause="Bazada yuz yo'q")   # ← LOG
+            _write_log(session, device, success=False, cause="Bazada yuz yo'q",request=request,client_info=data.get('client_info'))
         return _ok({"status": "failed", "detail": "Bazada yuz yo'q"})
 
     # ── 2. Base64 decode ──────────────────────────────────────────
@@ -200,7 +199,7 @@ def face_agent_check(request):
         incoming_bytes = extract_embedding(tmp_path)
     except Exception as e:
         if device:
-            _write_log(session, device, success=False, cause=f"Yuz topilmadi: {e}")  # ← LOG
+            _write_log(session, device, success=False, cause=f"Yuz topilmadi: {e}",request=request,client_info=data.get('client_info'))
         return _ok({"status": "failed", "detail": f"Yuz topilmadi: {e}"})
     finally:
         if tmp_path and os.path.exists(tmp_path):
@@ -232,6 +231,7 @@ def face_agent_check(request):
                 session, device,
                 success=False,
                 cause=f"Yuz tanilmadi (similarity={best_similarity:.4f})",
+                request=request,client_info=data.get('client_info'),
             )
         return _ok({
             "status":     "failed",
@@ -251,7 +251,7 @@ def face_agent_check(request):
     session.save(update_fields=["status"])
 
     if device:
-        _write_log(session, device, success=True, cause="Yuz tasdiqlandi")        # ← LOG
+        _write_log(session, device, success=True, cause=f"Yuz tasdiqlandi (similarity={best_similarity:.4f})",request=request,client_info=data.get('client_info'))
 
     logger.info("[face_agent_check] VERIFIED user=%s id=%s", username, session_id)
     return _ok({
@@ -285,12 +285,12 @@ def face_phone_submit(request, session_id):
         return _ok({"status": "completed"})
 
     # Device — session.user ga biriktirilgan birinchi device
-    device = Device.objects.filter(organization=session.user.organization).first()
+    device = session.device
 
     face_records = BiometricFace.objects.filter(user=session.user)
     if not face_records.exists():
         if device:
-            _write_log(session, device, success=False, cause="Bazada yuz yo'q")   # ← LOG
+            _write_log(session, device, success=False, cause="Bazada yuz yo'q",request=request,client_info=data.get('client_info'))
         return _ok({"status": "failed", "detail": "Bazada yuz yo'q"})
 
     try:
@@ -307,7 +307,7 @@ def face_phone_submit(request, session_id):
     except Exception as e:
         logger.warning("[face_phone_submit] embedding xato: %s  id=%s", e, session_id)
         if device:
-            _write_log(session, device, success=False, cause=f"Yuz topilmadi: {e}")  # ← LOG
+            _write_log(session, device, success=False, cause=f"Yuz topilmadi: {e}",request=request,client_info=data.get('client_info'))
         return _ok({"status": "failed", "detail": f"Yuz topilmadi: {e}"})
     finally:
         if tmp_path and os.path.exists(tmp_path):
@@ -336,6 +336,7 @@ def face_phone_submit(request, session_id):
                 session, device,
                 success=False,
                 cause=f"Yuz tanilmadi (similarity={best_similarity:.4f})",
+                request=request,client_info=data.get('client_info'),
             )
         return _ok({
             "status":     "failed",
@@ -353,7 +354,7 @@ def face_phone_submit(request, session_id):
     session.save(update_fields=["status"])
 
     if device:
-        _write_log(session, device, success=True, cause="Yuz tasdiqlandi (telefon)")  # ← LOG
+        _write_log(session, device, success=True, cause=f"Yuz tasdiqlandi (telefon) (similarity={best_similarity:.4f})",request=request,client_info=data.get('client_info'))
 
     logger.info("[face_phone_submit] COMPLETED  id=%s", session_id)
     return _ok({
@@ -393,11 +394,14 @@ def fingerprint_phone_submit(request, session_id):
     try:
         if request.method=='GET':return _ok(options(session))
         if request.method!='POST':return _err('Method not allowed',status=405)
-        authenticate(session,_body(request))
+        data=_body(request)
+        authenticate(session,data)
     except (ValueError,TypeError,WebAuthnException):
+        _write_log(session,device,False,'Biometrik tasdiqlash rad etildi',request=request,client_info=data.get('client_info') if 'data' in locals() else None)
         return _err('WebAuthn assertion rejected',status=400)
     except OperationalError:
         return _err('Authentication database busy',status=503)
+    _write_log(session,device,True,'Biometrik tasdiqlash muvaffaqiyatli',request=request,client_info=data.get('client_info'))
     return _ok({'status':'completed'})
 
 # ─────────────────────────────────────────────────────────────────
@@ -450,7 +454,7 @@ class DeviceStatusView(APIView):
 
     def get(self, request):
         pc_id = (request.GET.get("pc_id") or "").strip()
-        username = (request.GET.get("username") or "").strip()
+        username = (getattr(request, "bioguard_username", None) or request.GET.get("username") or "").strip()
 
         if not pc_id:
             return Response({"status": "blocked_device", "detail": "pc_id required"}, status=400)

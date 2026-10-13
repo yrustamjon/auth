@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Search, Eye, Ban, CheckCircle, LogOut, UserPlus } from 'lucide-react';
 import Table from '../../components/Table';
 import Badge from '../../components/Badge';
@@ -7,35 +7,35 @@ import {
   getOrganizations, getOrganization, createOrganization, updateOrganization, deleteOrganization,
   getOrgAdmins, getSystemAdmins, forceLogoutAdmin, attachAdminToOrg,
 } from '../../api/superadmin';
-import { useSystemToast } from '../../layouts/SystemLayout';
+import { useSystemToast } from '../../contexts/toast';
 
 const emptyForm = { name: '', slug: '', active: true };
 
 const S = {
-  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1rem', marginBottom: '1.5rem' },
-  statCard: { borderRadius: '1rem', padding: '1.25rem 1.5rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(135px,1fr))', gap: '1rem', marginBottom: '1.5rem' },
+  statCard: { borderRadius: '1rem', padding: '1.25rem 1.5rem', background: '#ffffff', border: '1px solid #e7ecf3', display: 'flex', flexDirection: 'column', gap: '0.5rem' },
   statLabel: { fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  statValue: { fontSize: '1.75rem', fontWeight: 700, color: '#f1f5f9', lineHeight: 1 },
+  statValue: { fontSize: '1.75rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 },
   pageTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' },
-  right: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  searchBox: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' },
-  searchInput: { background: 'transparent', border: 'none', outline: 'none', color: '#cbd5e1', fontSize: '0.875rem', width: '192px' },
-  tableWrap: { borderRadius: '1rem', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' },
-  addBtn: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', boxShadow: '0 4px 14px rgba(139,92,246,0.35)' },
-  saveBtn: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
+  right: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', maxWidth: '100%' },
+  searchBox: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.75rem', background: '#ffffff', border: '1px solid #e7ecf3' },
+  searchInput: { background: 'transparent', border: 'none', outline: 'none', color: '#46566e', fontSize: '0.875rem', width: '192px' },
+  tableWrap: { borderRadius: '1rem', overflow: 'hidden', background: '#ffffff', border: '1px solid #e7ecf3' },
+  addBtn: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', background: '#2563eb', boxShadow: '0 3px 7px #2563eb18' },
+  saveBtn: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', background: '#2563eb' },
   actionBtn: { padding: '6px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', transition: 'all 0.2s', display: 'flex', alignItems: 'center' },
   label: { display: 'block', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' },
   detailRow: { display: 'flex', gap: '0.5rem', marginBottom: '0.375rem', fontSize: '0.875rem' },
   detailKey: { color: '#64748b', minWidth: '100px' },
-  detailVal: { color: '#e2e8f0', fontWeight: 500 },
-  sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  detailVal: { color: 'var(--ink)', fontWeight: 500 },
+  sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e7ecf3' },
 };
 
 function StatCard({ label, value, color }) {
   return (
     <div style={S.statCard}>
       <span style={S.statLabel}>{label}</span>
-      <span style={{ ...S.statValue, color: color || '#f1f5f9' }}>{value}</span>
+      <span style={{ ...S.statValue, color: color || 'var(--ink)' }}>{value}</span>
     </div>
   );
 }
@@ -62,7 +62,7 @@ export default function Organizations() {
   const [attaching, setAttaching] = useState(false);
 
   const load = async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await getOrganizations();
       const data = Array.isArray(res.data) ? res.data : (res.data?.organizations ?? []);
@@ -113,7 +113,7 @@ export default function Organizations() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || !form.slug.trim()) { toast('Nom va slugni kiriting', 'error'); return; }
     setSaving(true);
     try {
       if (modal.mode === 'create') {
@@ -178,19 +178,19 @@ export default function Organizations() {
     },
     {
       key: 'name', label: 'Tashkilot',
-      render: (v, row) => (
+      render: v => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'white', flexShrink: 0, background: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'white', flexShrink: 0, background: '#2563eb' }}>
             {(v || '?')[0].toUpperCase()}
           </div>
-          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#e2e8f0' }}>{v}</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--ink)' }}>{v}</span>
         </div>
       ),
     },
     {
       key: 'slug', label: 'Slug',
       render: v => v
-        ? <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontFamily: 'monospace', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '6px' }}>{v}</span>
+        ? <span style={{ fontSize: '0.8rem', color: '#738096', fontFamily: 'monospace', background: '#f5f7fb', padding: '2px 8px', borderRadius: '6px' }}>{v}</span>
         : <span style={{ color: '#334155' }}>—</span>,
     },
     {
@@ -200,7 +200,7 @@ export default function Organizations() {
     {
       key: 'admin_count', label: 'Adminlar',
       render: v => (
-        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,0.12)' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, color: '#2563eb', background: '#edf3ff' }}>
           {v ?? 0}
         </span>
       ),
@@ -219,13 +219,13 @@ export default function Organizations() {
       <div style={S.statGrid}>
         <StatCard label="Jami tashkilotlar" value={totalOrgs} />
         <StatCard label="Faol" value={activeOrgs} color="#4ade80" />
-        <StatCard label="Nofaol" value={inactiveOrgs} color="#f87171" />
-        <StatCard label="Jami adminlar" value={totalAdmins} color="#a78bfa" />
+        <StatCard label="Nofaol" value={inactiveOrgs} color="#cf4650" />
+        <StatCard label="Jami adminlar" value={totalAdmins} color="#2563eb" />
       </div>
 
       <div style={S.pageTop}>
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.025em' }}>Tashkilotlar</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.025em' }}>Tashkilotlar</h2>
           <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '2px' }}>{filtered.length} ta tashkilot</p>
         </div>
         <div style={S.right}>
@@ -248,7 +248,7 @@ export default function Organizations() {
                 <Eye size={14} />
               </button>
               <button title="Tahrirlash" onClick={() => openEdit(row)} style={S.actionBtn}
-                onMouseEnter={e => { e.currentTarget.style.color = '#a78bfa'; e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#2563eb'; e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; }}>
                 <Pencil size={14} />
               </button>
@@ -258,7 +258,7 @@ export default function Organizations() {
                 {row.active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}
               </button>
               <button title="O'chirish" onClick={() => setDeleteTarget(row)} style={S.actionBtn}
-                onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#cf4650'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; }}>
                 <Trash2 size={14} />
               </button>
@@ -281,21 +281,21 @@ export default function Organizations() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={S.label}>Nomi *</label>
-            <input type="text" placeholder="Tashkilot nomi" value={form.name}
+            <label htmlFor="org-name" style={S.label}>Nomi *</label>
+            <input type="text" id="org-name" aria-label="Nomi *" placeholder="Tashkilot nomi" value={form.name}
               onChange={e => f('name')(e.target.value)} className="input-field" />
           </div>
           <div>
-            <label style={S.label}>Slug</label>
-            <input type="text" placeholder="tashkilot-slug" value={form.slug}
+            <label htmlFor="org-slug" style={S.label}>Slug</label>
+            <input type="text" id="org-slug" aria-label="Slug" placeholder="tashkilot-slug" value={form.slug}
               onChange={e => f('slug')(e.target.value)} className="input-field" />
           </div>
           {modal?.mode === 'edit' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <input type="checkbox" id="org_active" checked={form.active}
                 onChange={e => f('active')(e.target.checked)}
-                style={{ width: '16px', height: '16px', accentColor: '#8b5cf6' }} />
-              <label htmlFor="org_active" style={{ fontSize: '0.875rem', color: '#94a3b8', cursor: 'pointer' }}>Faol holat</label>
+                style={{ width: '16px', height: '16px', accentColor: '#2563eb' }} />
+              <label htmlFor="org_active" style={{ fontSize: '0.875rem', color: '#738096', cursor: 'pointer' }}>Faol holat</label>
             </div>
           )}
         </div>
@@ -308,9 +308,9 @@ export default function Organizations() {
         ) : detailOrg && (
           <>
             {/* Org info */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ background: '#ffffff', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', border: '1px solid #e7ecf3' }}>
               <div style={S.detailRow}><span style={S.detailKey}>Nomi:</span><span style={S.detailVal}>{detailOrg.name}</span></div>
-              <div style={S.detailRow}><span style={S.detailKey}>Slug:</span><span style={{ ...S.detailVal, fontFamily: 'monospace', color: '#94a3b8' }}>{detailOrg.slug || '—'}</span></div>
+              <div style={S.detailRow}><span style={S.detailKey}>Slug:</span><span style={{ ...S.detailVal, fontFamily: 'monospace', color: '#738096' }}>{detailOrg.slug || '—'}</span></div>
               <div style={S.detailRow}><span style={S.detailKey}>Holat:</span><Badge variant={detailOrg.active !== false ? 'success' : 'danger'} dot>{detailOrg.active !== false ? 'Faol' : 'Nofaol'}</Badge></div>
               <div style={S.detailRow}><span style={S.detailKey}>Yaratilgan:</span><span style={{ ...S.detailVal, color: '#64748b' }}>{detailOrg.created_at ? new Date(detailOrg.created_at).toLocaleString('uz') : '—'}</span></div>
             </div>
@@ -318,8 +318,8 @@ export default function Organizations() {
             {/* Admins section */}
             <div style={S.sectionHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e2e8f0' }}>Adminlar</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, color: '#a78bfa', background: 'rgba(139,92,246,0.12)' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--ink)' }}>Adminlar</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', background: '#edf3ff' }}>
                   {orgAdmins.length}
                 </span>
               </div>
@@ -331,10 +331,10 @@ export default function Organizations() {
             {orgAdmins.length === 0 ? (
               <p style={{ color: '#475569', fontSize: '0.875rem', textAlign: 'center', padding: '1.5rem' }}>Adminlar yo'q</p>
             ) : (
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ background: '#f8fafc', borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid #f5f7fb' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <tr style={{ borderBottom: '1px solid #e7ecf3' }}>
                       {['Username', 'Super admin', 'Holat', 'Muvaffaqiyatsiz', 'Harakatlar'].map(h => (
                         <th key={h} style={{ padding: '0.625rem 0.875rem', textAlign: 'left', color: '#475569', fontWeight: 600, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                       ))}
@@ -342,15 +342,15 @@ export default function Organizations() {
                   </thead>
                   <tbody>
                     {orgAdmins.map(a => (
-                      <tr key={a.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        <td style={{ padding: '0.625rem 0.875rem', color: '#e2e8f0', fontWeight: 500 }}>{a.username}</td>
+                      <tr key={a.id} style={{ borderBottom: '1px solid #ffffff' }}>
+                        <td style={{ padding: '0.625rem 0.875rem', color: 'var(--ink)', fontWeight: 500 }}>{a.username}</td>
                         <td style={{ padding: '0.625rem 0.875rem' }}>
                           <Badge variant={a.is_superadmin ? 'success' : 'default'} dot>{a.is_superadmin ? 'Ha' : 'Yo\'q'}</Badge>
                         </td>
                         <td style={{ padding: '0.625rem 0.875rem' }}>
                           <Badge variant={a.is_active !== false ? 'success' : 'danger'} dot>{a.is_active !== false ? 'Faol' : 'Nofaol'}</Badge>
                         </td>
-                        <td style={{ padding: '0.625rem 0.875rem', color: a.failed_attempts > 0 ? '#f87171' : '#475569' }}>
+                        <td style={{ padding: '0.625rem 0.875rem', color: a.failed_attempts > 0 ? '#cf4650' : '#475569' }}>
                           {a.failed_attempts ?? 0}
                         </td>
                         <td style={{ padding: '0.625rem 0.875rem' }}>
@@ -404,8 +404,8 @@ export default function Organizations() {
           </>
         }
       >
-        <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
-          <span style={{ color: '#e2e8f0', fontWeight: 600 }}>"{deleteTarget?.name}"</span> tashkilotini o'chirasizmi?
+        <p style={{ fontSize: '0.875rem', color: '#738096' }}>
+          <span style={{ color: 'var(--ink)', fontWeight: 600 }}>"{deleteTarget?.name}"</span> tashkilotini o'chirasizmi?
         </p>
       </Modal>
     </div>

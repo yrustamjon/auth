@@ -48,6 +48,21 @@ class AdminUserManager(BaseUserManager):
 
 
 class Organization(models.Model):
+    class Kind(models.TextChoices):
+        COMPANY = 'company', 'Company'
+        PERSONAL = 'personal', 'Personal workspace'
+
+    class ApprovalStatus(models.TextChoices):
+        PENDING = 'pending', 'Pending review'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+
+    kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.COMPANY)
+    approval_status = models.CharField(max_length=16, choices=ApprovalStatus.choices, default=ApprovalStatus.APPROVED)
+    registration_owner = models.ForeignKey('AdminUser', null=True, blank=True, on_delete=models.SET_NULL, related_name='registered_workspaces')
+    reviewed_by = models.ForeignKey('AdminUser', null=True, blank=True, on_delete=models.SET_NULL, related_name='reviewed_workspaces')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.CharField(max_length=500, blank=True)
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)   # for system ex: "org1", "org2"
     is_active = models.BooleanField(default=True)
@@ -212,6 +227,8 @@ class Device(models.Model):
     registered_at = models.DateTimeField(auto_now_add=True)
     enrolled_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
+    removal_state = models.CharField(max_length=24, default="active", choices=[("active", "Active"), ("removal_pending", "Removal pending"), ("removed", "Removed")])
+    agent_allocation_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -311,10 +328,16 @@ class BiometricFingerprint(models.Model):
 class AccessLogs(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="access_logs")
     timestamp=models.DateTimeField(auto_now_add=True)
-    user=models.ForeignKey(Users,on_delete=models.CASCADE)
-    device=models.ForeignKey(Device,on_delete=models.CASCADE)
+    user=models.ForeignKey(Users,on_delete=models.SET_NULL,null=True,blank=True)
+    device=models.ForeignKey(Device,on_delete=models.SET_NULL,null=True,blank=True)
     success=models.BooleanField(default=False)
     cause=models.CharField(max_length=255, blank=True, null=True)
+    similarity=models.FloatField(null=True,blank=True)
+    ip_address=models.GenericIPAddressField(null=True,blank=True)
+    source=models.CharField(max_length=32,blank=True,default='')
+    user_snapshot=models.JSONField(default=dict,blank=True)
+    device_snapshot=models.JSONField(default=dict,blank=True)
+    request_context=models.JSONField(default=dict,blank=True)
 
     class Meta:
         indexes = [

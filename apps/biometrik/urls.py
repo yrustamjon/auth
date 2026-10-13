@@ -1,8 +1,10 @@
 from django.urls import path
 from . import views
+from . import frontend_views
 from .views import *
 
 urlpatterns = [
+    path('api/fingerprint/phone/options/<uuid:session_id>/', frontend_views.fingerprint_options),
     path('api/users/<int:id>/biometric-status/',views.GetBiometricStatus.as_view()),
     path("api/users/<int:id>/face/",views.BiometricFace_.as_view()),
 

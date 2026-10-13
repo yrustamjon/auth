@@ -1,0 +1,11 @@
+import { useEffect, useState } from 'react';
+import client from '../../api/client';
+import { errorMessage } from '../../api/contracts';
+import Modal from '../../components/Modal';
+export default function Applications(){
+ const [rows,setRows]=useState([]),[error,setError]=useState(''),[loading,setLoading]=useState(true);
+ const [selected,setSelected]=useState(null),[note,setNote]=useState(''),[busy,setBusy]=useState(false);
+ useEffect(()=>{let alive=true;client.get('/api/registration/applications/').then(r=>{if(alive)setRows(r.data.applications);}).catch(e=>{if(alive)setError(errorMessage(e));}).finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};},[]);
+ async function decide(){if(busy)return;setBusy(true);setError('');try{await client.post(`/api/registration/${selected.row.id}/decision/`,{action:selected.action,note});setRows(p=>p.filter(r=>r.id!==selected.row.id));setSelected(null);setNote('');}catch(e){setError(errorMessage(e));}finally{setBusy(false);}}
+ return <><p className="page-description">Yangi kompaniyalar tasdiqlanmaguncha ish maydoni faol bo‘lmaydi.</p>{error&&<div role="alert" className="alert-error">{error}</div>}{loading?<p role="status">Arizalar yuklanmoqda...</p>:rows.length===0?<div className="panel">Kutayotgan arizalar yo‘q.</div>:<div className="product-grid">{rows.map(row=><article key={row.id}><h3>{row.name}</h3><p>Hisob: {row.owner}</p><p>{new Date(row.created_at).toLocaleString('uz-UZ')}</p><div className="product-actions"><button className="btn-primary" onClick={()=>setSelected({row,action:'approve'})}>Tasdiqlash</button><button className="btn-danger" onClick={()=>setSelected({row,action:'reject'})}>Rad etish</button></div></article>)}</div>}<Modal isOpen={!!selected} onClose={()=>{if(!busy)setSelected(null);}} title={selected?.action==='approve'?'Kompaniyani tasdiqlash':'Arizani rad etish'}><p>{selected?.row.name}</p><label htmlFor="review-note">Izoh (ixtiyoriy)<textarea id="review-note" className="input-field" value={note} onChange={e=>setNote(e.target.value)} maxLength={500}/></label><button className="btn-primary mt-5" disabled={busy} onClick={decide}>{busy?'Saqlanmoqda...':selected?.action==='approve'?'Tasdiqlash':'Rad etish'}</button></Modal></>;
+}

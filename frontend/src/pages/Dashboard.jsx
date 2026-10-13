@@ -1,124 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Users, Shield, Monitor, FileText, TrendingUp, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Users, ShieldCheck, Monitor, ScrollText, CalendarDays, ArrowUpRight, Plus, Check, X, Fingerprint } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import Badge from '../components/Badge';
 import { getUsers, getRoles, getDevices, getLogs } from '../api/admin';
-
-function RecentLog({ log }) {
-  const time = new Date(log.timestamp || log.created_at || Date.now())
-    .toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' });
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-      <div style={{
-        width: '32px', height: '32px', borderRadius: '10px', flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: log.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-      }}>
-        {log.success
-          ? <CheckCircle size={15} style={{ color: '#34d399' }} />
-          : <XCircle size={15} style={{ color: '#f87171' }} />}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {log.user_fio || log.username || "Noma'lum"}
-        </p>
-        <p style={{ fontSize: '0.75rem', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {log.device_pc_id || log.device || '—'}
-        </p>
-      </div>
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <Badge variant={log.success ? 'success' : 'danger'} dot>
-          {log.success ? 'OK' : 'Rad'}
-        </Badge>
-        <p style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.25rem' }}>{time}</p>
-      </div>
-    </div>
-  );
-}
-
+import { readCollection, readMetric } from '../api/contracts';
 export default function Dashboard() {
-  const [stats, setStats] = useState({ users: 0, roles: 0, devices: 0, logs: 0 });
-  const [recentLogs, setRecentLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    Promise.allSettled([getUsers(), getRoles(), getDevices(), getLogs()])
-      .then(([u, r, d, l]) => {
-        const users = u.status === 'fulfilled' ? (Array.isArray(u.value.data) ? u.value.data : u.value.data?.users ?? []) : [];
-        const roles = r.status === 'fulfilled' ? (Array.isArray(r.value.data) ? r.value.data : r.value.data?.roles ?? []) : [];
-        const devices = d.status === 'fulfilled' ? (Array.isArray(d.value.data) ? d.value.data : []) : [];
-        const logs = l.status === 'fulfilled' ? (Array.isArray(l.value.data) ? l.value.data : l.value.data?.logs ?? []) : [];
-        setStats({ users: users.length, roles: roles.length, devices: devices.length, logs: logs.length });
-        setRecentLogs(logs.slice(0, 8));
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const cards = [
-    { icon: <Users size={20} />, title: 'Foydalanuvchilar', value: loading ? '...' : stats.users, subtitle: 'Jami admin userlar', trend: 12, color: 'indigo' },
-    { icon: <Shield size={20} />, title: 'Rollar', value: loading ? '...' : stats.roles, subtitle: 'Faol rollar', color: 'violet' },
-    { icon: <Monitor size={20} />, title: 'Qurilmalar', value: loading ? '...' : stats.devices, subtitle: "Ro'yxatdagi qurilmalar", trend: -3, color: 'blue' },
-    { icon: <FileText size={20} />, title: 'Kirish loglari', value: loading ? '...' : stats.logs, subtitle: 'Jami yozuvlar', trend: 8, color: 'emerald' },
-  ];
-
-  return (
-    <div className="page-container">
-      <div>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.025em' }}>Dashboard</h2>
-        <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '2px' }}>Tizim holati va statistika</p>
-      </div>
-
-      {/* Stats grid */}
-      <div className="stats-grid">
-        {cards.map((c, i) => <StatCard key={i} {...c} />)}
-      </div>
-
-      {/* Bottom grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-        {/* Recent logs — span 2 */}
-        <div style={{
-          gridColumn: 'span 2', borderRadius: '1rem', padding: '1.25rem',
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <div>
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e2e8f0' }}>So'nggi kirish loglari</h3>
-              <p style={{ fontSize: '0.75rem', color: '#475569' }}>Real-time monitoring</p>
-            </div>
-            <Clock size={16} style={{ color: '#475569' }} />
-          </div>
-          {recentLogs.length === 0 && !loading ? (
-            <p style={{ fontSize: '0.875rem', color: '#475569', padding: '2rem 0', textAlign: 'center' }}>Hozircha loglar yo'q</p>
-          ) : (
-            recentLogs.map((log, i) => <RecentLog key={log.id ?? i} log={log} />)
-          )}
-        </div>
-
-        {/* System status */}
-        <div style={{
-          borderRadius: '1rem', padding: '1.25rem',
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <TrendingUp size={16} style={{ color: '#818cf8' }} />
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e2e8f0' }}>Tizim holati</h3>
-          </div>
-          {[
-            { label: 'API Server', status: true },
-            { label: 'Database', status: true },
-            { label: 'Auth Service', status: true },
-            { label: 'Log Service', status: true },
-          ].map(s => (
-            <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>{s.label}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981', display: 'inline-block' }} />
-                <span style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: 500 }}>Online</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  const [state,setState]=useState({loading:true,results:[],logs:[],devices:[]});
+  useEffect(()=>{let alive=true; Promise.allSettled([getUsers(),getRoles(),getDevices(),getLogs()]).then(results=>{
+    let logs=[],devices=[];
+    try { if(results[3].status==='fulfilled') logs=readCollection(results[3].value.data,'logs'); } catch {}
+    try { if(results[2].status==='fulfilled') devices=readCollection(results[2].value.data); } catch {}
+    if(alive) setState({loading:false,results,logs,devices});
+  }); return ()=>{alive=false;};},[]);
+  const metrics=state.results.map((r,i)=>readMetric(r,['users',undefined,undefined,'logs'][i]));
+  const cards=[['Foydalanuvchilar',Users,'Jamoangizdagi hisoblar'],['Rollar',ShieldCheck,'Kirish ruxsatlari'],['Qurilmalar',Monitor,'Ro‘yxatdagi qurilmalar'],['Kirishlar',ScrollText,'Qayd etilgan kirishlar']];
+  const active=state.devices.filter(d=>d.is_active && d.enrollment_status!=='browser_approved').length;
+  const pending=state.devices.filter(d=>d.enrollment_status==='browser_approved').length;
+  return <div className="page-container"><div className="page-intro"><div><div className="eyebrow">BOSHQARUV PANELI</div><h2>Ish maydoningizga xush kelibsiz</h2><p>Jamoa, qurilmalar va kirishlar haqida muhim ma’lumotlar.</p></div><div className="date-pill"><CalendarDays size={15}/>{new Date().toLocaleDateString('uz-UZ',{day:'numeric',month:'long',year:'numeric'})}</div></div>
+    <div className="stats-grid">{cards.map(([title,Icon,subtitle],i)=><StatCard key={title} title={title} icon={<Icon size={19}/>} value={state.loading?'…':metrics[i]?.value} subtitle={metrics[i]?.error?'Yuklab bo‘lmadi':subtitle}/>)}</div>
+    <div className="dashboard-grid"><section className="panel"><div className="panel-heading"><div><h3>Oxirgi kirishlar</h3><p>Ish maydonidagi so‘nggi faoliyat</p></div><Link to="/logs" className="text-link">Barchasi<ArrowUpRight size={13}/></Link></div>
+      {state.loading?<div className="empty-state">Yuklanmoqda...</div>:metrics[3]?.error?<div className="alert-error">Kirish tarixini yuklab bo‘lmadi.</div>:!state.logs.length?<div className="empty-state"><ScrollText size={26}/><strong>Hozircha kirishlar yo‘q</strong></div>:state.logs.slice(0,6).map(log=><div key={log.id} className="activity-row"><span className={`activity-icon${log.success?'':' danger'}`}>{log.success?<Check size={16}/>:<X size={16}/>}</span><div className="activity-main"><strong>{log.user_fio || 'Noma’lum foydalanuvchi'}</strong><small>{log.device_pc_id || 'Qurilma ko‘rsatilmagan'}</small></div><Badge variant={log.success?'success':'danger'} dot>{log.success?'Ruxsat berildi':'Rad etildi'}</Badge><time className="activity-time">{new Date(log.timestamp).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})}</time></div>)}
+    </section><div className="flex flex-col gap-5"><section className="panel"><div className="panel-heading"><div><h3>Tezkor amallar</h3><p>Kundalik ishlar uchun qisqa yo‘l</p></div></div><Link to="/users" className="quick-action"><Users size={19}/><div><strong>Foydalanuvchilar</strong><small>Hisoblar va biometrik ma’lumotlar</small></div><ArrowUpRight size={15}/></Link><Link to="/devices/scan-qr/" className="quick-action"><Monitor size={19}/><div><strong>Qurilmani ulash</strong><small>QR orqali ro‘yxatdan o‘tkazish</small></div><ArrowUpRight size={15}/></Link><Link to="/roles" className="quick-action"><ShieldCheck size={19}/><div><strong>Ruxsatlarni boshqarish</strong><small>Jamoa rollarini sozlash</small></div><ArrowUpRight size={15}/></Link></section><section className="panel"><div className="panel-heading"><div><h3>Qurilmalar holati</h3><p>Joriy ro‘yxat asosida</p></div><Monitor size={17} className="text-slate-400"/></div>{metrics[2]?.error?<div className="alert-error">Qurilmalar yuklanmadi.</div>:<><div className="device-summary"><strong>{state.loading?'…':active}</strong><span>Faol qurilmalar</span><Badge variant="success" dot>Faol</Badge></div><div className="device-summary"><strong>{state.loading?'…':pending}</strong><span>Agent ulanishi kutilmoqda</span></div></>}</section></div></div>
+    <section className="dashboard-banner"><Fingerprint size={35}/><div><h3>Hisoblar va biometrik ma’lumotlarni boshqaring</h3><p>Yuz va barmoq izi orqali tasdiqlash sozlamalari foydalanuvchi kartasida.</p></div><Link className="btn-primary" to="/users"><Plus size={15}/>Foydalanuvchilar</Link></section>
+  </div>;
 }

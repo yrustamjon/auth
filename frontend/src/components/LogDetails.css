@@ -1,0 +1,35 @@
+.log-details {display:flex;flex-direction:column;gap:18px;min-width:0;color:var(--ink);}
+.log-result {display:flex;align-items:center;gap:13px;padding:17px 18px;border:1px solid;border-radius:12px;}
+.log-result.is-success {background:#f0faf4;border-color:#cdebd8;color:#168557;}
+.log-result.is-failed {background:#fff4f4;border-color:#f4d5d8;color:#be3d49;}
+.log-result>svg {flex-shrink:0;}
+.log-result strong {display:block;font-size:16px;font-weight:650;}
+.log-result span {display:block;font-size:12px;margin-top:5px;color:#64748b;}
+.log-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.log-metrics>div {padding:14px 16px;background:#f6f8fc;border:1px solid #e7ecf3;border-radius:10px;min-width:0;}
+.log-metrics span,.log-reason>span {display:block;font-size:11px;color:#738096;margin-bottom:7px;}
+.log-metrics strong {font-size:15px;font-weight:650;overflow-wrap:anywhere;}
+.log-reason {padding:0 2px;}
+.log-reason p {font-size:13px;line-height:1.7;margin:0;overflow-wrap:anywhere;}
+.log-section-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;}
+.log-section {min-width:0;border:1px solid #e7ecf3;border-radius:12px;overflow:hidden;}
+.log-section h4 {display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;margin:0;padding:14px 16px;border-bottom:1px solid #e7ecf3;background:#fafbfd;}
+.log-section h4 svg {color:#4e74ae;flex-shrink:0;}
+.log-fields {margin:0;padding:0 16px;}
+.log-field {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:12px;padding:12px 0;border-bottom:1px solid #f0f3f8;align-items:start;}
+.log-field:last-child {border-bottom:0;}
+.log-field dt {font-size:11px;color:#738096;line-height:1.7;}
+.log-field dd {min-width:0;margin:0;font-size:12px;font-weight:500;line-height:1.65;overflow-wrap:anywhere;}
+.log-field-group {display:block;}
+.log-field-group>dt {font-weight:600;color:#52637c;margin-bottom:7px;}
+.log-field-group>dd>.log-fields {padding:0 10px;background:#f8fafe;border-radius:8px;}
+.log-missing {padding:16px;font-size:12px;line-height:1.7;color:#738096;margin:0;}
+@media(max-width:600px) {
+ .log-section-grid {grid-template-columns:1fr;}
+ .log-metrics {grid-template-columns:1fr;gap:8px;}
+ .log-metrics>div {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;}
+ .log-metrics span {margin:0;}
+ .log-metrics strong {font-size:13px;text-align:right;}
+ .log-result {padding:14px;}
+ .log-result strong {font-size:14px;}
+}

@@ -3,9 +3,9 @@
  * Handles authentication and error handling
  */
 
-// Base API URL (configure this based on your backend)
+// Django pages use the backend that served the current page.
 
-const API_BASE_URL =  "http://127.0.0.1:8000" || "https://sibilantly-penanceless-young.ngrok-free.dev"; // Change this to your backend URL
+const API_BASE_URL = window.location.origin;
 
 
 

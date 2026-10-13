@@ -1,0 +1,10 @@
+﻿[
+    {
+        "hash":  "C6A319EE82551E2D96C9F7D3844EB0D0B6DCBC79056BE7055963CABB92148CE5",
+        "path":  "services/removal.py"
+    },
+    {
+        "hash":  "EC45F1D9853C3248D7404A9E098D1D89F8BF09A9D19A41B50B55ED7B084748D0",
+        "path":  "services/lifecycle_broker.py"
+    }
+]

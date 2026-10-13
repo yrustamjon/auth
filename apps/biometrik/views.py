@@ -1,5 +1,6 @@
 import base64, os, tempfile, numpy as np
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from apps.common.permissions import IsWorkspaceAdmin
 from rest_framework.views import APIView, Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.views.decorators.csrf import csrf_exempt
@@ -10,10 +11,10 @@ from apps.common.models import *
 from apps.biometrik.models import *
 
 class GetBiometricStatus(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsWorkspaceAdmin]
 
     def get(self,request,id):
-        user=Users.objects.get(id=id)
+        user=get_object_or_404(Users,id=id,organization_id=request.session.get('current_org_id'))
         has_face = BiometricFace.objects.filter(user=user).exists()
         has_fingerprint = BiometricFingerprint.objects.filter(user=user).exists()
         print(user,has_fingerprint,has_face)
@@ -25,7 +26,7 @@ class GetBiometricStatus(APIView):
 
 
 class BiometricFace_(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsWorkspaceAdmin]
 
     def post(self,request,id):
         org = request.session.get("current_org_id")
@@ -78,7 +79,7 @@ class FingerprintPhoneStartView(APIView):
         user=Users.objects.filter(pk=request.data.get('user_id')).first()
         if not user:
             return Response({'detail':'User not found'},status=404)
-        if not request.user.organizations.filter(pk=user.organization_id).exists() or not user.status or not user.organization.is_active:
+        if not (request.user.is_admin or request.user.is_superadmin) or not request.user.organizations.filter(pk=user.organization_id).exists() or not user.status or not user.organization.is_active or user.organization.approval_status != 'approved':
             return Response({'detail':'Forbidden'},status=403)
         session=FingerprintSession.objects.create(user=user,challenge=secrets.token_bytes(32))
         return Response({'session_id':str(session.session_id),'expires_in':120,'status':session.status})
@@ -123,9 +124,9 @@ class FingerprintPhoneStatusView(APIView):
 
 
 class BiometricFingerprintListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsWorkspaceAdmin]
     def get(self, request, id):
-        user =  Users.objects.get(id=id)
+        user =  get_object_or_404(Users,id=id,organization_id=request.session.get('current_org_id'))
         fingerprints = BiometricFingerprint.objects.filter(
             user=user
         )
@@ -143,7 +144,7 @@ class BiometricFingerprintListView(APIView):
     
     def delete(self,request,user_id,id):
         print("sihladi")
-        user =  Users.objects.get(id=user_id)
+        user =  get_object_or_404(Users,id=user_id,organization_id=request.session.get('current_org_id'))
         fingerprints = BiometricFingerprint.objects.filter(
             user=user,id=id
         )

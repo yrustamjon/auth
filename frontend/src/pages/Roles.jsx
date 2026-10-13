@@ -4,14 +4,14 @@ import Table from '../components/Table';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import { getRoles, createRole, updateRole, deleteRole } from '../api/admin';
-import { useAdminToast } from '../layouts/AdminLayout';
+import { useAdminToast } from '../contexts/toast';
 
 const S = {
   pageTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' },
-  right: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  searchBox: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' },
-  searchInput: { background: 'transparent', border: 'none', outline: 'none', color: '#cbd5e1', fontSize: '0.875rem', width: '176px' },
-  tableWrap: { borderRadius: '1rem', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' },
+  right: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', maxWidth: '100%' },
+  searchBox: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.75rem', background: '#ffffff', border: '1px solid #e7ecf3' },
+  searchInput: { background: 'transparent', border: 'none', outline: 'none', color: '#46566e', fontSize: '0.875rem', width: '176px' },
+  tableWrap: { borderRadius: '1rem', overflow: 'hidden', background: '#ffffff', border: '1px solid #e7ecf3' },
   actionBtn: { padding: '6px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', transition: 'all 0.2s', display: 'flex', alignItems: 'center' },
   label: { display: 'block', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' },
 };
@@ -29,7 +29,7 @@ export default function Roles() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await getRoles();
       const data = Array.isArray(res.data) ? res.data : (res.data?.roles ?? []);
@@ -72,9 +72,9 @@ export default function Roles() {
       render: v => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{ width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99,102,241,0.12)' }}>
-            <Shield size={13} style={{ color: '#818cf8' }} />
+            <Shield size={13} style={{ color: '#2563eb' }} />
           </div>
-          <span style={{ color: '#e2e8f0', fontWeight: 500 }}>{v}</span>
+          <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{v}</span>
         </div>
       ),
     },
@@ -92,13 +92,13 @@ export default function Roles() {
     <div className="page-container">
       <div style={S.pageTop}>
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.025em' }}>Rollar</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.025em' }}>Rollar</h2>
           <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '2px' }}>{filtered.length} ta rol topildi</p>
         </div>
         <div style={S.right}>
           <div style={S.searchBox}>
             <Search size={14} style={{ color: '#475569' }} />
-            <input type="text" placeholder="Qidirish..." value={search}
+            <input type="text" aria-label="Qidirish" placeholder="Qidirish..." value={search}
               onChange={e => setSearch(e.target.value)} style={S.searchInput} />
           </div>
           <button onClick={openCreate} className="btn-primary">
@@ -111,13 +111,13 @@ export default function Roles() {
         <Table columns={columns} data={filtered} loading={loading} error={error}
           actions={(row) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <button onClick={() => openEdit(row)} style={S.actionBtn}
-                onMouseEnter={e => { e.currentTarget.style.color = '#818cf8'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
+              <button aria-label="Tahrirlash" onClick={() => openEdit(row)} style={S.actionBtn}
+                onMouseEnter={e => { e.currentTarget.style.color = '#2563eb'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; }}>
                 <Pencil size={14} />
               </button>
-              <button onClick={() => setDeleteTarget(row)} style={S.actionBtn}
-                onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+              <button aria-label="O‘chirish" onClick={() => setDeleteTarget(row)} style={S.actionBtn}
+                onMouseEnter={e => { e.currentTarget.style.color = '#cf4650'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; }}>
                 <Trash2 size={14} />
               </button>
@@ -138,8 +138,8 @@ export default function Roles() {
         }
       >
         <div>
-          <label style={S.label}>Rol nomi *</label>
-          <input type="text" placeholder="Masalan: Moderator" value={form.name}
+          <label htmlFor="role-name" style={S.label}>Rol nomi *</label>
+          <input id="role-name" type="text" placeholder="Masalan: Moderator" value={form.name}
             onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
             className="input-field" autoFocus />
         </div>
@@ -153,8 +153,8 @@ export default function Roles() {
           </>
         }
       >
-        <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
-          <span style={{ color: '#e2e8f0', fontWeight: 600 }}>"{deleteTarget?.name}"</span> rolini o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.
+        <p style={{ fontSize: '0.875rem', color: '#738096' }}>
+          <span style={{ color: 'var(--ink)', fontWeight: 600 }}>"{deleteTarget?.name}"</span> rolini o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.
         </p>
       </Modal>
     </div>

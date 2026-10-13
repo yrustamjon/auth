@@ -1,0 +1,70 @@
+[
+    {
+        "hash":  "C96083CC498F48581045292D18C7B16310004A656B2A711E3FCA46C4DAF07F22",
+        "path":  ".github/workflows/build.yml"
+    },
+    {
+        "hash":  "98296B294D5EF39286A33BCA28DEBDBC7616021113C16EB668C17BB537EBDB93",
+        "path":  "app/lifecycle_entry.py"
+    },
+    {
+        "hash":  "D7872E07A9DEED695A8F3A45D53F6CB9450C65FCC7B9DDF5EEEDF4552C4872D3",
+        "path":  "builders/windows/bioguard-supervisor.spec"
+    },
+    {
+        "hash":  "4ED72EFB0F4219B423965F9FD9615D5680BD34CE219A35DCCB3F951212EF5506",
+        "path":  "builders/windows/bioguard-watchdog.spec"
+    },
+    {
+        "hash":  "C247B5045D775154875391837359B62FAEA91CC1BDC97E67D37C87969F91478A",
+        "path":  "builders/windows/bioguard_installer.iss"
+    },
+    {
+        "hash":  "8A57ED653C2E8F561FE4694775ACED0E2E8AA33B8EDF95D85144BEDCF4C42D99",
+        "path":  "builders/windows/recover-supervisor.cmd"
+    },
+    {
+        "hash":  "6C9443C67E953FDA4731FB1B3FFA0ED7B204917149FA1D27CF49058EC605DCEE",
+        "path":  "builders/windows/SUPERVISOR.md"
+    },
+    {
+        "hash":  "2A57BAD463A730E468A0425D2010DED61AA57593292526CE3070B00A659471F4",
+        "path":  "platform_adapters/windows/lifecycle.py"
+    },
+    {
+        "hash":  "9AE1D8090E2F4C95480C9045ABC1CCB21BFECAF323FEBAD9910AA46FBF4F9F25",
+        "path":  "platform_adapters/windows/runtime.py"
+    },
+    {
+        "hash":  "440675CFBA7A001A8EDE0DAA63A89260FDA5BA269152FC702285CCDDC0487B32",
+        "path":  "platform_adapters/windows/supervisor_process.py"
+    },
+    {
+        "hash":  "8BF319C36E209CD46C370DD101C9EC35707D4994A65943FF90B023B0D8C62B38",
+        "path":  "platform_adapters/windows/supervisor_service.py"
+    },
+    {
+        "hash":  "9515D0063CC4A2CF35F72FB7BFE5091C6B3190D8C32A051CD3A80FED6AFB3BB2",
+        "path":  "platform_adapters/windows/watchdog_entry.py"
+    },
+    {
+        "hash":  "142BF1E1C353C974B1A8EE19CCDC4540FB4D71E5D3EDFFB777D2C88D9C674D67",
+        "path":  "services/supervision.py"
+    },
+    {
+        "hash":  "48CB37D52198E56DA18B40BF5744E669D0D872DEC03E0E9F5283AEE2DB89A89F",
+        "path":  "services/telemetry.py"
+    },
+    {
+        "hash":  "0C58538C8F97D85A31BFF7C5ED3C23256D9CE5FC8234D38FA0FF897EC07B2E8D",
+        "path":  "tests/test_supervision.py"
+    },
+    {
+        "hash":  "3658455B7F54383CBEA67D7CBB9DEFB0DA3F47AFA595DCA5BF59DFF84B1F6200",
+        "path":  "tests/test_supervisor_packaging.py"
+    },
+    {
+        "hash":  "6C00B40E684E516EDF2321B7D09D6869E312755A09DA1DB10D56FB4045659B92",
+        "path":  "tests/test_supervisor_windows.py"
+    }
+]

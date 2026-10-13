@@ -1,4 +1,4 @@
-import client from './client';
+import client from './client.js';
 
 // Users
 export const getUsers = () => client.get('/api/users/');
@@ -9,7 +9,14 @@ export const deleteUser = (id) => client.delete(`/api/users/${id}/`);
 // Roles
 export const getRoles = () => client.get('/api/roles');
 export const createRole = (data) => client.post('/api/roles', data);
-export const updateRole = (id, data) => client.put(`/api/roles/${id}/`, data);
+export const updateRole = async (id, data) => {
+  // The backend updates name and active state in separate PATCH branches.
+  const { name, is_active } = data;
+  let response;
+  if (name !== undefined) response = await client.patch(`/api/roles/${id}/`, { name });
+  if (is_active !== undefined) response = await client.patch(`/api/roles/${id}/`, { is_active });
+  return response;
+};
 export const deleteRole = (id) => client.delete(`/api/roles/${id}/`);
 
 // Devices
@@ -37,3 +44,6 @@ export const startFingerprintSession = (userId) =>
   client.post('/api/fingerprint/phone/start/', { user_id: userId });
 export const getFingerprintSessionStatus = (sessionId) =>
   client.get(`/api/fingerprint/phone/status/${sessionId}/`);
+
+// Device-specific online uninstall authorization
+export const issueRemovalCode = (id) => client.post(`/api/devices/${id}/removal-code/`, {});

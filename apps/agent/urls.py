@@ -14,8 +14,13 @@ Barcha URL lar quyidagi fayllar bilan to'liq mos:
 
 from django.urls import path
 from . import views
+from .telemetry import TelemetryView, AgentEventsView, PausePermissionView, SupervisionPolicyView
 
 urlpatterns = [
+    path('api/agent/supervision/',SupervisionPolicyView.as_view()),
+    path('api/agent/telemetry/',TelemetryView.as_view()),
+    path('api/agent-events/',AgentEventsView.as_view()),
+    path('api/devices/<int:device_id>/pause-permission/',PausePermissionView.as_view()),
 
     path(
         "agent/mobile/fingerprint/<str:session_id>/",

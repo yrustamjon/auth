@@ -1,0 +1,10 @@
+﻿[
+    {
+        "hash":  "7AB9D0D7701FB12E33E256B47D95238B14734E0D783A9B34EDCF47D92D825B10",
+        "path":  "platform_adapters/windows/runtime.py"
+    },
+    {
+        "hash":  "1A3D81AA14D026FAC71E2F556500A57979C7E1B0234880F840A608EBE6FD1BC9",
+        "path":  "app/controller.py"
+    }
+]

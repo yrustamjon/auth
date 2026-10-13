@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Search, Monitor } from 'lucide-react';
 import Table from '../components/Table';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
-import { getDevices, createDevice, updateDevice, deleteDevice } from '../api/admin';
-import { useAdminToast } from '../layouts/AdminLayout';
+import RemovalCodeCard from '../components/RemovalCodeCard';
+import { getDevices, createDevice, updateDevice } from '../api/admin';
+import { useAdminToast } from '../contexts/toast';
 
-const empty = { pc_id: '', location: '', license: '', is_active: true, revoked: false };
+const empty = { pc_id: '', location: '', license: '', platform: 'windows', is_active: true };
 
 const S = {
   pageTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' },
-  right: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  searchBox: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' },
-  searchInput: { background: 'transparent', border: 'none', outline: 'none', color: '#cbd5e1', fontSize: '0.875rem', width: '192px' },
-  tableWrap: { borderRadius: '1rem', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' },
+  right: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', maxWidth: '100%' },
+  searchBox: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.75rem', background: '#ffffff', border: '1px solid #e7ecf3' },
+  searchInput: { background: 'transparent', border: 'none', outline: 'none', color: '#46566e', fontSize: '0.875rem', width: '192px' },
+  tableWrap: { borderRadius: '1rem', overflow: 'hidden', background: '#ffffff', border: '1px solid #e7ecf3' },
   actionBtn: { padding: '6px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', transition: 'all 0.2s', display: 'flex', alignItems: 'center' },
   formGroup: { display: 'flex', flexDirection: 'column', gap: '1rem' },
   label: { display: 'block', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' },
@@ -32,7 +34,7 @@ export default function Devices() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await getDevices();
       const data = Array.isArray(res.data) ? res.data : [];
@@ -52,12 +54,12 @@ export default function Devices() {
 
   const openCreate = () => { setForm(empty); setModal({ mode: 'create' }); };
   const openEdit = (row) => {
-    setForm({ pc_id: row.pc_id, location: row.location || '', license: row.license || '', is_active: row.is_active !== false, revoked: !!row.revoked });
+    setForm({ pc_id: row.pc_id, location: row.location || '', license: row.license || '', platform: row.platform || 'windows', is_active: row.is_active !== false });
     setModal({ mode: 'edit', data: row });
   };
 
   const handleSave = async () => {
-    if (!form.pc_id.trim()) return;
+    if (!form.pc_id.trim() || !form.location.trim() || (form.platform === 'windows' && !form.license.trim())) { toast('PC ID, joylashuv va Windows litsenziyasini kiriting', 'error'); return; }
     setSaving(true);
     try {
       if (modal.mode === 'create') { await createDevice(form); toast("Qurilma qo'shildi", 'success'); }
@@ -67,12 +69,7 @@ export default function Devices() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async () => {
-    try {
-      await deleteDevice(deleteTarget.id);
-      toast("O'chirildi", 'success'); setDeleteTarget(null); load();
-    } catch { toast('Xato', 'error'); }
-  };
+
 
   const f = (k) => (v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -85,15 +82,19 @@ export default function Devices() {
           <div style={{ width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.15)' }}>
             <Monitor size={14} style={{ color: '#60a5fa' }} />
           </div>
-          <span style={{ color: '#e2e8f0', fontFamily: 'monospace', fontSize: '0.875rem' }}>{v}</span>
+          <span style={{ color: 'var(--ink)', fontFamily: 'monospace', fontSize: '0.875rem' }}>{v}</span>
         </div>
       ),
     },
-    { key: 'location', label: 'Joylashuv', render: v => <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>{v || '—'}</span> },
+    { key: 'location', label: 'Joylashuv', render: v => <span style={{ color: '#738096', fontSize: '0.875rem' }}>{v || '—'}</span> },
     {
       key: 'is_active', label: 'Holat',
-      render: (v, row) => row.revoked
-        ? <Badge variant="warning" dot>Revoked</Badge>
+      render: (v, row) => row.removal_state === 'removed'
+        ? <Badge variant="default">O‘chirilgan</Badge>
+        : row.removal_state === 'removal_pending'
+        ? <Badge variant="warning">O‘chirish yakunlanmagan</Badge>
+        : row.enrollment_status === 'browser_approved'
+        ? <Badge variant="warning" dot>Agent kutilmoqda</Badge>
         : <Badge variant={v !== false ? 'success' : 'danger'} dot>{v !== false ? 'Faol' : 'Nofaol'}</Badge>,
     },
     {
@@ -108,10 +109,11 @@ export default function Devices() {
     <div className="page-container">
       <div style={S.pageTop}>
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.025em' }}>Qurilmalar</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.025em' }}>Qurilmalar</h2>
           <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '2px' }}>{filtered.length} ta qurilma</p>
         </div>
         <div style={S.right}>
+          <Link to="/devices/scan-qr/" className="btn-secondary">QR orqali ulash</Link>
           <div style={S.searchBox}>
             <Search size={14} style={{ color: '#475569' }} />
             <input type="text" placeholder="PC ID yoki joylashuv..." value={search}
@@ -127,13 +129,13 @@ export default function Devices() {
         <Table columns={columns} data={filtered} loading={loading} error={error}
           actions={(row) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <button onClick={() => openEdit(row)} style={S.actionBtn}
-                onMouseEnter={e => { e.currentTarget.style.color = '#818cf8'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
+              <button aria-label="Tahrirlash" disabled={row.enrollment_status === 'browser_approved'} title={row.enrollment_status === 'browser_approved' ? 'Agent ulanishi kutilmoqda' : 'Tahrirlash'} onClick={() => openEdit(row)} style={S.actionBtn}
+                onMouseEnter={e => { e.currentTarget.style.color = '#2563eb'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; }}>
                 <Pencil size={14} />
               </button>
-              <button onClick={() => setDeleteTarget(row)} style={S.actionBtn}
-                onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+              <button aria-label="O‘chirish" disabled={row.removal_state && row.removal_state !== 'active'} title="O‘chirish kodini yaratish" onClick={() => setDeleteTarget(row)} style={S.actionBtn}
+                onMouseEnter={e => { e.currentTarget.style.color = '#cf4650'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; }}>
                 <Trash2 size={14} />
               </button>
@@ -154,44 +156,43 @@ export default function Devices() {
         }
       >
         <div style={S.formGroup}>
+          <label className="text-sm">Operatsion tizim<select className="input-field mt-2" value={form.platform} onChange={e => f('platform')(e.target.value)}><option value="windows">Windows</option><option value="macos">macOS</option><option value="linux">Linux</option></select></label>
           {[
             { label: 'PC ID *', key: 'pc_id', ph: 'DESKTOP-XXXXX' },
-            { label: 'Joylashuv', key: 'location', ph: 'Ofis 1, 3-qavat' },
+            { label: 'Joylashuv *', key: 'location', ph: 'Ofis 1, 3-qavat' },
             { label: 'Litsenziya', key: 'license', ph: 'XXX-XXX-XXX' },
           ].map(({ label, key, ph }) => (
             <div key={key}>
-              <label style={S.label}>{label}</label>
-              <input type="text" placeholder={ph} value={form[key]}
+              <label htmlFor={"field-"+key} style={S.label}>{label}</label>
+              <input id={"field-"+key} type="text" placeholder={ph} value={form[key]}
                 onChange={e => f(key)(e.target.value)} className="input-field" />
             </div>
           ))}
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
+          {modal?.mode === 'edit' && <div style={{ display: 'flex', gap: '1.5rem' }}>
             {[
               { id: 'is_active', label: 'Faol', key: 'is_active' },
-              { id: 'revoked', label: 'Revoked', key: 'revoked' },
+
             ].map(({ id, label, key }) => (
               <div key={id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input type="checkbox" id={id} checked={form[key]}
                   onChange={e => f(key)(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: '#6366f1' }} />
-                <label htmlFor={id} style={{ fontSize: '0.875rem', color: '#94a3b8', cursor: 'pointer' }}>{label}</label>
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }} />
+                <label htmlFor={id} style={{ fontSize: '0.875rem', color: '#738096', cursor: 'pointer' }}>{label}</label>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       </Modal>
 
-      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="O'chirishni tasdiqlash"
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Agentni o‘chirish kodi"
         footer={
           <>
             <button onClick={() => setDeleteTarget(null)} className="btn-secondary">Bekor</button>
-            <button onClick={handleDelete} className="btn-danger">O'chirish</button>
+
           </>
         }
       >
-        <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
-          <span style={{ color: '#e2e8f0', fontWeight: 600 }}>"{deleteTarget?.pc_id}"</span> qurilmasini o'chirasizmi?
-        </p>
+        {deleteTarget && <RemovalCodeCard key={deleteTarget.id} device={deleteTarget}/>}
       </Modal>
     </div>
   );
