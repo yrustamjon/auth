@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AD BioGuard</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="theme.css">
+  <script src="qrcode.min.js"></script>
+</head>
+<body>
+
+<div id="header">
+  <div class="header-brand">
+    <div class="brand-dot"></div>
+    <span>AD BioGuard</span>
+    <span style="opacity:0.3;margin:0 4px">|</span>
+    <span style="opacity:0.5;font-size:10px">IDENTITY VERIFICATION SYSTEM</span>
+  </div>
+  <div class="header-info">
+    <span id="header-user" class="header-user font-mono" style="font-size:11px"></span>
+    <span id="header-clock"></span>
+    <span id="header-mode" style="font-size:10px;color:var(--amber);display:none">● DEMO</span>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- INIT -->
+  <div id="screen-init" class="screen active">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner" style="text-align:center;padding:48px 40px;">
+        <div class="spinner" style="margin:0 auto 20px"></div>
+        <div class="card-title">System Check</div>
+        <div class="card-heading">Initializing</div>
+        <div class="card-sub font-mono" id="init-status" style="margin-top:8px">
+          Establishing secure session...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP: Faqat Org bilan -->
+  <div id="screen-setup" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Welcome to AD BioGuard</div>
+        <div class="card-heading">Setup</div>
+        <div class="card-sub font-mono">Org administrator bergan ma'lumotlarni kiriting</div>
+        <div class="divider"></div>
+        <div class="screen-label">Tashkilot aktivatsiyasi</div>
+        <div class="method-grid" style="grid-template-columns:1fr">
+          <div class="method-card" onclick="App.showSetupOrg()">
+            <span class="method-card-icon">⬡</span>
+            <div class="method-card-title">Org bilan faollashtirish</div>
+            <div class="method-card-desc">Org token va Activation Code kerak<br>IT administrator tomonidan beriladi</div>
+            <div class="method-card-badge">
+              <span>●</span> Korporativ
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP ORG: Activation Code -->
+  <div id="screen-setup-org" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Org Aktivatsiya</div>
+        <div class="card-heading">Activation Code</div>
+        <div class="card-sub font-mono">IT administrator bergan kodni kiriting</div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Activation Code</div>
+            <input id="setup-org-code" type="text" autocomplete="off"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none;
+                     letter-spacing:0.1em;text-transform:uppercase"
+              placeholder="XXXX-XXXX-XXXX" />
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;letter-spacing:0.05em">
+              Bir martalik kod · 24 soat muddatli · IT admin beradi
+            </div>
+          </div>
+          <div id="setup-org-status" style="display:none">
+            <div class="status-row">
+              <div class="status-indicator error" id="setup-org-indicator"></div>
+              <div class="status-text" id="setup-org-status-text"></div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-primary" id="setup-org-btn" onclick="App.submitOrgActivation()">
+            → &nbsp; Aktivatsiya
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="App.goBack()">← Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP PERSONAL: Email + Parol -->
+  <div id="screen-setup-personal" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Shaxsiy Aktivatsiya</div>
+        <div class="card-heading">Ro'yxatdan o'tish</div>
+        <div class="card-sub font-mono">adauth.tech akkaunti bilan kiring</div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Email</div>
+            <input id="setup-email" type="email" autocomplete="off"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="email@example.com" />
+          </div>
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Parol</div>
+            <input id="setup-password" type="password" autocomplete="off"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="••••••••" />
+          </div>
+          <div id="setup-personal-status" style="display:none">
+            <div class="status-row">
+              <div class="status-indicator error"></div>
+              <div class="status-text" id="setup-personal-status-text"></div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-primary" id="setup-personal-btn" onclick="App.submitPersonalActivation()">
+            → &nbsp; Kirish
+          </button>
+          <button class="btn btn-ghost" onclick="App.goBack()">← Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP SUCCESS — biometrik o'rnatilsin, keyin offline parol -->
+  <div id="screen-setup-success" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner" style="text-align:center;padding:48px 40px">
+        <div class="card-title">Setup Complete</div>
+        <div class="divider" style="margin-top:16px"></div>
+        <div class="success-wrap">
+          <div class="success-ring">✓</div>
+          <div class="success-title">Aktivatsiya muvaffaqiyatli!</div>
+          <div class="success-sub font-mono" style="margin-top:8px">
+            Agent endi biometrik himoya qiladi
+          </div>
+          <div class="success-bar-wrap" style="margin-top:16px">
+            <div class="success-bar"></div>
+          </div>
+          <div class="success-sub font-mono" style="animation-delay:0.8s">
+            Ishga tushirilmoqda...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP ADMIN PAROL — aktivatsiyadan keyin, MAJBURIY -->
+  <div id="screen-setup-admin-pw" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Admin Parol</div>
+        <div class="card-heading">Parol O'rnatish</div>
+        <div class="card-sub font-mono">Bu parol bilan istalgan PC dan Admin Panel ochiladi</div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Admin Parol</div>
+            <input id="setup-admin-pw" type="password" autocomplete="new-password"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="Kamida 6 ta belgi" />
+          </div>
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Tasdiqlang</div>
+            <input id="setup-admin-pw2" type="password" autocomplete="new-password"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="Qaytaring"
+              onkeydown="if(event.key==='Enter')App.submitAdminPasswordSetup()" />
+          </div>
+          <div id="setup-admin-status" style="display:none">
+            <div class="status-row">
+              <div class="status-indicator error"></div>
+              <div class="status-text" id="setup-admin-status-text"></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);line-height:1.8;letter-spacing:0.05em">
+            ⚠ Bu parol org dagi barcha agentlar uchun bir xil bo'lishi kerak.<br>
+            Faqat IT administrator bilishi kerak. Xavfsiz joyda saqlang.
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-primary" id="setup-admin-btn" onclick="App.submitAdminPasswordSetup()">
+            → &nbsp; Saqlash va Boshlash
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="screen-setup-offline-pw" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Offline Kirish</div>
+        <div class="card-heading">Parol O'rnatish</div>
+        <div class="card-sub font-mono">Internet yo'q vaqtda istalgan PC dan kirish uchun parol</div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Parol</div>
+            <input id="offline-setup-pw" type="password" autocomplete="new-password"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="Kamida 6 ta belgi" />
+          </div>
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Parolni tasdiqlang</div>
+            <input id="offline-setup-pw2" type="password" autocomplete="new-password"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="Takroring" />
+          </div>
+          <div id="offline-setup-status" style="display:none">
+            <div class="status-row">
+              <div class="status-indicator error"></div>
+              <div class="status-text" id="offline-setup-status-text"></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);line-height:1.8;letter-spacing:0.05em">
+            Bu parol bilan internetdan mustaqil holda, istalgan PC dan kira olasiz.<br>
+            Parolni xavfsiz joyda saqlang.
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-primary" id="offline-setup-btn" onclick="App.submitOfflineSetup()">
+            → &nbsp; Saqlash
+          </button>
+          <button class="btn btn-ghost" onclick="App.skipOfflineSetup()">O'tkazib yuborish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN SELECT: Face OR Fingerprint -->
+  <div id="screen-select" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Kompyuter qulflangan</div>
+        <div class="card-heading">Shaxsingizni tasdiqlang</div>
+        <div class="card-sub font-mono" id="select-username"></div>
+        <div class="divider"></div>
+        <div class="screen-label">Kirish uchun tasdiqlash usulini tanlang</div>
+        <div class="method-grid">
+          <div class="method-card" onclick="App.selectMethod('face')">
+            <span class="method-card-icon">⬡</span>
+            <div class="method-card-title">Yuz orqali</div>
+            <div class="method-card-desc">Kompyuter yoki telefon kamerasi<br>bilan shaxsingizni tasdiqlang</div>
+            <div class="method-card-badge" id="face-badge">
+              <span>●</span> <span id="face-badge-text">Available</span>
+            </div>
+          </div>
+          <div class="method-card" onclick="App.selectMethod('finger')">
+            <span class="method-card-icon">◈</span>
+            <div class="method-card-title">Barmoq izi orqali</div>
+            <div class="method-card-desc">Telefoningizdagi biometrik<br>tasdiqlashdan foydalaning</div>
+            <div class="method-card-badge">
+              <span>●</span> Available
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;text-align:right">
+          <button class="btn btn-ghost btn-sm" onclick="App.showAdminLogin()"
+            style="font-size:12px">
+            ⬡ &nbsp; ADMIN PANEL
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FACE SUB-SELECT: Webcam OR Phone QR -->
+  <div id="screen-face-select" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Face Verification</div>
+        <div class="card-heading">Choose Device</div>
+        <div class="card-sub font-mono">How do you want to capture your face?</div>
+        <div class="divider"></div>
+        <div class="screen-label">Select input device</div>
+        <div class="method-grid">
+          <div class="method-card" id="card-face-webcam" onclick="App.startFaceWebcam()">
+            <span class="method-card-icon">📷</span>
+            <div class="method-card-title">Webcam</div>
+            <div class="method-card-desc">Use this PC's camera<br>for face capture</div>
+            <div class="method-card-badge" id="webcam-badge">
+              <span>●</span> <span id="webcam-badge-text">Available</span>
+            </div>
+          </div>
+          <div class="method-card" onclick="App.startFaceQR()">
+            <span class="method-card-icon">📱</span>
+            <div class="method-card-title">Phone Camera</div>
+            <div class="method-card-desc">Scan QR, capture face<br>using your phone</div>
+            <div class="method-card-badge">
+              <span>●</span> Available
+            </div>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-ghost btn-sm" onclick="App.goBack()">← Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FACE WEBCAM -->
+  <div id="screen-face" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Face Verification · Webcam</div>
+        <div class="card-heading">Face Scan</div>
+        <div class="card-sub font-mono">Position your face within the frame</div>
+        <div class="divider"></div>
+        <div class="cam-wrap">
+          <video id="camera-video" autoplay playsinline muted></video>
+          <canvas id="camera-canvas" style="display:none"></canvas>
+          <div class="face-overlay">
+            <div class="face-ring"></div>
+            <div class="scan-line"></div>
+          </div>
+          <div class="cam-corner tl"></div>
+          <div class="cam-corner tr"></div>
+          <div class="cam-corner bl"></div>
+          <div class="cam-corner br"></div>
+        </div>
+        <div class="status-row">
+          <div class="status-indicator active" id="face-indicator"></div>
+          <div class="status-text" id="face-status-text">Camera active — look at the camera</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="capture-btn" onclick="App.captureFrame()">
+            ⊙ &nbsp; Capture &amp; Verify
+          </button>
+          <button class="btn btn-ghost" onclick="App.goBack()">← Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FACE VIA PHONE QR -->
+  <div id="screen-face-qr" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Face Verification · Phone</div>
+        <div class="card-heading">Phone Camera</div>
+        <div class="card-sub font-mono">Scan QR → phone opens camera → captures face</div>
+        <div class="divider"></div>
+        <div class="qr-wrap">
+          <div style="position:relative">
+            <div class="qr-frame">
+              <div class="qr-generating font-mono" id="face-qr-loading">
+                <div class="spinner" style="margin:0 auto 10px"></div>
+                Generating...
+              </div>
+              <div id="face-qr-code" style="display:none"></div>
+            </div>
+            <div class="qr-corner tl"></div>
+            <div class="qr-corner tr"></div>
+            <div class="qr-corner bl"></div>
+            <div class="qr-corner br"></div>
+          </div>
+          <div class="status-row" style="width:100%;margin-bottom:0">
+            <div class="qr-blink" id="face-qr-blink"></div>
+            <div class="status-text" id="face-qr-status">Waiting for phone...</div>
+            <div style="margin-left:auto;font-family:var(--font-mono);font-size:11px;
+                        color:var(--text-muted)" id="face-qr-timer"></div>
+          </div>
+          <div class="timer-bar-wrap" style="width:100%">
+            <div class="timer-bar" id="face-timer-bar"></div>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:16px">
+          <button class="btn btn-ghost" onclick="App.goBack()">← Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINGER SUB-SELECT: Phone QR OR USB -->
+  <div id="screen-finger-select" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Fingerprint Verification</div>
+        <div class="card-heading">Choose Device</div>
+        <div class="card-sub font-mono">How do you want to scan your fingerprint?</div>
+        <div class="divider"></div>
+        <div class="screen-label">Select input device</div>
+        <div class="method-grid">
+          <div class="method-card" onclick="App.startFingerQR()">
+            <span class="method-card-icon">📱</span>
+            <div class="method-card-title">Phone / QR</div>
+            <div class="method-card-desc">Scan QR with phone,<br>use phone fingerprint</div>
+            <div class="method-card-badge">
+              <span>●</span> Available
+            </div>
+          </div>
+          <div class="method-card disabled">
+            <span class="method-card-icon">🔌</span>
+            <div class="method-card-title">USB Scanner</div>
+            <div class="method-card-desc">Connect USB fingerprint<br>scanner device</div>
+            <div class="method-card-badge unavailable">
+              <span>○</span> Coming Soon
+            </div>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-ghost btn-sm" onclick="App.goBack()">← Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINGER QR -->
+  <div id="screen-finger" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Fingerprint Verification · Phone</div>
+        <div class="card-heading">Phone Authentication</div>
+        <div class="card-sub font-mono">Scan the QR code with your mobile device</div>
+        <div class="divider"></div>
+        <div class="qr-wrap">
+          <div style="position:relative">
+            <div class="qr-frame" id="qr-frame">
+              <div class="qr-generating font-mono" id="qr-loading">
+                <div class="spinner" style="margin:0 auto 10px"></div>
+                Generating...
+              </div>
+              <div id="qr-code" style="display:none"></div>
+            </div>
+            <div class="qr-corner tl"></div>
+            <div class="qr-corner tr"></div>
+            <div class="qr-corner bl"></div>
+            <div class="qr-corner br"></div>
+          </div>
+          <div class="status-row" style="width:100%;margin-bottom:0">
+            <div class="qr-blink" id="qr-blink"></div>
+            <div class="status-text" id="qr-status-text">Waiting for mobile device...</div>
+            <div style="margin-left:auto;font-family:var(--font-mono);font-size:11px;
+                        color:var(--text-muted)" id="qr-timer"></div>
+          </div>
+          <div class="timer-bar-wrap" style="width:100%">
+            <div class="timer-bar" id="timer-bar"></div>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:16px">
+          <button class="btn btn-ghost" onclick="App.goBack()">← Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OFFLINE LOGIN (doc 06) — personal parol bilan, istalgan PC dan -->
+  <!-- OFFLINE ADMIN (org bilan — adauth.tech login/parol) -->
+  <div id="screen-offline-admin" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Offline Mode · Org</div>
+        <div class="card-heading">Admin Kirish</div>
+        <div class="card-sub font-mono">Internet yo'q — adauth.tech login ma'lumotlaringizni kiriting</div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Login (Email)</div>
+            <input id="offline-admin-username" type="text" autocomplete="off"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="admin@company.com" />
+          </div>
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Parol</div>
+            <input id="offline-admin-password" type="password" autocomplete="off"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="••••••••" />
+          </div>
+          <div class="status-row" id="offline-admin-status-row" style="display:none">
+            <div class="status-indicator error"></div>
+            <div class="status-text" id="offline-admin-status-text"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em">
+            adauth.tech saytiga kirish uchun ishlatiladigan login/parol
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-primary" id="offline-admin-btn" onclick="App.submitAdminOfflineLogin()">
+            → &nbsp; Kirish
+          </button>
+        </div>
+        <!-- Admin panel -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+          <button class="btn btn-ghost btn-sm" onclick="App.showAdminLogin()" style="width:100%;opacity:0.7">
+            ⬡ &nbsp; Admin Panel (LAN boshqaruv)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OFFLINE PERSONAL (orgsiz — o'zi o'rnatgan parol) -->
+  <div id="screen-offline" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Offline Mode</div>
+        <div class="card-heading">Offline Kirish</div>
+        <div class="card-sub font-mono">Internet mavjud emas — offline parolingizni kiriting</div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Parol</div>
+            <input id="offline-password" type="password" autocomplete="off"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="••••••••" />
+          </div>
+          <div class="status-row" id="offline-status-row" style="display:none">
+            <div class="status-indicator error" id="offline-indicator"></div>
+            <div class="status-text" id="offline-status-text"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em">
+            O'rnatishda belgilangan offline parolingizni kiriting
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-primary" id="offline-submit-btn" onclick="App.submitOfflineLogin()">
+            → &nbsp; Kirish
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTOLOCK WARNING (doc 04) -->
+  <div id="autolock-overlay" style="display:none;position:fixed;inset:0;
+       background:rgba(4,8,18,0.85);z-index:9999;
+       display:none;align-items:center;justify-content:center">
+    <div class="card" style="max-width:380px;width:90%"><div class="corner-bl"></div>
+      <div class="card-inner" style="text-align:center;padding:40px 32px">
+        <div class="card-title">Auto-Lock</div>
+        <div class="card-heading" style="color:var(--amber)">Session Expiring</div>
+        <div class="card-sub font-mono" style="margin-top:8px">
+          Workstation will lock in
+        </div>
+        <div style="font-size:48px;font-weight:700;color:var(--amber);
+                    font-family:var(--font-mono);margin:16px 0"
+             id="autolock-countdown">30</div>
+        <div class="btn-row" style="justify-content:center;margin-top:8px">
+          <button class="btn btn-primary" onclick="App.extendSession()">
+            ↺ &nbsp; Continue Session
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCKED -->
+  <div id="screen-blocked" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner" style="text-align:center;padding:48px 40px">
+        <div class="card-title">Access Denied</div>
+        <div class="card-heading" style="color:var(--red)">Account Blocked</div>
+        <div class="divider" style="margin-top:16px"></div>
+        <div class="card-sub font-mono" id="blocked-message" style="margin-top:16px;color:var(--red)"></div>
+        <div class="card-sub font-mono" style="margin-top:8px;opacity:0.5">
+          Contact IT support for assistance
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div id="screen-admin-login" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">AD BioGuard</div>
+        <div class="card-heading">Admin Panel</div>
+        <div class="card-sub font-mono">Admin parolni kiriting — PC ochilmaydi</div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+          <div>
+            <div class="screen-label" style="margin-bottom:4px">Admin Parol</div>
+            <input id="admin-panel-pw" type="password" autocomplete="off"
+              style="width:100%;background:rgba(0,194,255,0.04);border:1px solid var(--border);
+                     border-radius:4px;padding:10px 14px;color:var(--text);
+                     font-family:var(--font-mono);font-size:13px;outline:none"
+              placeholder="••••••••"
+              onkeydown="if(event.key==='Enter')App.submitAdminPanelLogin()" />
+          </div>
+          <div class="status-row" id="admin-panel-error" style="display:none">
+            <div class="status-indicator error"></div>
+            <div class="status-text"></div>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-primary" id="admin-panel-btn" onclick="App.submitAdminPanelLogin()">
+            → &nbsp; Kirish
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="App.goBack()">← Orqaga</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="screen-admin-panel" class="screen">
+    <div class="card" style="max-width:680px;width:96%"><div class="corner-bl"></div>
+      <div class="card-inner" style="padding:22px 26px">
+
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div>
+            <div class="card-title">Admin Panel</div>
+            <div style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:0.04em">
+              LAN Qurilmalar
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="admin-peer-count" class="font-mono"
+              style="font-size:10px;color:var(--text-muted)"></span>
+            <button class="btn btn-ghost btn-sm" onclick="App.disableAll()">
+              ⏸ &nbsp; Barchani Disable
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="App.closeAdminPanel()"
+              style="opacity:0.5">✕</button>
+          </div>
+        </div>
+
+        <div class="divider" style="margin:10px 0 14px"></div>
+
+        <!-- Legend -->
+        <div style="display:flex;gap:14px;margin-bottom:12px;
+                    font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">
+          <span>🟢 ACTIVE</span>
+          <span>🔴 LOCKED</span>
+          <span>🟡 DISABLED</span>
+          <span>⚫ OFFLINE</span>
+        </div>
+
+        <!-- Peer list -->
+        <div id="admin-peer-list"
+          style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto">
+          <div class="admin-empty font-mono">
+            <div class="spinner" style="margin:0 auto 12px"></div>
+            LAN qurilmalar qidirilmoqda...
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div id="admin-confirm-modal"
+    style="display:none;position:fixed;inset:0;background:rgba(4,8,18,0.92);
+           z-index:9999;align-items:center;justify-content:center">
+    <div class="card" style="max-width:380px;width:90%"><div class="corner-bl"></div>
+      <div class="card-inner" style="text-align:center;padding:36px 28px">
+        <div class="card-title">Tasdiqlash</div>
+        <div class="card-heading" style="color:var(--amber);font-size:16px">Diqqat!</div>
+        <div class="card-sub font-mono" id="admin-confirm-msg"
+          style="margin-top:12px;line-height:1.6"></div>
+        <div class="btn-row" style="justify-content:center;margin-top:24px;gap:10px">
+          <button class="btn btn-primary" onclick="App.confirmYes()">✓ &nbsp; Tasdiqlash</button>
+          <button class="btn btn-ghost" onclick="App.confirmNo()">← &nbsp; Bekor</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="screen-success" class="screen">
+    <div class="card"><div class="corner-bl"></div>
+      <div class="card-inner">
+        <div class="card-title">Verification Complete</div>
+        <div class="divider" style="margin-top:16px"></div>
+        <div class="success-wrap">
+          <div class="success-ring">✓</div>
+          <div class="success-title">Identity Verified</div>
+          <div class="success-sub font-mono" id="success-method"></div>
+          <div class="success-bar-wrap" style="margin-top:8px">
+            <div class="success-bar"></div>
+          </div>
+          <div class="success-sub font-mono" style="animation-delay:0.8s">
+            Unlocking workstation...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="dev-bar" style="display:none">
+  <button class="dev-btn" onclick="App.devUnlock()">✓ SIMULATE</button>
+  <button class="dev-btn" onclick="App.devExit()">⏻ EXIT</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

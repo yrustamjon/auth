@@ -4,8 +4,46 @@ from django.test import TestCase
 from django.utils import timezone
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from apps.common.models import Device, Organization, Users
+from apps.common.models import AdminUser, Device, Organization, Users
 from apps.org.models import OrgToken
+
+
+class OrganizationDeletionTests(TestCase):
+    def setUp(self):
+        self.admin = AdminUser.objects.create(username='deletion-admin', is_superadmin=True)
+        self.client.force_login(self.admin)
+        self.org = Organization.objects.create(name='Deletion test', slug='deletion-test')
+
+    def test_removal_code_blocks_deletion_without_losing_records(self):
+        from apps.device.models import DeviceRemovalCode
+        device = Device.objects.create(organization=self.org, pc_id='deletion-pc', license='TEST', location='Test')
+        code = DeviceRemovalCode.objects.create(device=device, code_digest='a' * 64,
+            expires_at=timezone.now() + timedelta(minutes=10))
+        response = self.client.delete(f'/api/organizations/{self.org.pk}/')
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('detail', response.json())
+        self.assertTrue(Organization.objects.filter(pk=self.org.pk).exists())
+        self.assertTrue(Device.objects.filter(pk=device.pk).exists())
+        self.assertTrue(DeviceRemovalCode.objects.filter(pk=code.pk).exists())
+
+    def test_removal_history_blocks_deletion(self):
+        from apps.device.models import DeviceRemoval
+        device = Device.objects.create(organization=self.org, pc_id='removed-pc', license='TEST', location='Test')
+        removal = DeviceRemoval.objects.create(device=device, recovery_public_key='archived',
+            started_at=timezone.now(), state='removed', completed_at=timezone.now())
+        response = self.client.delete(f'/api/organizations/{self.org.pk}/')
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(DeviceRemoval.objects.filter(pk=removal.pk).exists())
+        self.assertTrue(Organization.objects.filter(pk=self.org.pk).exists())
+
+    def test_empty_organization_can_be_deleted(self):
+        response = self.client.delete(f'/api/organizations/{self.org.pk}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Organization.objects.filter(pk=self.org.pk).exists())
+
+    def test_missing_organization_returns_404(self):
+        response = self.client.delete('/api/organizations/999999/')
+        self.assertEqual(response.status_code, 404)
 
 
 class EnrollmentTests(TestCase):

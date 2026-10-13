@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -117,7 +118,13 @@ class Organizations(APIView):
         if not org:
             return Response({"detail": "Not found"}, status=404)
 
-        org.delete()
+        try:
+            with transaction.atomic():
+                org.delete()
+        except ProtectedError:
+            return Response({
+                "detail": "Organization cannot be deleted because protected device removal records must be retained. Deactivate the organization instead.",
+            }, status=409)
         return Response({"ok": True})
 
 
