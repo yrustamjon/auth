@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Search, Monitor } from 'lucide-react';
 import Table from '../components/Table';
+import { activeFilter, platformFilter } from '../components/table-filters';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import RemovalCodeCard from '../components/RemovalCodeCard';
@@ -126,7 +127,7 @@ export default function Devices() {
       </div>
 
       <div style={S.tableWrap}>
-        <Table columns={columns} data={filtered} loading={loading} error={error}
+        <Table columns={columns} data={filtered} loading={loading} error={error} filters={[activeFilter('is_active'), platformFilter]}
           actions={(row) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <button aria-label="Tahrirlash" disabled={row.enrollment_status === 'browser_approved'} title={row.enrollment_status === 'browser_approved' ? 'Agent ulanishi kutilmoqda' : 'Tahrirlash'} onClick={() => openEdit(row)} style={S.actionBtn}

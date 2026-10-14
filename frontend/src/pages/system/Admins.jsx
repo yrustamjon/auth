@@ -2,6 +2,7 @@ import { readCollection } from '../../api/contracts';
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Pencil, Trash2, Search, Lock, Unlock,  LogOut, Link } from 'lucide-react';
 import Table from '../../components/Table';
+import { lockedFilter } from '../../components/table-filters';
 import Badge from '../../components/Badge';
 import Modal from '../../components/Modal';
 import {
@@ -291,7 +292,7 @@ export default function Admins() {
       </div>
 
       <div style={S.tableWrap}>
-        <Table columns={columns} data={filtered} loading={loading} error={error}
+        <Table columns={columns} data={filtered} loading={loading} error={error} filters={[lockedFilter]}
           actions={(row) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <button title="Tahrirlash" onClick={() => openEdit(row)} style={S.actionBtn}

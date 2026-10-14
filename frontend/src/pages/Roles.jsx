@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Search, Shield } from 'lucide-react';
 import Table from '../components/Table';
+import { activeFilter } from '../components/table-filters';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import { getRoles, createRole, updateRole, deleteRole } from '../api/admin';
@@ -108,7 +109,7 @@ export default function Roles() {
       </div>
 
       <div style={S.tableWrap}>
-        <Table columns={columns} data={filtered} loading={loading} error={error}
+        <Table columns={columns} data={filtered} loading={loading} error={error} filters={[activeFilter('is_active')]}
           actions={(row) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <button aria-label="Tahrirlash" onClick={() => openEdit(row)} style={S.actionBtn}

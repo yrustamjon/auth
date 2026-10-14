@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Search, Fingerprint } from 'lucide-react';
 import Table from '../components/Table';
+import { activeFilter } from '../components/table-filters';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import BiometricModal from '../components/BiometricModal';
@@ -166,6 +167,7 @@ export default function Users() {
 
       <div style={S.tableWrap}>
         <Table columns={columns} data={filtered} loading={loading} error={error}
+          filters={[activeFilter('status'), { key: 'role', label: 'Rol', getValue: row => row.role?.id, options: roles.map(role => ({ value: role.id, label: role.name })) }]}
           actions={(row) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <button onClick={() => setBioTarget(row)} style={S.actionBtn} title="Biometrik"

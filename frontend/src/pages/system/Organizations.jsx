@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Search, Eye, Ban, CheckCircle, LogOut, UserPlus } from 'lucide-react';
 import Table from '../../components/Table';
+import { activeFilter } from '../../components/table-filters';
 import Badge from '../../components/Badge';
 import Modal from '../../components/Modal';
 import {
@@ -239,7 +240,7 @@ export default function Organizations() {
       </div>
 
       <div style={S.tableWrap}>
-        <Table columns={columns} data={filtered} loading={loading} error={error}
+        <Table columns={columns} data={filtered} loading={loading} error={error} filters={[activeFilter('active')]}
           actions={(row) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
               <button title="Ko'rish" onClick={() => openDetail(row)} style={S.actionBtn}

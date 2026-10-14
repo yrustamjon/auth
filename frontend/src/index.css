@@ -268,3 +268,50 @@ a { color:inherit; text-decoration:none; } svg { flex-shrink:0; }
 .mobile-biometric-card .mobile-face-hint {text-align:center;margin:8px 0;}
 .mobile-biometric-card>.btn-primary {width:100%;justify-content:center;min-height:46px;}
 @media(max-width:480px){.mobile-biometric-card {padding:16px;}.mobile-biometric-card h1 {font-size:22px;}.mobile-biometric-card .eyebrow {margin-top:12px;}}
+.table-filters {display:flex;align-items:center;flex-wrap:wrap;gap:16px;padding:16px 20px;border-bottom:1px solid #edf1f6;background:#fff;font-size:12px;}
+.table-filter-heading {display:flex;align-items:center;gap:8px;color:#66758c;font-weight:600;}
+.table-filter-heading b {display:grid;place-items:center;min-width:19px;height:19px;border-radius:6px;background:#eaf1ff;color:#2563eb;font-size:10px;}
+.table-filter-controls {display:flex;flex-wrap:wrap;gap:8px;min-width:0;}
+.table-filter-select {display:flex;align-items:center;position:relative;gap:8px;min-width:0;max-width:100%;padding:0 12px;height:36px;border:1px solid #e5eaf1;border-radius:8px;background:#fafbfd;transition:border-color .15s,background .15s;}
+.table-filter-select>span {color:#7d899b;white-space:nowrap;}
+.table-filter-select select {appearance:none;min-width:65px;max-width:180px;padding:8px 20px 8px 0;background:transparent;border:0;color:#334155;font-size:12px;font-weight:600;cursor:pointer;}
+.table-filter-select>svg {position:absolute;right:10px;pointer-events:none;color:#8996a9;}
+.table-filter-select:hover {border-color:#bfcde1;}
+.table-filter-select:focus-within {outline:3px solid #dbeafe;border-color:#93b4fd;}
+.table-filter-select select:focus-visible {outline:none;}
+.table-filter-select.is-selected {background:#f0f5ff;border-color:#c9dafc;}
+.table-filter-select.is-selected select {color:#2563eb;}
+.table-filter-clear {display:flex;align-items:center;gap:5px;margin-left:auto;padding:7px 0;border:0;background:transparent;color:#64748b;font-size:12px;}
+.table-filter-clear:hover {color:#2563eb;}
+.table-pagination {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:16px 20px;border-top:1px solid #edf1f6;background:#fff;font-size:12px;color:#8490a3;}
+.table-pagination-info {display:flex;align-items:center;flex-wrap:wrap;gap:24px;}
+.table-result-count {font-variant-numeric:tabular-nums;white-space:nowrap;}
+.table-result-count strong {color:#42526b;font-weight:600;}
+.table-page-size {display:flex;align-items:center;gap:8px;}
+.table-size-select {position:relative;display:flex;align-items:center;}
+.table-size-select select {appearance:none;height:32px;padding:0 27px 0 11px;border:1px solid #e5eaf1;border-radius:7px;background:#fff;color:#42526b;font-size:12px;font-weight:600;cursor:pointer;}
+.table-size-select svg {position:absolute;right:9px;pointer-events:none;}
+.table-pagination nav,.table-page-number {display:flex;align-items:center;gap:4px;}
+.table-page-button {display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:transparent;color:#67758c;font-size:12px;font-weight:600;transition:background .15s,color .15s,border-color .15s;}
+.table-page-button:hover:not(:disabled) {background:#f0f5ff;color:#2563eb;}
+.table-page-button.is-current {background:#2563eb;color:#fff;border-color:#2563eb;box-shadow:0 2px 4px #2563eb20;}
+.table-page-button.is-current:hover:not(:disabled) {background:#1d4ed8;color:#fff;}
+.table-page-arrow {border-color:#e5eaf1;background:#fff;}
+.table-page-button:disabled {color:#c5cdd9;background:#fafbfd;opacity:1;cursor:not-allowed;}
+.table-page-gap {padding:0 5px;color:#9aa6b7;}
+.table-mobile-page {display:none;}
+@media(max-width:640px){
+ .table-filters {padding:14px;gap:10px;}
+ .table-filter-heading {width:100%;font-size:11px;}
+ .table-filter-controls {flex:1;}
+ .table-filter-select {height:36px;padding-left:10px;gap:6px;}
+ .table-filter-select select {max-width:140px;}
+ .table-filter-clear {margin-left:0;}
+ .table-pagination {padding:14px;gap:12px;}
+ .table-pagination-info {width:100%;justify-content:space-between;gap:8px;}
+ .table-pagination nav {width:100%;justify-content:space-between;padding-top:12px;border-top:1px solid #f0f3f7;}
+ .table-pagination .table-page-number {display:none;}
+ .table-mobile-page {display:block;font-size:12px;color:#8a97a9;}
+ .table-mobile-page strong {color:#334155;font-weight:600;}
+ .table-page-arrow {width:40px;height:36px;}
+}
