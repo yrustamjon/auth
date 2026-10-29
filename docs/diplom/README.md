@@ -19,3 +19,9 @@ Avvalgi `Yolchiyev_Rustam_Annotatsiya_va_Kirish.docx` faqat dastlabki qismni saq
 Hujjatda jami 15 ta rasm va sxema mavjud. Qo‘shilgan 8 ta ekran rasmi mahalliy Django serverida vaqtinchalik namuna kompaniyasi bilan olingan. Mobil ko‘rinish 390 piksel kenglikda ko‘rsatilgan. Ro‘yxatga olish va administrator tasdig‘i real endpointlar orqali bajarilgan; Windows yordamchisining apparat ma’lumotlari namuna sifatida kiritilgan. Tasvirga olishdan keyin namuna yozuvlari va sessiyalar o‘chirilgan, QR va kodlar amaldan chiqarilgan. Fizik telefon biometrik sensori sinovdan o‘tkazilmagan.
 
 Windows o‘rnatuvchisining native oynalari hali rasm sifatida qo‘shilmagan: o‘rnatish bosqichlari manba kodiga tayangan holda matnda yoritilgan. Ularni to‘ldirish uchun haqiqiy Windowsdagi token kiritish (token ko‘rinmasin), aktivatsiya natijasi, o‘rnatish yakuni va agent asosiy oynasi rasmlari kerak.
+
+## PowerPoint taqdimoti
+
+[Loyiha bilan boyitilgan 25 slaydli taqdimot](taqdimot/README.md) · [PowerPoint fayli](taqdimot/Yolchiyev_Rustam_Loyiha_Taqdimoti_25_slayd.pptx) · [Slaydlar ko‘rinishi](taqdimot/Slaydlar_korinishi.png)
+
+Foydalanuvchi bergan taqdimot asosida korporativ PC registratsiyasi, mobil tasdiq, agent aktivatsiyasi, tizim komponentlari, monitoring va qayd etilgan sinovlar qo‘shilgan. Mavjud dizayn va 25 slaydli hajm saqlangan.
