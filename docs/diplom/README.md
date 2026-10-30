@@ -2,9 +2,9 @@
 
 Mavzu: **Operatsion tizimlar uchun ko‘p faktorli autentifikatsiya asosidagi foydalanishni nazoratlash tizimini ishlab chiqish.**
 
-[Hozirgi Word hujjati](Yolchiyev_Rustam_Diplom_Loyihasi.docx)
+[Hozirgi Word hujjati](Yolchiyev_Rustam_Diplom_Loyihasi.docx) · [Tahrirlangan reja](Reja.md)
 
-Bu rahbar tahriri uchun dastlabki ishchi nusxa. Tekshirilgan maket 54 betdan iborat; Word versiyasi va shriftlarga qarab sahifalanish farqlanishi mumkin.
+Bu rahbar tahriri uchun dastlabki ishchi nusxa. Tekshirilgan maket 56 betdan iborat; Word versiyasi va shriftlarga qarab sahifalanish farqlanishi mumkin.
 
 Hujjat DL Namuna.docx tartibiga asoslangan: titul, topshiriq, maslahatlar va ish grafigi, uch tildagi annotatsiya, mundarija, kirish, uchta bob, xulosa, 13 ta adabiyot manbasi va ilovalar. Rasmiy shaxslar, universitet, fakultet, kafedra, yo‘nalish, guruh, imzo, tasdiqlash raqami va sanalar uchun joylar bo‘sh qoldirilgan. Ma’lum bo‘lgan muallif va mavzu kiritilgan.
 
@@ -25,3 +25,7 @@ Windows o‘rnatuvchisining native oynalari hali rasm sifatida qo‘shilmagan: o
 [Loyiha bilan boyitilgan 25 slaydli taqdimot](taqdimot/README.md) · [PowerPoint fayli](taqdimot/Yolchiyev_Rustam_Loyiha_Taqdimoti_25_slayd.pptx) · [Slaydlar ko‘rinishi](taqdimot/Slaydlar_korinishi.png)
 
 Foydalanuvchi bergan taqdimot asosida korporativ PC registratsiyasi, mobil tasdiq, agent aktivatsiyasi, tizim komponentlari, monitoring va qayd etilgan sinovlar qo‘shilgan. Mavjud dizayn va 25 slaydli hajm saqlangan.
+
+## Rahbar izohlari bo‘yicha reja tahriri
+
+I bob va 1.1 da operatsion tizimlar hamda ulardagi nazorat usullari kengaytirildi. 1.2 ko‘p faktorli autentifikatsiya tizimlari tahliliga moslandi, 2.1 sarlavhasi “Ishlab chiqiluvchi tizim arxitekturasi” qilindi. Eski 2.2 va 2.3 bitta yangi 2.2 ga birlashtirildi. Eski 2.4 yangi 2.3 bo‘lib, “Ko‘p faktorli autentifikatsiya tizimini baholash” deb nomlandi. Matn, jadval tartibi va mundarija ham shunga moslashtirildi. Rasmiy ma’lumotlar uchun bo‘sh joylar va 15 ta rasm saqlangan.
